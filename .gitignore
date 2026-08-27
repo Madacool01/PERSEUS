@@ -1,0 +1,10 @@
+# Node dependencies (installed only to run the jsdom test harnesses in tests/)
+node_modules/
+
+# Package manager lockfiles / metadata
+tests/node_modules/
+package-lock.json
+
+# Misc OS / editor cruft
+.DS_Store
+Thumbs.db
