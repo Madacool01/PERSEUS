@@ -41,7 +41,12 @@ function section(t){ console.log("\n== " + t + " =="); }
   section("Initial render");
   const woView = $("#view-workouts");
   check(Boolean(woView.innerHTML.length > 500), "workouts view rendered (len=" + woView.innerHTML.length + ")");
-  check($$("#view-workouts input[data-dayname]").length === 2, "two seeded days shown");
+  check($$("#view-workouts [data-edit-day]").length === 2, "two seeded routines shown in the list");
+  check($$("#view-workouts input[data-dayname]").length === 0, "routine list has no inline editing inputs");
+
+  section("Routine editor");
+  $("#view-workouts [data-edit-day]").dispatchEvent(new window.MouseEvent("click", { bubbles:true }));
+  check($$("#view-workouts input[data-dayname]").length === 1, "opening a routine shows its name input");
 
   section("Navigation switches");
   ["workouts","log","coach","history","library","settings"].forEach(v => {

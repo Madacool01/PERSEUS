@@ -212,6 +212,31 @@
   }
   .card h3 { margin: 0 0 1rem; font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -.01em; color: var(--ink); }
   .h100 { height: 100%; }
+
+  /* ---------- Exercise editor modal ---------- */
+  #ex-editor-host {
+    position: fixed; inset: 0; z-index: 55;
+    display: grid; place-items: center; padding: 1.2rem;
+    overscroll-behavior: contain;
+    text-transform: uppercase;
+  }
+  /* helper note stays sentence-case for readability */
+  #ex-editor-host .micro { text-transform: none; }
+  #ex-editor-host:empty { display: none; }
+  #ex-editor-host:not(:empty) {
+    background: rgba(34,29,21,.44);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: modalBack .25s ease;
+  }
+  #ex-editor-host .card {
+    width: min(600px, 100%); max-height: 88vh; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: var(--r-xl);
+    box-shadow: var(--shadow-2);
+    animation: modalIn .32s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes modalBack { from { opacity: 0; } to { opacity: 1; } }
   .grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
   @media (max-width: 780px) { .grid.two { grid-template-columns: 1fr; } }
 
@@ -231,6 +256,17 @@
   textarea { resize: vertical; min-height: 70px; }
   input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
   .inline-field input, .inline-field select { width: auto; }
+  .ex-weightable-row {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .85rem 1rem; margin-bottom: .55rem;
+    border: 1px solid var(--line-2); border-radius: var(--r-md);
+    background: var(--surface-2); cursor: pointer;
+  }
+  .ex-weightable-row input[type=checkbox] { width: 17px; height: 17px; flex: none; }
+  .ex-weightable-row span { margin: 0 !important; text-transform: none; letter-spacing: 0; font-size: .9rem; font-weight: 600; color: var(--ink); }
+  .set-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: .5rem; margin-top: .35rem; }
+  .set-target { display: flex; flex-direction: column; gap: .3rem; }
+  .set-target span { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .eq-select { width: auto; min-width: 175px; }
 
   /* ---------- Pills / tags ---------- */
@@ -297,6 +333,31 @@
     padding: .14rem .5rem; color: var(--ink-2);
   }
   .add-new-btn { margin-top: .9rem; }
+  .routine-card {
+    border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 1.35rem 1.4rem;
+    background: var(--surface); box-shadow: var(--shadow-1); cursor: pointer;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .25s;
+  }
+  .routine-card:hover { transform: translateY(-4px); border-color: var(--accent-line); box-shadow: var(--shadow-2); }
+  .routine-top { display: flex; align-items: center; gap: .8rem; }
+  .routine-name { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; letter-spacing: -.01em; color: var(--ink); }
+  .routine-meta { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .routine-open {
+    margin-left: auto; display: inline-flex; align-items: center; gap: .3rem;
+    font-family: var(--font-mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent);
+  }
+  .routine-open .btn-arrow { transition: transform .25s; }
+  .routine-card:hover .routine-open .btn-arrow { transform: translateX(4px); }
+  .editor-top { display: flex; align-items: center; gap: .8rem; margin-bottom: 1.2rem; }
+  .editor-name {
+    font-family: var(--font-display) !important; font-weight: 700 !important;
+    font-size: clamp(1.9rem, 3.6vw, 2.8rem) !important; letter-spacing: -.02em !important;
+    width: 100% !important; padding: .25rem .35rem !important;
+    background: transparent !important; border: 1px solid transparent !important;
+    border-radius: var(--r-md); color: var(--ink);
+  }
+  .editor-name:hover { border-color: var(--line) !important; background: var(--surface) !important; }
+  .editor-day { margin-top: 1.4rem; }
 
   /* ---------- Workout card / list ---------- */
   .wo-list { display: flex; flex-direction: column; gap: .9rem; }
@@ -673,6 +734,12 @@ function fmtWeight(w){ return state.profile.weightUnit==="lb" ? Math.round(w*2.2
 function weightUnit(){ return state.profile.weightUnit; }
 function getEx(id){ return state.exercises.find(e=>e.id===id); }
 function getDay(id){ return state.days.find(d=>d.id===id); }
+/* per-set target for a set index: falls back to the single value when no per-set array exists */
+function setTarget(de, field, i){
+  const arr = field==="time" ? de.setTimes : de.setReps;
+  if (Array.isArray(arr) && arr[i]!=null && arr[i]!=="") return arr[i];
+  return field==="time" ? de.time : de.reps;
+}
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
 function shortRepr(field, value){
@@ -700,6 +767,8 @@ function confettiSmall(){
 
 /* ==== APP CORE ==== */
 let currentView = "workouts";
+let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" (routine editor)
+let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
 let libraryFilters = { eq:"", search:"" };
 
@@ -709,6 +778,7 @@ let libraryFilters = { eq:"", search:"" };
    ========================================================================= */
 function switchView(v){
   currentView = v;
+  if (v==="workouts"){ planMode = "list"; planEditId = null; }
   render();
   window.scrollTo({top:0});
 }
@@ -795,23 +865,30 @@ function openExEditor(id){
   if (!host) host = document.body;
   const e = ex || { id:null, name:"", mode:"reps", equipment:["bodyweight"], weightAvailable:false,
     defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"" };
+  // legacy "weight" mode maps to reps + the weighted option (kept for old data)
+  const mode = e.mode==="weight" ? "reps" : e.mode;
   const eqTags = ALL_EQUIP.map(k=>'<label style="font-weight:400;display:inline-flex;gap:6px;margin-right:14px"><input type="checkbox" class="eqbox" value="'+k+'"'+(e.equipment.includes(k)?" checked":"")+'>'+k+"</label>").join("");
   host.innerHTML =
-    '<div class="card" style="margin-top:22px">'+
-      '<h3>'+(ex?"Edit exercise":"New exercise")+"</h3>"+
+    '<div class="card" role="dialog" aria-modal="true" aria-label="'+(ex?"Edit exercise":"New exercise")+'">'+
+      '<div class="day-head" style="border:none;padding:0;margin:0 0 1.1rem">'+
+        '<h3 style="margin:0">'+(ex?"Edit exercise":"New exercise")+"</h3>"+
+        '<div class="spacer"></div>'+
+        '<button class="btn ghost small" id="ex-close" aria-label="Close">✕</button>'+
+      '</div>'+
       '<div class="grid two">'+
         '<label class="field"><span>Name</span><input id="ex-name" type="text" value="'+esc(e.name)+'"/></label>'+
         '<label class="field"><span>Progression mode</span><select id="ex-mode">'+
-          '<option value="reps"'+(e.mode==="reps"?" selected":"")+'>reps</option>'+
-          '<option value="time"'+(e.mode==="time"?" selected":"")+'>timer (hold / duration)</option>'+
-          '<option value="weight"'+(e.mode==="weight"?" selected":"")+'>weight (weighted)</option>'+
+          '<option value="reps"'+(mode==="reps"?" selected":"")+'>reps</option>'+
+          '<option value="time"'+(mode==="time"?" selected":"")+'>timer (hold / duration)</option>'+
         '</select></label>'+
         '<label class="field"><span>Equipment</span><div>'+eqTags+'</div></label>'+
-        '<label class="field"><span>Sets</span><input id="ex-sets" type="number" min="1" value="'+e.defaultSets+'"/></label>'+
-        '<label class="field"><span>Default reps</span><input id="ex-reps" type="number" min="0" value="'+e.defaultReps+'"/></label>'+
-        '<label class="field"><span>Default time (s)</span><input id="ex-time" type="number" min="0" value="'+e.defaultTime+'"/></label>'+
-        '<label class="field"><span>Default weight</span><input id="ex-weight" type="number" min="0" step="0.5" value="'+e.defaultWeight+'"/></label>'+
+        '<div></div>'+
       '</div>'+
+      '<label class="field ex-weightable-row">'+
+        '<input type="checkbox" id="ex-weightable"'+(e.weightAvailable?" checked":"")+'/>'+
+        '<span>Weighted — this exercise can add load later</span>'+
+      '</label>'+
+      '<p class="micro" style="margin:-.3rem 0 1rem">Weight is separate from mode: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily. Target sets and reps are set when you add this exercise to a workout day.</p>'+
       '<label class="field"><span>Notes (optional)</span><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'"/></label>'+
       '<div class="btn-row">'+
         '<button class="btn primary" id="ex-save">'+(ex?"Save changes":"Add exercise")+"</button>"+
@@ -820,24 +897,40 @@ function openExEditor(id){
       '</div>'+
     '</div>';
   const eqs = ()=>$$(".eqbox", host).filter(c=>c.checked).map(c=>c.value);
-  $("#ex-cancel", host).addEventListener("click", ()=>render());
+  function dismiss(){
+    document.removeEventListener("keydown", onKey);
+    render();
+  }
+  function onKey(ev){
+    if (ev.key!=="Escape") return;
+    const h = document.querySelector("#ex-editor-host");
+    if (h && h.innerHTML.trim().length) dismiss();
+  }
+  document.addEventListener("keydown", onKey);
+  const nameEl = $("#ex-name", host);
+  if (nameEl && nameEl.focus) nameEl.focus();
+  $("#ex-cancel", host).addEventListener("click", dismiss);
+  $("#ex-close", host).addEventListener("click", dismiss);
+  host.addEventListener("click", ev=>{ if (ev.target===host) dismiss(); });
   if (ex) $("#ex-delete", host).addEventListener("click", ()=>{
     if (!confirm("Delete \""+ex.name+"\"? Workouts using it keep their plan copy.")) return;
     state.exercises = state.exercises.filter(x=>x.id!==ex.id);
+    document.removeEventListener("keydown", onKey);
     saveState(); render(); toast("Exercise deleted");
   });
   $("#ex-save", host).addEventListener("click", ()=>{
     const name = $("#ex-name", host).value.trim();
     if (!name){ toast("Name is required"); return; }
+    const m = $("#ex-mode", host).value;
     const data = {
       name: name,
-      mode: $("#ex-mode", host).value,
+      mode: m,
       equipment: eqs().length ? eqs() : ["bodyweight"],
-      weightAvailable: ([...eqs()].some(equ=>["rings","pullup","dumbbell"].includes(equ))) || $("#ex-mode", host).value==="weight",
-      defaultSets: +$("#ex-sets", host).value || 3,
-      defaultReps: +$("#ex-reps", host).value || 0,
-      defaultTime: +$("#ex-time", host).value || 30,
-      defaultWeight: +$("#ex-weight", host).value || 0,
+      weightAvailable: $("#ex-weightable", host).checked,
+      defaultSets: ex ? (ex.defaultSets||3) : 3,
+      defaultReps: ex ? (ex.defaultReps||0) : (m==="time" ? 0 : 8),
+      defaultTime: ex ? (ex.defaultTime||30) : 30,
+      defaultWeight: ex ? (ex.defaultWeight||0) : 0,
       notes: $("#ex-notes", host).value.trim(),
     };
     if (ex){
@@ -846,6 +939,7 @@ function openExEditor(id){
       data.id = "ex-"+uid();
       state.exercises.push(data);
     }
+    document.removeEventListener("keydown", onKey);
     saveState(); render(); toast(ex?"Exercise updated":"Exercise added");
   });
 }
@@ -854,32 +948,29 @@ function openExEditor(id){
    WORKOUTS (PLAN BUILDER)
    ========================================================================= */
 function renderWorkouts(){
+  if (planMode==="edit" && planEditId){ renderWorkoutEditor(); return; }
+  renderRoutineList();
+}
+
+/* ---------- Routines overview (read-only list) ---------- */
+function renderRoutineList(){
   const s = $("#view-workouts");
   const cards = state.days.map((d,i) => {
-    const exRows = d.exercises.map(de => {
-      const ex = getEx(de.exId);
-      const nm = ex ? ex.name : "(deleted exercise)";
-      const setChips = Array.from({length:de.targetSets||0},(_,j)=>'<span class="set-chip">S'+(j+1)+"</span>").join("");
-      return '<div class="ex-row">'+
-        '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+"</div>"+
-        '<div class="micro ex-target">'+(de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':'')+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+"</div>"+
-        '<div class="set-chips">'+setChips+'</div>'+
-        '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
-      '</div>';
-    }).join("");
-    return '<div class="card day-card">'+
-      '<div class="day-head">'+
+    const exCount = d.exercises.length;
+    const setCount = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
+    const last = lastSessionForDay(d.id);
+    return '<div class="routine-card" data-edit-day="'+d.id+'">'+
+      '<div class="routine-top">'+
         '<span class="day-num mono">'+String(i+1).padStart(2,"0")+'</span>'+
-        '<input type="text" data-dayname="'+d.id+'" value="'+esc(d.name)+'" class="day-name" aria-label="Day name"/>'+
-        '<span class="pill">'+d.exercises.length+' exercises</span>'+
-        '<span class="pill">'+d.exercises.reduce((a,x)=>a+(x.targetSets||0),0)+" total sets</span>"+
+        '<span class="routine-name">'+esc(d.name)+'</span>'+
         '<div class="spacer"></div>'+
-        '<button class="btn small" data-add-ex="'+d.id+'">+ Add exercise</button>'+
-        '<button class="btn small danger" data-del-day="'+d.id+'">Remove day</button>'+
+        '<span class="routine-open">Open <span class="btn-arrow">→</span></span>'+
       '</div>'+
-      (exRows || '<div class="muted small">No exercises yet.</div>')+
-      '<div class="addhost" data-day="'+d.id+'"></div>'+
-      '<button class="btn small ghost add-new-btn" data-add-new="'+d.id+'">+ new exercise…</button>'+
+      '<div class="routine-meta">'+
+        '<span class="pill">'+exCount+' exercise'+(exCount!==1?"s":"")+'</span>'+
+        '<span class="pill">'+setCount+' total sets</span>'+
+        (last?'<span class="pill time">last logged · '+fmtDate(last.dateISO)+'</span>':"")+
+      '</div>'+
     '</div>';
   }).join("");
   s.innerHTML =
@@ -887,37 +978,82 @@ function renderWorkouts(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(img/dense-forest-light.png)"></div>'+
       '<div class="view-hero-inner">'+
         '<h2 class="view-title">Shape the week<span class="serif-i">,</span> then <span class="img-chip"><span style="background-image:url(img/single-flower-macro-light.png)"></span></span><em class="serif-i">let the coach</em> push it forward.</h2>'+
-        '<p class="view-sub fx-scrub">Sets never change. The coach only tunes reps, hold time, or weight — you plan the days, log the work, review the call.</p>'+
+        '<p class="view-sub fx-scrub">Your routines, stored here. Open one to plan it — sets never change, the coach only tunes reps, hold time, or weight.</p>'+
         '<div class="hero-cta">'+
-          '<button class="btn btn-xl primary" id="add-day"><span>+ New workout day</span><span class="btn-arrow">→</span></button>'+
+          '<button class="btn btn-xl primary" id="add-day"><span>+ New routine</span><span class="btn-arrow">→</span></button>'+
         '</div>'+
       '</div>'+
     '</div>'+
     '<div class="section-block">'+
-      (cards ? '<div class="days-grid">'+cards+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5"/></svg></div>No workout days yet. Create your first day above.</div>')+
+      (cards ? '<div class="days-grid">'+cards+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5"/></svg></div>No routines yet. Create your first routine above.</div>')+
     '</div>';
-  // bind events
+  $$("[data-edit-day]", s).forEach(card=>card.addEventListener("click", ()=>{
+    planMode="edit"; planEditId = card.dataset.editDay; render();
+  }));
+  $("#add-day", s).addEventListener("click", ()=>{
+    const id = "day-"+uid();
+    state.days.push({ id:id, name:"Workout "+String.fromCharCode(65+state.days.length), exercises:[] });
+    saveState();
+    planMode="edit"; planEditId = id; render();
+  });
+}
+
+/* ---------- Routine editor (single routine, full controls) ---------- */
+function renderWorkoutEditor(){
+  const s = $("#view-workouts");
+  const d = getDay(planEditId);
+  if (!d){ planMode="list"; planEditId=null; renderRoutineList(); return; }
+  const exRows = d.exercises.map(de => {
+    const ex = getEx(de.exId);
+    const nm = ex ? ex.name : "(deleted exercise)";
+    const setChips = Array.from({length:de.targetSets||0},(_,j)=>'<span class="set-chip">S'+(j+1)+"</span>").join("");
+    return '<div class="ex-row">'+
+      '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+"</div>"+
+      '<div class="micro ex-target">'+
+        (de.setReps ? de.setReps.join(" / ")+' reps' : (de.reps?'target '+de.reps+' reps':''))+
+        (de.setTimes ? de.setTimes.join(" / ")+'s' : (de.time?'hold '+de.time+'s':''))+
+        (de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+
+      '</div>'+
+      '<div class="set-chips">'+setChips+'</div>'+
+      '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
+    '</div>';
+  }).join("");
+  s.innerHTML =
+    '<div class="view-hero slim">'+
+      '<div class="view-hero-inner">'+
+        '<div class="editor-top">'+
+          '<button class="btn small ghost" id="plan-back">← All routines</button>'+
+          '<div class="spacer"></div>'+
+          '<button class="btn small danger" id="plan-del-day">Delete routine</button>'+
+        '</div>'+
+        '<input type="text" data-dayname="'+d.id+'" value="'+esc(d.name)+'" class="editor-name" aria-label="Routine name"/>'+
+        '<p class="view-sub">Set the target for every set — the coach only tunes reps, hold time, or weight, never set count.</p>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card day-card editor-day">'+
+      '<div class="day-head">'+
+        '<span class="pill">'+d.exercises.length+' exercise'+(d.exercises.length!==1?"s":"")+'</span>'+
+        '<span class="pill">'+d.exercises.reduce((a,x)=>a+(x.targetSets||0),0)+' total sets</span>'+
+        '<div class="spacer"></div>'+
+        '<button class="btn primary" data-add-ex="'+d.id+'">+ Add exercise</button>'+
+      '</div>'+
+      (exRows || '<div class="muted small">No exercises yet. Add one to get started.</div>')+
+      '<div class="addhost" data-day="'+d.id+'"></div>'+
+    '</div>';
+  $("#plan-back", s).addEventListener("click", ()=>{ planMode="list"; planEditId=null; render(); });
+  $("#plan-del-day", s).addEventListener("click", ()=>{
+    if(!confirm("Delete this routine and its plan?")) return;
+    state.days = state.days.filter(x=>x.id!==d.id); saveState();
+    planMode="list"; planEditId=null; render();
+  });
   $$("input[data-dayname]", s).forEach(inp => inp.addEventListener("change", ev=>{
-    const d = getDay(inp.dataset.dayname); if(d){ d.name=inp.value.trim()||d.name; saveState(); }
+    const day = getDay(inp.dataset.dayname); if(day){ day.name=inp.value.trim()||day.name; saveState(); }
   }));
   $$("[data-add-ex]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddEx(b.dataset.addEx)));
-  $$("[data-add-new]", s).forEach(b=>b.addEventListener("click", ev=>openExEditor(null)));
-  $$("[data-del-day]", s).forEach(b=>b.addEventListener("click", ev=>{
-    if(!confirm("Remove this workout day and its plan?")) return;
-    state.days = state.days.filter(d=>d.id!==b.dataset.delDay); saveState(); render();
-  }));
-  $("#add-day", s).addEventListener("click", ()=>{
-    state.days.push({ id:"day-"+uid(), name:"Workout "+String.fromCharCode(65+state.days.length), exercises:[] });
-    saveState(); render();
-  });
-  // remove-exercise rows: locate owning day via closest card
   $$("[data-rm-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
-    const dayCard = b.closest(".card");
-    const dayId = dayCard.querySelector("input[data-dayname]").dataset.dayname;
-    const day = getDay(dayId);
-    if(!day) return;
-    day.exercises = day.exercises.filter(x=>x.exId!==b.dataset.rmEx);
+    if(!d) return;
+    d.exercises = d.exercises.filter(x=>x.exId!==b.dataset.rmEx);
     saveState(); render();
   }));
 }
@@ -931,21 +1067,43 @@ function openAddEx(dayId){
       '<div class="grid two">'+
         '<label class="field"><span>Exercise</span><select id="add-ex-select">'+opts+'</select></label>'+
         '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>'+
-        '<label class="field" id="add-field-reps" style="display:none"><span>Target reps / set</span><input id="add-ex-reps" type="number" min="0" value="8"/></label>'+
-        '<label class="field" id="add-field-time" style="display:none"><span>Target hold (seconds)</span><input id="add-ex-time" type="number" min="0" value="30"/></label>'+
-        '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
       '</div>'+
+      '<div id="add-per-set"></div>'+
+      '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
       '<div class="btn-row"><button class="btn primary" id="add-ex-ok">Add</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
     '</div>';
-  function updateFields(){
+  let prevVals = null;
+  function readVals(){
+    const vals = [];
+    $$("#add-per-set .set-target-in", host).forEach(inp=>{ vals[+inp.dataset.i] = inp.value; });
+    return vals;
+  }
+  function buildPerSet(){
     const ex = getEx($("#add-ex-select").value);
-    const m = ex.mode;
-    $("#add-field-reps").style.display = (m!=="time") ? "block" : "none";
-    $("#add-field-time").style.display = (m==="time") ? "block" : "none";
-    $("#add-field-weight").style.display = (ex.weightAvailable||m==="weight") ? "block" : "none";
-    if (ex){ $("#add-ex-reps").value = ex.defaultReps||8; $("#add-ex-time").value = ex.defaultTime||30; $("#add-ex-weight").value = ex.defaultWeight||0; }
+    if (!ex) return;
+    const n = Math.max(1, +$("#add-ex-sets").value || 1);
+    const isTime = ex.mode==="time";
+    const fallback = isTime ? (ex.defaultTime||30) : (ex.defaultReps||8);
+    let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' — per set</span><div class="set-targets">';
+    for (let i=0;i<n;i++){
+      const v = (prevVals && prevVals[i]!=null && prevVals[i]!=="") ? prevVals[i] : fallback;
+      html += '<label class="set-target"><span>Set '+(i+1)+'</span><input type="number" min="0" class="set-target-in" data-i="'+i+'" value="'+v+'"/></label>';
+    }
+    html += '</div></label>';
+    $("#add-per-set", host).innerHTML = html;
+    prevVals = null;
+  }
+  function updateFields(){
+    prevVals = readVals();
+    const ex = getEx($("#add-ex-select").value);
+    if (!ex) return;
+    $("#add-field-weight").style.display = (ex.weightAvailable||ex.mode==="weight") ? "block" : "none";
+    $("#add-ex-weight").value = ex.defaultWeight||0;
+    buildPerSet();
   }
   $("#add-ex-select").addEventListener("change", updateFields);
+  $("#add-ex-sets").addEventListener("input", updateFields);
+  $("#add-ex-sets").addEventListener("change", updateFields);
   updateFields();
   $("#add-ex-cancel").addEventListener("click", ()=>render());
   $("#add-ex-ok").addEventListener("click", ()=>{
@@ -953,13 +1111,22 @@ function openAddEx(dayId){
     const day = getDay(dayId);
     if (day.exercises.find(x=>x.exId===ex.id)){ toast("Already in this day"); return; }
     const m = ex.mode;
-    day.exercises.push({
-      exId: ex.id,
-      targetSets: +$("#add-ex-sets").value||3,
-      reps: m==="weight" ? (+$("#add-ex-reps").value||0) : (m==="time"? 0 : +$("#add-ex-reps").value||0),
-      time: m==="time" ? +$("#add-ex-time").value||30 : 0,
-      weight: (ex.weightAvailable||m==="weight") ? +$("#add-ex-weight").value||0 : 0,
-    });
+    const n = +$("#add-ex-sets").value||3;
+    const vals = readVals();
+    const entry = { exId: ex.id, targetSets: n, reps: 0, time: 0, weight: 0 };
+    if (m==="time"){
+      const times = [];
+      for (let i=0;i<n;i++){ const v = +(vals[i]); times.push(v>0 ? v : (ex.defaultTime||30)); }
+      entry.time = times[0]||0;
+      entry.setTimes = times;
+    } else {
+      const reps = [];
+      for (let i=0;i<n;i++){ const v = +(vals[i]); reps.push(v>0 ? v : (ex.defaultReps||8)); }
+      entry.reps = reps[0]||0;
+      entry.setReps = reps;
+    }
+    if (ex.weightAvailable||m==="weight") entry.weight = +$("#add-ex-weight").value||0;
+    day.exercises.push(entry);
     saveState(); render(); toast("Added to day");
   });
 }
@@ -1036,7 +1203,7 @@ function renderLogStep(s){
   const setCells = entry.sets.map((set,i)=>{
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
-    const planTxt = ex.mode==="time" ? (plan.time+'s') : plan.weight? (plan.reps+'×'+fmtWeight(plan.weight)+' '+weightUnit()) : (plan.reps+' reps');
+    const planTxt = ex.mode==="time" ? (setTarget(plan,"time",i)+'s') : plan.weight? (setTarget(plan,"reps",i)+'×'+fmtWeight(plan.weight)+' '+weightUnit()) : (setTarget(plan,"reps",i)+' reps');
     return '<div class="set-cell fx-rise'+(done?' done':"")+'" data-set="'+i+'">'+
       '<div class="set-top"><span class="set-label">Set '+(i+1)+'</span><span class="set-plan mono">'+planTxt+'</span></div>'+
       (showReps ? '<label class="field"><span>Actual reps</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
@@ -1156,7 +1323,7 @@ function computeSuggestions(day, entries){
       const times = sets.map(s=>val(s.time)).filter(v=>v!=null);
       if (!times.length) return;
       const target = plan.time||0;
-      const allHit = times.length===sets.length && times.every(t=>t>=target);
+      const allHit = sets.every((s,i)=>{ const t = val(s.time); return t!=null && t>= setTarget(plan,"time",i); });
       const avgRating = avgR(sets);
       if (allHit && avgRating<=2){
         if (prev && prevOkForExercise(prev, de.exId, "time")){
@@ -1175,17 +1342,21 @@ function computeSuggestions(day, entries){
       if (!repsVals.length) return;
       const target = plan.reps||0;
       const n = sets.length;
-      const allHit = repsVals.length>=n && repsVals.every(r=>r>=target);
+      const allHit = sets.every((s,i)=>{ const r = val(s.reps); return r!=null && r>= setTarget(plan,"reps",i); });
       const doneAll = val(sets[n-1]?sets[n-1].reps:null)!=null; // at least as many as sets
       const avgR_ = avgR(sets);
       if (allHit){
         if (avgR_<=2){
-          // easy: progress. If 2 in a row & weighted possible & high reps, offer weight
-          const capped = target>=ex.repCeil && ex.weightAvailable;
+          // easy: progress. Offer weight instead of reps when the exercise can take
+          // load and the user actually used it (or reps sit at the cap).
+          const loggedW = sets.map(s=>s.weight===""||s.weight==null?null:+s.weight).filter(w=>w!=null&&w>0);
+          const usingWeight = loggedW.length>0;
+          const capped = (target>= (ex.repCeil||15)) || (ex.weightAvailable && usingWeight);
           if (capped && prev && prevOkForExercise(prev, de.exId, "reps") && ex.weightAvailable){
-            const nextW = stepUpWeight(plan.weight, ex.weightStep);
-            if (nextW>plan.weight){
-              sug.push(mkSug(de.exId,"weight",plan.weight,nextW,"You have been repping "+target+" easily for two weeks — time to add weight instead of chasing more reps."));
+            const baseW = usingWeight ? Math.max.apply(null, loggedW) : plan.weight;
+            const nextW = stepUpWeight(baseW, ex.weightStep);
+            if (nextW>baseW){
+              sug.push(mkSug(de.exId,"weight",baseW,nextW,"You have been repping "+target+" easily with load — time to add "+(nextW-baseW)+" "+weightUnit()+" instead of chasing more reps."));
               sug.push(mkSug(de.exId,"reps",target,target-2,"Drop the rep target slightly when adding weight so form stays honest."));
             }
           } else if (target< (ex.repCeil||15)){
@@ -1246,12 +1417,12 @@ function buildSession(day, entries, recovery){
       const reps = set.reps===""||set.reps==null ? null : +set.reps;
       const time = set.time===""||set.time==null ? null : +set.time;
       const weight = set.weight===""||set.weight==null ? null : +set.weight;
-      // hit: for reps/time compare against plan; weight mode uses reps target
+      // hit: for reps/time compare against the per-set plan target; weight mode uses reps target
       const p = entries[de.exId].plan||{reps:0,time:0,weight:0};
       let hit=false;
-      if (ex.mode==="time") hit = time!=null && time>= (p.time||0);
-      else if (ex.mode==="reps") hit = reps!=null && reps>= (p.reps||0);
-      else hit = reps!=null && reps>= (p.reps||5) && weight!=null && weight>= (p.weight||0);
+      if (ex.mode==="time") hit = time!=null && time>= (setTarget(p,"time",i)||0);
+      else if (ex.mode==="reps") hit = reps!=null && reps>= (setTarget(p,"reps",i)||0);
+      else hit = reps!=null && reps>= (setTarget(p,"reps",i)||5) && weight!=null && weight>= (p.weight||0);
       completedSets.push({
         exId:de.exId, setIndex:i, reps, time, weight, rating:set.rating||0,
         note:set.note||"", hit
@@ -1395,6 +1566,7 @@ function buildAIPayload({ session, day, entries, base }){
   const plan = day.exercises.map(de=>{
     const ex = getEx(de.exId);
     return { exId:de.exId, name:ex?ex.name:"?", mode:ex?ex.mode:"reps",
+      weightAvailable: ex?!!ex.weightAvailable:false,
       targetSets:de.targetSets, targetReps:de.reps, targetTime:de.time, weight:de.weight };
   });
   const performed = session.completedSets.map(c=>({
@@ -1516,7 +1688,18 @@ function recAct(ds, actVal){
     const day = session?getDay(session.dayId):null;
     if (day){
       const de = day.exercises.find(x=>x.exId===exId);
-      if (de){ de[sug.field] = sug.to; }
+      if (de){
+        const delta = (sug.to!=null && sug.from!=null) ? (sug.to - sug.from) : null;
+        if (sug.field==="reps" && Array.isArray(de.setReps) && delta!==null){
+          de.setReps = de.setReps.map(v=>Math.max(0,(+v||0)+delta));
+          de.reps = Math.max(0,(de.reps||0)+delta);
+        } else if (sug.field==="time" && Array.isArray(de.setTimes) && delta!==null){
+          de.setTimes = de.setTimes.map(v=>Math.max(0,(+v||0)+delta));
+          de.time = Math.max(0,(de.time||0)+delta);
+        } else {
+          de[sug.field] = sug.to;
+        }
+      }
     }
     sug.kept = true;
     toast("Applied — "+exId+" next session updated.");
@@ -1576,7 +1759,7 @@ function renderHistory(){
         date: fmtDate(ses.dateISO),
         reps: first.reps, time: first.time, weight: first.weight,
         rating: cs[0].rating,
-        targetReps: de.reps, targetTime: de.time, targetWeight:de.weight
+        targetReps: setTarget(de,"reps",first.setIndex), targetTime: setTarget(de,"time",first.setIndex), targetWeight:de.weight
       });
     });
   });
