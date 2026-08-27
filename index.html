@@ -809,25 +809,41 @@ function equipmentTags(ex){
    EXERCISES LIBRARY
    ========================================================================= */
 const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell"];
-function renderLibrary(){
-  const s = $("#view-library");
+const LIB_EMPTY = '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></div>No exercises match. Adjust the filter or add one.</div>';
+function exerciseRow(e){
+  const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");
+  return '<div class="exercise-item" data-open="'+e.id+'">'+
+    '<div class="name">'+esc(e.name)+modePill(e)+"</div>"+
+    '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
+    '<div class="attr">defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
+    (e.notes?'<div class="attr micro">'+"↳ "+esc(e.notes)+"</div>":"")+
+    '</div>';
+}
+function libraryMatches(){
   const eq = libraryFilters.eq, q = libraryFilters.search.trim().toLowerCase();
-  let list = state.exercises.filter(e =>
+  return state.exercises.filter(e =>
     (!eq || (e.equipment||[]).includes(eq)) &&
     (!q || e.name.toLowerCase().includes(q))
   );
+}
+/* Refresh ONLY the results container so the search input keeps focus/caret. */
+function renderLibraryResults(){
+  const s = $("#view-library");
+  const list = libraryMatches();
+  const host = $("#lib-results", s);
+  if (!host) return;
+  host.innerHTML = list.length
+    ? '<div class="exercise-list">'+list.map(exerciseRow).join("")+'</div>'
+    : LIB_EMPTY;
+  $$(".exercise-item[data-open]", s).forEach(el=>
+    el.addEventListener("click", ()=>openExEditor(el.dataset.open)));
+}
+function renderLibrary(){
+  const s = $("#view-library");
+  const eq = libraryFilters.eq;
   const equipOpts = ['<option value="">All equipment</option>'].concat(
     ALL_EQUIP.map(e=>'<option value="'+e+'"'+(eq===e?" selected":"")+'>'+esc(e)+"</option>")
   ).join("");
-  const rows = list.map(e => {
-    const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");
-    return '<div class="exercise-item" data-open="'+e.id+'">'+
-      '<div class="name">'+esc(e.name)+modePill(e)+"</div>"+
-      '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
-      '<div class="attr">defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
-      (e.notes?'<div class="attr micro">'+"↳ "+esc(e.notes)+"</div>":"")+
-      '</div>';
-  }).join("");
   s.innerHTML =
     '<div class="view-hero slim">'+
       '<div class="view-hero-inner">'+
@@ -842,13 +858,12 @@ function renderLibrary(){
       '<select id="lib-eq" class="eq-select">'+equipOpts+'</select>'+
       '<button class="btn primary" id="add-exercise">+ New exercise</button>'+
     '</div>'+
-    (list.length ? '<div class="exercise-list">'+rows+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></div>No exercises match. Adjust the filter or add one.</div>')+
+    '<div id="lib-results"></div>'+
     '<div id="ex-editor-host"></div>';
-  $("#lib-search").addEventListener("input", ev=>{ libraryFilters.search = ev.target.value; renderLibrary(); });
-  $("#lib-eq").addEventListener("change", ev=>{ libraryFilters.eq = ev.target.value; renderLibrary(); });
+  $("#lib-search").addEventListener("input", ev=>{ libraryFilters.search = ev.target.value; renderLibraryResults(); });
+  $("#lib-eq").addEventListener("change", ev=>{ libraryFilters.eq = ev.target.value; renderLibraryResults(); });
   $("#add-exercise").addEventListener("click", ()=>openExEditor(null));
-  $$(".exercise-item[data-open]", s).forEach(el=>
-    el.addEventListener("click", ()=>openExEditor(el.dataset.open)));
+  renderLibraryResults();
 }
 
 function openExEditor(id){
@@ -1225,7 +1240,8 @@ function renderLogStep(s){
         '<p class="small muted">Enter what you actually did for each set, then rate how hard each set felt (1 = very easy, 5 = near-failure).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>'+
         '<div class="set-grid">'+setCells+'</div>'+
         '<div class="btn-row">'+
-          (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Back</button>':"")+
+          (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Previous exercise</button>':"")+
+          '<button class="btn danger" id="log-discard">Discard session</button>'+
           '<div class="spacer" style="flex:1"></div>'+
           (logCtx.idx<total-1 ? '<button class="btn primary" id="log-next">Next exercise →</button>' : '<button class="btn primary" id="log-recovery">Log recovery →</button>')+
         '</div>'+
@@ -1258,6 +1274,10 @@ function renderLogStep(s){
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-recovery")) $("#log-recovery").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
+  if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
+    if (!confirm("Discard this session? Nothing will be saved.")) return;
+    logCtx = null; saveState(); render();
+  });
 }
 
 function renderRecovery(s){
@@ -1284,13 +1304,16 @@ function renderRecovery(s){
       '<label class="field"><span>Session note (optional)</span><textarea data-recv="note" placeholder="How did it go overall? Anything you noticed?"></textarea></label>'+
       '<div class="btn-row">'+
         '<button class="btn" id="rec-back">‹ Back to exercises</button>'+
+        '<button class="btn danger" id="rec-discard">Discard session</button>'+
         '<div class="spacer" style="flex:1"></div>'+
-        '<button class="btn" id="rec-cancel">Cancel</button>'+
         '<button class="btn primary" id="rec-finish">Generate coach suggestions →</button>'+
       '</div>'+
     '</div>';
   $("#rec-back").addEventListener("click", ()=>{ logCtx.recoveryScreen=false; render(); });
-  $("#rec-cancel").addEventListener("click", ()=>{ logCtx=null; saveState(); render(); });
+  $("#rec-discard").addEventListener("click", ()=>{
+    if (!confirm("Discard this session? Nothing will be saved.")) return;
+    logCtx=null; saveState(); render();
+  });
   $("#rec-finish").addEventListener("click", ()=>finishLog(s));
   function finishLog(el){
     const fb = {};
