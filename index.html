@@ -295,6 +295,22 @@
   .seg-btn.active { background: var(--accent); color: #fff; box-shadow: 0 8px 16px -10px rgba(192,74,30,.55); }
   .seg-desc { font-size: .82rem; color: var(--ink-3); max-width: 36rem; margin-top: .7rem; line-height: 1.55; }
 
+  /* ---------- Per-set type selector (builder) ---------- */
+  .set-target select { font-size: .72rem; padding: .4rem .5rem; margin-top: .2rem; }
+  .set-target select.set-type-in { min-width: 0; width: 100%; }
+
+  /* ---------- Set-type badges (logger) ---------- */
+  .set-type-badge {
+    display: inline-flex; align-items: center;
+    font-family: var(--font-mono); font-size: .56rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; padding: .12rem .42rem; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2);
+  }
+  .set-type-badge.warmup { color: #4a5f8a; background: #e9edf6; border-color: #cfd9ec; }
+  .set-type-badge.drop { color: #8a4a1e; background: #f6e7d8; border-color: #e8cdb2; }
+  .set-type-badge.failure { color: var(--accent); background: #f7e4da; border-color: #ecc6b2; }
+  .set-chip.type { border-color: var(--accent-line); color: var(--accent); }
+
   /* ---------- Toolbar / search ---------- */
   .toolbar { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; margin: 0 0 1.6rem; }
   .search { flex: 1 1 240px; position: relative; }
@@ -337,9 +353,10 @@
   }
   .day-name:hover { border-color: var(--line) !important; background: var(--surface) !important; }
   .day-head .spacer { flex: 1; }
-  .ex-row { display: grid; grid-template-columns: 1fr 150px 150px 34px; gap: .7rem; align-items: center; margin-top: .7rem; }
+  .ex-row { display: grid; grid-template-columns: 1fr 150px 150px auto; gap: .7rem; align-items: center; margin-top: .7rem; }
   @media (max-width: 720px) { .ex-row { grid-template-columns: 1fr; } }
   .ex-name2 b { font-weight: 700; }
+  .ex-actions { display: flex; gap: .35rem; justify-content: flex-end; }
   .ex-target { color: var(--ink-3); }
   .set-chips { display: flex; flex-wrap: wrap; gap: .25rem; }
   .set-chip {
@@ -640,6 +657,26 @@ const SESSION_TYPES = {
 function sessionTypeLabel(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).label; }
 function sessionZone(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).zone; }
 
+/* Per-set types let a routine mark individual sets (drop sets, AMRAP failure
+   sets, warm-ups). 'regular' is the default and never needs to be stored. */
+const SET_TYPES = {
+  regular: { label:"Regular",  tag:"SET",   desc:"Standard working set to the target." },
+  warmup:  { label:"Warm-up",  tag:"WARM",  desc:"Light prep set — never counted toward progression." },
+  drop:    { label:"Drop set", tag:"DROP",  desc:"Take the set to failure, drop the load, keep going." },
+  failure: { label:"Failure",  tag:"FAIL",  desc:"AMRAP — go to complete muscular failure; no fixed rep target." },
+};
+function setTypeOf(de, i){ return (de && de.setTypes && de.setTypes[i]) || "regular"; }
+/* compact ladder display: "8 / 8·DROP / 6·FAIL reps" */
+function setLadderTxt(de){
+  const arr = de.setTimes || de.setReps;
+  if (!Array.isArray(arr) || !arr.length) return "";
+  const unit = de.setTimes ? "s" : " reps";
+  return arr.map((v,j)=>{
+    const st = setTypeOf(de,j);
+    return v + (st!=="regular" ? "·"+SET_TYPES[st].tag : "");
+  }).join(" / ") + unit;
+}
+
 let state;      // assigned during bootstrap at the bottom, after persistence helpers are defined
 
 /* Seed a default program the first time; re-run if a future version upgrades the seed */
@@ -767,6 +804,16 @@ function setTarget(de, field, i){
   const arr = field==="time" ? de.setTimes : de.setReps;
   if (Array.isArray(arr) && arr[i]!=null && arr[i]!=="") return arr[i];
   return field==="time" ? de.time : de.reps;
+}
+/* plan text for a set in the logger, aware of set type */
+function setPlanTxt(de, ex, i){
+  const st = setTypeOf(de, i);
+  if (st==="failure") return ex.mode==="time" ? "hold to failure" : "AMRAP — to failure";
+  if (st==="warmup") return "light warm-up";
+  const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
+    : (de.weight? (setTarget(de,"reps",i)+'×'+fmtWeight(de.weight)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
+  if (st==="drop") return base+" · drop";
+  return base;
 }
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
@@ -1049,16 +1096,20 @@ function renderWorkoutEditor(){
   const exRows = d.exercises.map(de => {
     const ex = getEx(de.exId);
     const nm = ex ? ex.name : "(deleted exercise)";
-    const setChips = Array.from({length:de.targetSets||0},(_,j)=>'<span class="set-chip">S'+(j+1)+"</span>").join("");
+    const setChips = Array.from({length:de.targetSets||0},(_,j)=>{
+      const st = setTypeOf(de,j);
+      return '<span class="set-chip'+(st!=="regular"?' type':'')+'">'+(j+1)+(st!=="regular"?'·'+SET_TYPES[st].tag:'')+'</span>';
+    }).join("");
+    const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
+      ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
     return '<div class="ex-row">'+
       '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+"</div>"+
-      '<div class="micro ex-target">'+
-        (de.setReps ? de.setReps.join(" / ")+' reps' : (de.reps?'target '+de.reps+' reps':''))+
-        (de.setTimes ? de.setTimes.join(" / ")+'s' : (de.time?'hold '+de.time+'s':''))+
-        (de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+
-      '</div>'+
+      '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>'+
       '<div class="set-chips">'+setChips+'</div>'+
-      '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
+      '<div class="ex-actions">'+
+        '<button class="btn ghost small" data-edit-ex="'+de.exId+'" title="Edit set targets & types">edit</button>'+
+        '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
+      '</div>'+
     '</div>';
   }).join("");
   s.innerHTML =
@@ -1094,32 +1145,45 @@ function renderWorkoutEditor(){
   }));
   $$("[data-add-ex]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddEx(b.dataset.addEx)));
+  $$("[data-edit-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openAddEx(d.id, b.dataset.editEx);
+  }));
   $$("[data-rm-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
     if(!d) return;
     d.exercises = d.exercises.filter(x=>x.exId!==b.dataset.rmEx);
     saveState(); render();
   }));
 }
 
-function openAddEx(dayId){
+function openAddEx(dayId, exId){
   const host = document.querySelector('.addhost[data-day="'+dayId+'"]');
+  const day = getDay(dayId);
+  const editing = exId ? (day.exercises.find(x=>x.exId===exId)||null) : null;
   const opts = state.exercises.map(e=>'<option value="'+e.id+'">'+esc(e.name)+"</option>").join("");
   host.innerHTML =
     '<div class="card" style="margin-top:12px">'+
-      '<h3>Add exercise to day</h3>'+
+      '<h3>'+(editing?'Edit exercise':'Add exercise to day')+'</h3>'+
       '<div class="grid two">'+
         '<label class="field"><span>Exercise</span><select id="add-ex-select">'+opts+'</select></label>'+
         '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>'+
       '</div>'+
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
-      '<div class="btn-row"><button class="btn primary" id="add-ex-ok">Add</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
+      '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure).</p>'+
+      '<div class="btn-row"><button class="btn primary" id="add-ex-ok">'+(editing?'Save changes':'Add')+'</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
     '</div>';
-  let prevVals = null;
+  let prevVals = null, prevTypes = null;
   function readVals(){
     const vals = [];
     $$("#add-per-set .set-target-in", host).forEach(inp=>{ vals[+inp.dataset.i] = inp.value; });
     return vals;
+  }
+  function readTypes(){
+    const tys = [];
+    $$("#add-per-set .set-type-in", host).forEach(sel=>{ tys[+sel.dataset.i] = sel.value; });
+    return tys;
   }
   function buildPerSet(){
     const ex = getEx($("#add-ex-select").value);
@@ -1127,50 +1191,64 @@ function openAddEx(dayId){
     const n = Math.max(1, +$("#add-ex-sets").value || 1);
     const isTime = ex.mode==="time";
     const fallback = isTime ? (ex.defaultTime||30) : (ex.defaultReps||8);
-    let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' — per set</span><div class="set-targets">';
+    const typeOpts = Object.keys(SET_TYPES).map(t=>'<option value="'+t+'">'+SET_TYPES[t].label+'</option>').join("");
+    let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' & set type — per set</span><div class="set-targets">';
     for (let i=0;i<n;i++){
       const v = (prevVals && prevVals[i]!=null && prevVals[i]!=="") ? prevVals[i] : fallback;
-      html += '<label class="set-target"><span>Set '+(i+1)+'</span><input type="number" min="0" class="set-target-in" data-i="'+i+'" value="'+v+'"/></label>';
+      const t = (prevTypes && prevTypes[i]) || "regular";
+      html += '<label class="set-target"><span>Set '+(i+1)+'</span>'+
+        '<input type="number" min="0" class="set-target-in" data-i="'+i+'" value="'+v+'"/>'+
+        '<select class="set-type-in" data-i="'+i+'">'+typeOpts.replace('value="'+t+'"', 'value="'+t+'" selected')+'</select></label>';
     }
     html += '</div></label>';
     $("#add-per-set", host).innerHTML = html;
-    prevVals = null;
+    prevVals = null; prevTypes = null;
   }
-  function updateFields(){
-    prevVals = readVals();
+  function updateFields(resetWeight){
+    const vals = readVals(); if (vals.length) prevVals = vals;
+    const tys = readTypes(); if (tys.length) prevTypes = tys;
     const ex = getEx($("#add-ex-select").value);
     if (!ex) return;
     $("#add-field-weight").style.display = (ex.weightAvailable||ex.mode==="weight") ? "block" : "none";
-    $("#add-ex-weight").value = ex.defaultWeight||0;
+    if (resetWeight) $("#add-ex-weight").value = ex.defaultWeight||0;
     buildPerSet();
   }
-  $("#add-ex-select").addEventListener("change", updateFields);
-  $("#add-ex-sets").addEventListener("input", updateFields);
-  $("#add-ex-sets").addEventListener("change", updateFields);
-  updateFields();
+  $("#add-ex-select").addEventListener("change", ()=>updateFields(true));
+  $("#add-ex-sets").addEventListener("input", ()=>updateFields(false));
+  $("#add-ex-sets").addEventListener("change", ()=>updateFields(false));
+  if (editing){
+    const ex = getEx(editing.exId);
+    $("#add-ex-select").value = editing.exId;
+    $("#add-ex-sets").value = editing.targetSets||3;
+    prevVals = (ex&&ex.mode==="time" ? editing.setTimes : editing.setReps) || [];
+    prevTypes = editing.setTypes ? editing.setTypes.slice() : [];
+    $("#add-ex-weight").value = editing.weight!=null ? editing.weight : 0;
+  }
+  updateFields(!editing);
   $("#add-ex-cancel").addEventListener("click", ()=>render());
   $("#add-ex-ok").addEventListener("click", ()=>{
     const ex = getEx($("#add-ex-select").value); if(!ex){ toast("Pick an exercise"); return; }
-    const day = getDay(dayId);
-    if (day.exercises.find(x=>x.exId===ex.id)){ toast("Already in this day"); return; }
+    if (!editing && day.exercises.find(x=>x.exId===ex.id)){ toast("Already in this day"); return; }
     const m = ex.mode;
-    const n = +$("#add-ex-sets").value||3;
+    const n = Math.max(1, +$("#add-ex-sets").value||3);
     const vals = readVals();
-    const entry = { exId: ex.id, targetSets: n, reps: 0, time: 0, weight: 0 };
+    const tys = readTypes();
+    const types = []; for (let i=0;i<n;i++) types[i] = tys[i] || "regular";
+    const entry = editing || { exId: ex.id, targetSets: n, reps: 0, time: 0, weight: 0 };
+    entry.exId = ex.id; entry.targetSets = n; entry.setTypes = types;
     if (m==="time"){
       const times = [];
       for (let i=0;i<n;i++){ const v = +(vals[i]); times.push(v>0 ? v : (ex.defaultTime||30)); }
-      entry.time = times[0]||0;
-      entry.setTimes = times;
+      entry.time = times[0]||0; entry.setTimes = times; delete entry.setReps;
     } else {
       const reps = [];
       for (let i=0;i<n;i++){ const v = +(vals[i]); reps.push(v>0 ? v : (ex.defaultReps||8)); }
-      entry.reps = reps[0]||0;
-      entry.setReps = reps;
+      entry.reps = reps[0]||0; entry.setReps = reps; delete entry.setTimes;
     }
     if (ex.weightAvailable||m==="weight") entry.weight = +$("#add-ex-weight").value||0;
-    day.exercises.push(entry);
-    saveState(); render(); toast("Added to day");
+    else delete entry.weight;
+    if (!editing) day.exercises.push(entry);
+    saveState(); render(); toast(editing?"Exercise updated":"Added to day");
   });
 }
 
@@ -1240,7 +1318,7 @@ function startLog(dayId){
     logCtx.entries[de.exId] = {
       plan: de,
       sets: Array.from({length: de.targetSets||1}, (_,i)=>({
-        reps: "", time:"", weight: de.weight||"", rating:0, note:""
+        reps: "", time:"", weight: de.weight||"", rating:0, note:"", type: setTypeOf(de, i)
       }))
     };
   });
@@ -1260,10 +1338,13 @@ function renderLogStep(s){
   const setCells = entry.sets.map((set,i)=>{
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
-    const planTxt = ex.mode==="time" ? (setTarget(plan,"time",i)+'s') : plan.weight? (setTarget(plan,"reps",i)+'×'+fmtWeight(plan.weight)+' '+weightUnit()) : (setTarget(plan,"reps",i)+' reps');
+    const st = setTypeOf(plan, i);
+    const planTxt = setPlanTxt(plan, ex, i);
     return '<div class="set-cell fx-rise'+(done?' done':"")+'" data-set="'+i+'">'+
-      '<div class="set-top"><span class="set-label">Set '+(i+1)+'</span><span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? '<label class="field"><span>Actual reps</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
+      '<div class="set-top"><span class="set-label">Set '+(i+1)+'</span>'+
+        (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
+        '<span class="set-plan mono">'+planTxt+'</span></div>'+
+      (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
       (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" data-i="'+i+'" value="'+set.time+'"/></label>' : "") +
       (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" data-i="'+i+'" value="'+set.weight+'"/></label>' : "") +
       '<div class="micro" style="margin-bottom:4px">Effort</div>'+
@@ -1392,8 +1473,14 @@ function computeSuggestions(day, entries, type){
       const times = sets.map(s=>val(s.time)).filter(v=>v!=null);
       if (!times.length) return;
       const target = plan.time||0;
-      const allHit = sets.every((s,i)=>{ const t = val(s.time); return t!=null && t>= setTarget(plan,"time",i); });
-      const avgRating = avgR(sets);
+      const allHit = sets.every((s,i)=>{
+        if (setTypeOf(plan,i)==="warmup") return true;
+        const t = val(s.time);
+        if (setTypeOf(plan,i)==="failure") return t!=null && t>0;
+        return t!=null && t>= setTarget(plan,"time",i);
+      });
+      // warm-up + failure sets are intensity/prep tools, not progression signals
+      const avgRating = avgR(sets.filter((s,i)=>setTypeOf(plan,i)!=="warmup" && setTypeOf(plan,i)!=="failure"));
       if (allHit && avgRating<=2){
         if (prev && prevOkForExercise(prev, de.exId, "time")){
           const to = capRound(target+5, 5);
@@ -1411,8 +1498,14 @@ function computeSuggestions(day, entries, type){
       if (!repsVals.length) return;
       const target = plan.reps||0;
       const n = sets.length;
-      const allHit = sets.every((s,i)=>{ const r = val(s.reps); return r!=null && r>= setTarget(plan,"reps",i); });
-      const avgR_ = avgR(sets);
+      const allHit = sets.every((s,i)=>{
+        if (setTypeOf(plan,i)==="warmup") return true;
+        const r = val(s.reps);
+        if (setTypeOf(plan,i)==="failure") return r!=null && r>0;
+        return r!=null && r>= setTarget(plan,"reps",i);
+      });
+      // warm-up + failure sets are intensity/prep tools, not progression signals
+      const avgR_ = avgR(sets.filter((s,i)=>setTypeOf(plan,i)!=="warmup" && setTypeOf(plan,i)!=="failure"));
       if (allHit){
         if (avgR_<=2){
           // easy: progress. Offer weight instead of reps when the exercise can take
@@ -1489,15 +1582,18 @@ function buildSession(day, entries, recovery){
       const reps = set.reps===""||set.reps==null ? null : +set.reps;
       const time = set.time===""||set.time==null ? null : +set.time;
       const weight = set.weight===""||set.weight==null ? null : +set.weight;
-      // hit: for reps/time compare against the per-set plan target; weight mode uses reps target
+      // hit: for reps/time compare against the per-set plan target; weight mode uses reps target.
+      // Warm-ups always count as done; failure sets are judged as performed (no fixed target).
       const p = entries[de.exId].plan||{reps:0,time:0,weight:0};
+      const st = set.type || setTypeOf(p, i);
       let hit=false;
-      if (ex.mode==="time") hit = time!=null && time>= (setTarget(p,"time",i)||0);
-      else if (ex.mode==="reps") hit = reps!=null && reps>= (setTarget(p,"reps",i)||0);
+      if (st==="warmup") hit = true;
+      else if (ex.mode==="time") hit = time!=null && (st==="failure" ? time>0 : time>= (setTarget(p,"time",i)||0));
+      else if (ex.mode==="reps") hit = reps!=null && (st==="failure" ? reps>0 : reps>= (setTarget(p,"reps",i)||0));
       else hit = reps!=null && reps>= (setTarget(p,"reps",i)||5) && weight!=null && weight>= (p.weight||0);
       completedSets.push({
         exId:de.exId, setIndex:i, reps, time, weight, rating:set.rating||0,
-        note:set.note||"", hit
+        note:set.note||"", type:st, hit
       });
     });
   });
@@ -1626,6 +1722,12 @@ const SYSTEM_PROMPT = [
   `{ "summary":"one sentence on the session", `,
   `  "changes":[ { "exId":"...(unchanged id)", "field":"reps|time|weight", "before":<num>, "after":<num>, `,
   `     "reason":"plain-language, why this change and expected benefit" } ] }`,
+  "Per-set types appear as 'setTypes' (plan) and 'type' (performed): 'regular' =",
+  "standard working set; 'warmup' = light prep, never counts toward progression;",
+  "'drop' = taken to failure then load dropped and continued; 'failure' = AMRAP to",
+  "complete muscular failure, no fixed target (performing it counts as a hit).",
+  "Drive progression from the regular/drop working sets — warm-up and failure sets",
+  "are intensity tools, not progression signals.",
   "The payload includes 'sessionType'. Judge progression against that type's zone",
   "(repetition continuum, ACSM position stand + Schoenfeld 2021):",
   "- strength: 1-6 reps per set at heavy load (>=80% 1RM), 2-5 min rest. Maximal",
@@ -1651,10 +1753,11 @@ function buildAIPayload({ session, day, entries, base }){
     const ex = getEx(de.exId);
     return { exId:de.exId, name:ex?ex.name:"?", mode:ex?ex.mode:"reps",
       weightAvailable: ex?!!ex.weightAvailable:false,
-      targetSets:de.targetSets, targetReps:de.reps, targetTime:de.time, weight:de.weight };
+      targetSets:de.targetSets, targetReps:de.reps, targetTime:de.time, weight:de.weight,
+      setTypes: Array.isArray(de.setTypes) ? de.setTypes.map(t=>t||"regular") : [] };
   });
   const performed = session.completedSets.map(c=>({
-    exId:c.exId, set:c.setIndex+1, reps:c.reps, time:c.time, weight:c.weight, rating:c.rating, note:c.note||""
+    exId:c.exId, set:c.setIndex+1, reps:c.reps, time:c.time, weight:c.weight, rating:c.rating, note:c.note||"", type:c.type||"regular"
   }));
   const candidates = base.map(s=>({ exId:s.exId, field:s.field, before:s.from, after:s.to, reason:s.reason }));
   return {
@@ -1890,7 +1993,8 @@ function sessionDetail(ses){
     const ex = getEx(c.exId);
     const nm = ex?ex.name:"?";
     const valTxt = ex&&ex.mode==="time" ? (c.time+'s') : (ex&&ex.mode==="weight" ? (c.reps+'×'+(c.weight!=null?fmtWeight(c.weight):0)+weightUnit()) : (c.reps!=null?c.reps+' reps':''));
-    return '<tr><td>'+nm+'</td><td>S'+(c.setIndex+1)+'</td><td>'+valTxt+'</td><td>'+(c.rating?'★'+c.rating:'')+'</td><td>'+(c.hit?'<span class="st-kept">✓</span>':'<span class="st-rejected">miss</span>')+'</td><td class="small muted">'+(c.note?esc(c.note):'')+'</td></tr>';
+    const st = c.type && c.type!=="regular" ? ' <span class="set-type-badge '+c.type+'">'+SET_TYPES[c.type].tag+'</span>' : '';
+    return '<tr><td>'+nm+'</td><td>S'+(c.setIndex+1)+st+'</td><td>'+valTxt+'</td><td>'+(c.rating?'★'+c.rating:'')+'</td><td>'+(c.hit?'<span class="st-kept">✓</span>':'<span class="st-rejected">miss</span>')+'</td><td class="small muted">'+(c.note?esc(c.note):'')+'</td></tr>';
   }).join("");
   const rec = ses.recovery||{};
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
