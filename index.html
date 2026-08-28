@@ -644,16 +644,48 @@ const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
 const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", autoApply:false, lastSessionType:"hypertrophy" };
 
-/* Harder exercise progressions (by seeded exercise name → ordered list of harder
-   exercise ids). Lets the coach recommend a more challenging variation when a
-   weight-less movement drifts past the top of the session's rep zone. */
-const SEED_PROGRESSIONS = {
-  "Push-Up":["ex-5"],            // Archer Push-Up
-  "Diamond Push-Up":["ex-25"],  // Renegade Push-Up
-  "Ring Row":["ex-27"],         // One-Arm Ring Row
-  "Squat (Bodyweight)":["ex-17"], // Bulgarian Split Squat
-  "Pull-Up Negative":["ex-6"],  // Pull-Up
+/* Harder exercise progressions, auto-resolved from the user's own library.
+   PROGRESSION_CHAINS maps each base movement to an ordered (easiest → hardest)
+   list of variation NAMES. The coach recommends the next-harder variation of the
+   same movement when a weight-less exercise drifts past the session's rep zone.
+   resolveProgressions() turns the chain into real exercise ids present in the
+   library, so the user never has to wire these up by hand. */
+const PROGRESSION_CHAINS = {
+  pullup: ["Pull-Up Negative","Pull-Up","Chin-Up","Strict Pull-Up","Weighted Pull-Up","Bar Muscle-Up","Ring Muscle-Up (DL)"],
+  pushup: ["Push-Up","Diamond Push-Up","Archer Push-Up","Renegade Push-Up"],
+  row:    ["Ring Row","One-Arm Ring Row"],
+  squat:  ["Squat (Bodyweight)","Hindu Squat","Bulgarian Split Squat"],
+  core:   ["Plank","Hollow-Body Hold","Ring Rollout","Back Lever Hold","Front Lever Hold"],
+  leads:  ["Ring Support Hold","Ring L-Sit"],
 };
+/* Which base movement chain an exercise belongs to (matched on name tokens). */
+function progressionKey(name){
+  const nm = String(name||"").toLowerCase();
+  if (/muscle-up|pull-up|chin-up/.test(nm)) return "pullup";
+  if (/push-up/.test(nm)) return "pushup";
+  if (/row/.test(nm)) return "row";
+  if (/squat/.test(nm)) return "squat";
+  if (/l-sit|support/.test(nm)) return "leads";
+  if (/lever|plank|hollow|rollout/.test(nm)) return "core";
+  return "";
+}
+/* Auto-resolve each exercise's harder-progression ids from its movement chain,
+   using only variations the user actually has. Exercises already carrying an
+   explicit (possibly hand-edited) progressions array are left untouched. */
+function resolveProgressions(exercises){
+  if (!Array.isArray(exercises)) return;
+  const byName = new Map();
+  exercises.forEach(e => { if (e && e.name) byName.set(e.name.toLowerCase(), e.id); });
+  exercises.forEach(e => {
+    if (!e || Array.isArray(e.progressions)) return; // respect explicit/manual chains
+    const key = progressionKey(e.name);
+    const chain = key ? PROGRESSION_CHAINS[key] : null;
+    if (!chain) { e.progressions = []; return; }
+    const idx = chain.indexOf(e.name);
+    const rest = idx >= 0 ? chain.slice(idx+1) : chain; // skip self + everything easier
+    e.progressions = rest.filter(n => byName.has(n.toLowerCase())).map(n => byName.get(n.toLowerCase()));
+  });
+}
 
 /* Session types drive the progression engine + AI coaching. Rep zones follow
    the repetition continuum (ACSM position stand; Schoenfeld et al. 2021):
@@ -693,10 +725,10 @@ let state;      // assigned during bootstrap at the bottom, after persistence he
 /* Seed a default program the first time; re-run if a future version upgrades the seed */
 function seedDefaultState() {
   const defaultExercises = [
-    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0, progressions:["ex-5"] }, // harder: Archer Push-Up
-    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, progressions:["ex-25"] }, // harder: Renegade Push-Up
+    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0 },
+    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
     { name:"Ring Dip",                mode:"reps",   equipment:["rings"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt / ankle" },
-    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, progressions:["ex-27"] }, // harder: One-Arm Ring Row
+    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
     { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
     { name:"Pull-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
     { name:"Chin-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
@@ -708,12 +740,12 @@ function seedDefaultState() {
     { name:"Plank",                   mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:45, defaultWeight:0 },
     { name:"Hollow-Body Hold",        mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
     { name:"Ring Support Hold",       mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
-    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, progressions:["ex-17"] }, // harder: Bulgarian Split Squat
+    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
     { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held" },
     { name:"Hang (Dead Grip)",        mode:"time",   equipment:["pullup"], weightAvailable:false, defaultSets:2, defaultReps:5, defaultTime:30, defaultWeight:0 },
     { name:"Hindu Squat",             mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
     { name:"Ring Rollout",            mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
-    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0, progressions:["ex-6"] }, // harder: Pull-Up
+    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0 },
     { name:"Ring False-Grip Row",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
     { name:"Back Lever Hold",         mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:10, defaultWeight:0 },
     { name:"Front Lever Hold",        mode:"time",   equipment:["rings","pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:8, defaultWeight:0 },
@@ -722,6 +754,8 @@ function seedDefaultState() {
     { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
   ];
   const exercises = defaultExercises.map((e,i) => { e.id = "ex-"+(i+1); return e; });
+  // auto-resolve each exercise's harder variations from its movement chain
+  resolveProgressions(exercises);
   const days = [
     { id:"day-1", name:"Workout A", exercises:[
       { exId:"ex-3", targetSets:3, reps:8, time:30, weight:0 },  // Ring Dip
@@ -764,12 +798,10 @@ function loadState() {
     s.sessions = s.sessions || [];
     s.pending = s.pending || [];
     s.counts = s.counts || { nextId:1 };
-    // backfill progression chains for exercises whose names match the seed, so
-    // previously-saved libraries still get harder-variation recommendations.
-    (s.exercises||[]).forEach(e => {
-      if (!e.progressions && SEED_PROGRESSIONS[e.name]) e.progressions = SEED_PROGRESSIONS[e.name];
-      e.progressions = Array.isArray(e.progressions) ? e.progressions : [];
-    });
+    // auto-resolve progression chains from the user's library so previously-saved
+    // and custom exercises still get harder-variation recommendations (explicit
+    // hand-edited chains are preserved)
+    resolveProgressions(s.exercises);
     return s;
   } catch(e){ return null; }
 }
@@ -1044,15 +1076,19 @@ function openExEditor(id){
       defaultTime: ex ? (ex.defaultTime||30) : 30,
       defaultWeight: ex ? (ex.defaultWeight||0) : 0,
       notes: $("#ex-notes", host).value.trim(),
-      progressions: ex ? (Array.isArray(ex.progressions) ? ex.progressions.slice() : []) : [],
     };
     const progSel = $("#ex-progressions", host);
-    if (progSel) data.progressions = Array.from(progSel.selectedOptions).map(o=>o.value);
+    const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
     if (ex){
+      // existing: reflect current selection (empty = cleared), defaulting to prior chain
+      data.progressions = (selected!=null && selected.length) ? selected : ((Array.isArray(ex.progressions)&&ex.progressions.length) ? ex.progressions.slice() : []);
       Object.assign(ex, data);
     } else {
+      if (selected && selected.length) data.progressions = selected; // explicit override
       data.id = "ex-"+uid();
       state.exercises.push(data);
+      // otherwise auto-resolve the new variation's harder progression from its chain
+      resolveProgressions(state.exercises);
     }
     document.removeEventListener("keydown", onKey);
     saveState(); render(); toast(ex?"Exercise updated":"Exercise added");
