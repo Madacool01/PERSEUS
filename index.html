@@ -1801,15 +1801,15 @@ function renderLogDone(s){
           '<h2 class="view-title">Session <em class="serif-i">logged</em></h2>'+
           '<p class="view-sub">Your performance is recorded and the coach has prepared suggestions for next session. Review them in the Coach feed.</p>'+
           '<div class="hero-cta">'+
-            '<button class="btn btn-xl primary" data-goto="coach">Review coach suggestions <span class="btn-arrow">→</span></button>'+
-            '<button class="btn" data-goto="workouts">Back to workouts</button>'+
-            '<button class="btn ghost" id="log-another">Log another session</button>'+
+            '<button class="btn btn-xl primary" id="log-finish">Finish logging</button>'+
+            '<button class="btn" data-goto="coach">Review coach suggestions <span class="btn-arrow">→</span></button>'+
+            '<button class="btn ghost" data-goto="workouts">Back to workouts</button>'+
           '</div>'+
         '</div>'+
       '</div>'+
     '</div>';
   $$("[data-goto]", s).forEach(b=>b.addEventListener("click", ()=>{ logCtx=null; switchView(b.dataset.goto); }));
-  $("#log-another", s).addEventListener("click", ()=>{ logCtx=null; render(); });
+  $("#log-finish", s).addEventListener("click", ()=>{ logCtx=null; render(); }); // back to the initial log-session page
 }
 
 /* =========================================================================
