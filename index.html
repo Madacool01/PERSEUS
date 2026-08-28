@@ -427,14 +427,59 @@
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
   .set-cell label.field { margin: .5rem 0; }
-  .rate-row { display: flex; gap: .4rem; flex-wrap: wrap; }
-  .rate-btn {
-    min-width: 38px; height: 38px; font-family: var(--font-mono); font-size: .95rem; font-weight: 700;
-    padding: 0; border: 1px solid var(--line); border-radius: 999px;
-    background: var(--surface); color: var(--ink-2); cursor: pointer; transition: all .18s;
+  /* ---------- Effort slider (0.5 steps) ---------- */
+  .effort { margin: .65rem 0 .2rem; }
+  .effort-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+  .effort-label { font-family: var(--font-mono); font-size: .62rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .effort-val {
+    font-family: var(--font-mono); font-size: 1.05rem; font-weight: 600; color: var(--ink-2);
+    min-width: 2.6rem; text-align: right; transition: color .2s; line-height: 1;
   }
-  .rate-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
-  .rate-btn.rated { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 8px 16px -10px rgba(192,74,30,.6); }
+  .effort-val.rated { color: var(--accent); }
+  .effort-wrap { position: relative; padding: 18px 0 0; }
+  .effort-range {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+    background: var(--line); outline: none; cursor: pointer; margin: 0;
+  }
+  .effort-range::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--accent);
+    box-shadow: 0 4px 12px -4px rgba(192,74,30,.55); cursor: grab;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
+  }
+  .effort-range::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--surface);
+    border: 3px solid var(--accent); box-shadow: 0 4px 12px -4px rgba(192,74,30,.55); cursor: grab;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
+  }
+  .effort-range:hover::-webkit-slider-thumb { transform: scale(1.18); border-color: var(--accent-deep); }
+  .effort-range:active::-webkit-slider-thumb { transform: scale(1.3); cursor: grabbing; box-shadow: 0 0 0 8px rgba(192,74,30,.14); }
+  .effort-range:hover::-moz-range-thumb { transform: scale(1.18); border-color: var(--accent-deep); }
+  .effort-range:active::-moz-range-thumb { transform: scale(1.3); cursor: grabbing; }
+  .effort-bubble {
+    position: absolute; top: -10px; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: .66rem; font-weight: 700; line-height: 1;
+    color: var(--surface); background: var(--ink); border-radius: 8px; padding: .3rem .5rem;
+    pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity .18s;
+  }
+  .effort-bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: var(--ink); border-bottom: none;
+  }
+  .effort-wrap:hover .effort-bubble,
+  .effort-range:focus-visible ~ .effort-bubble,
+  .effort-range:active ~ .effort-bubble { opacity: 1; }
+  .effort-scale { display: flex; justify-content: space-between; margin-top: .45rem; }
+  .effort-scale span { font-family: var(--font-mono); font-size: .56rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .effort-desc { margin-top: .4rem; font-size: .8rem; color: var(--ink-2); min-height: 1.2em; font-style: italic; }
+  .effort-desc.rated { color: var(--accent); font-style: normal; }
+  .effort-clear {
+    display: none; margin-top: .45rem; padding: 0; background: none; border: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .effort-clear:hover { color: var(--red); }
+  .effort.rated .effort-clear { display: inline-block; }
 
   /* ---------- Coach feed (stacked cards) ---------- */
   .rec-card {
@@ -461,6 +506,12 @@
   .st-pending { color: var(--amber); }
   .st-kept { color: var(--green); }
   .st-rejected { color: var(--red); }
+  .rec-del {
+    border: none; background: transparent; cursor: pointer; color: var(--ink-3);
+    font-size: .8rem; line-height: 1; padding: .2rem .4rem; border-radius: 8px;
+    transition: color .18s, background .18s, transform .18s;
+  }
+  .rec-del:hover { color: var(--red); background: var(--red-soft); transform: scale(1.12); }
 
   .summary-line { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: .8rem; }
   .striped { width: 100%; border-collapse: collapse; font-size: .88rem; }
@@ -1395,6 +1446,23 @@ function renderLogStep(s){
   const showTime = ex.mode==="time";
   const showWeight = ex.weightAvailable || ex.mode==="weight";
   const showReps = ex.mode!=="time";
+  const effortHTML = (set,i)=>{
+    const rated = set.rating>0;
+    const v = rated ? set.rating : 1;
+    const pct = ((v-1)/4)*100;
+    const txt = rated ? set.rating.toFixed(1) : "—";
+    return '<div class="effort'+(rated?' rated':'')+'" data-effort="'+i+'">'+
+      '<div class="effort-head"><span class="effort-label">Effort</span>'+
+        '<span class="effort-val'+(rated?' rated':'')+'">'+txt+'</span></div>'+
+      '<div class="effort-wrap">'+
+        '<input type="range" class="effort-range" min="1" max="5" step="0.5" value="'+v+'" data-i="'+i+'" style="background:linear-gradient(90deg,var(--accent) 0%,var(--accent) '+pct+'%,var(--line) '+pct+'%,var(--line) 100%)" aria-label="Effort level for set '+(i+1)+'"/>'+
+        '<span class="effort-bubble" style="left:'+Math.max(4,Math.min(96,pct))+'%">'+txt+'</span>'+
+      '</div>'+
+      '<div class="effort-scale"><span>Very easy</span><span>Near failure</span></div>'+
+      '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort — half-point steps")+'</div>'+
+      '<button type="button" class="effort-clear" data-i="'+i+'">clear</button>'+
+    '</div>';
+  };
   const setCells = entry.sets.map((set,i)=>{
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
@@ -1407,8 +1475,7 @@ function renderLogStep(s){
       (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
       (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" data-i="'+i+'" value="'+set.time+'"/></label>' : "") +
       (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" data-i="'+i+'" value="'+set.weight+'"/></label>' : "") +
-      '<div class="micro" style="margin-bottom:4px">Effort</div>'+
-      '<div class="rate-row">'+[1,2,3,4,5].map(r=>'<button class="rate-btn'+(set.rating===r?' rated':'')+'" data-i="'+i+'" data-val="'+r+'">'+r+'</button>').join("")+'</div>'+
+      effortHTML(set, i)+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
   }).join("");
@@ -1420,7 +1487,7 @@ function renderLogStep(s){
       '</div>'+
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
       '<div class="log-step">'+
-        '<p class="small muted">Enter what you actually did for each set, then rate how hard each set felt (1 = very easy, 5 = near-failure).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>'+
+        '<p class="small muted">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>'+
         '<div class="set-grid">'+setCells+'</div>'+
         '<div class="btn-row">'+
           (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Previous exercise</button>':"")+
@@ -1443,11 +1510,21 @@ function renderLogStep(s){
   };
   $$(".s-reps,.s-time,.s-weight", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
   $$(".s-note", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
-  $$(".rate-btn", s).forEach(b=>b.addEventListener("click", ()=>{
-    const i = +b.dataset.i, v = +b.dataset.val;
-    entry.sets[i].rating = entry.sets[i].rating===v ? 0 : v;
-    renderLog();
-  }));
+  $$(".effort-range", s).forEach(inp=>{
+    const i = +inp.dataset.i;
+    inp.addEventListener("input", ()=>{
+      entry.sets[i].rating = +inp.value;
+      syncEffort(inp, entry.sets[i]);
+    });
+  });
+  $$(".effort-clear", s).forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const i = +btn.dataset.i;
+      entry.sets[i].rating = 0;
+      const inp = s.querySelector('.effort-range[data-i="'+i+'"]');
+      if (inp) syncEffort(inp, entry.sets[i]);
+    });
+  });
   const next = ()=>{
     readFromDom();
     if (logCtx.idx<total-1){ logCtx.idx++; render(); }
@@ -1645,6 +1722,44 @@ function computeSuggestions(day, entries, type){
 
 function mkSug(exId,field,from,to,reason){ return { exId, field, from, to, reason, kept:null, method:"engine" }; }
 function avgR(sets){ const rs=sets.map(s=>s.rating||0).filter(r=>r>0); return rs.length? rs.reduce((a,b)=>a+b,0)/rs.length : null; }
+/* Plain-language readout for the effort slider's 0.5-step ratings. */
+function effortDesc(r){
+  if (r<=1)   return "Very easy — barely taxing";
+  if (r<=1.5) return "Easy — smooth, plenty in reserve";
+  if (r<=2)   return "Easy — comfortable control";
+  if (r<=2.5) return "Light-moderate — moving, still easy";
+  if (r<=3)   return "Moderate — solid work";
+  if (r<=3.5) return "Moderate-hard — noticeable effort";
+  if (r<=4)   return "Hard — a few reps in reserve";
+  if (r<=4.5) return "Very hard — one or two left";
+  return "Near failure — last rep was the limit";
+}
+/* Live-sync the effort slider DOM (track fill, bubble, readout, descriptor, cell
+   state) without a full re-render so dragging stays fluid. */
+function syncEffort(rangeEl, set){
+  const rated = set.rating>0;
+  const eff = rangeEl.closest(".effort");
+  const cell = rangeEl.closest(".set-cell");
+  const v = rated ? set.rating : 1;
+  const pct = ((v-1)/4)*100;
+  const txt = rated ? set.rating.toFixed(1) : "—";
+  rangeEl.value = v;
+  rangeEl.style.background = "linear-gradient(90deg,var(--accent) 0%,var(--accent) "+pct+"%,var(--line) "+pct+"%,var(--line) 100%)";
+  const bubble = eff.querySelector(".effort-bubble");
+  if (bubble){ bubble.style.left = Math.max(4,Math.min(96,pct))+"%"; bubble.textContent = txt; }
+  const valEl = eff.querySelector(".effort-val");
+  if (valEl){ valEl.textContent = txt; valEl.classList.toggle("rated", rated); }
+  const descEl = eff.querySelector(".effort-desc");
+  if (descEl){ descEl.textContent = rated ? effortDesc(set.rating) : "Drag to rate effort — half-point steps"; descEl.classList.toggle("rated", rated); }
+  eff.classList.toggle("rated", rated);
+  if (cell){
+    const perfSet = (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
+    cell.classList.toggle("done", rated || perfSet);
+  }
+  if (valEl && window.gsap && FX.ok && !FX.reduced()){
+    try{ window.gsap.fromTo(valEl, {scale:1.3}, {scale:1, duration:.3, ease:"back.out(2.4)", overwrite:"auto"}); }catch(e){}
+  }
+}
 function stepUpWeight(w, step){ const s = step||2.5; return Math.round((w+s)*2)/2; }
 function capRound(v, step){ return Math.ceil(v/step)*step; }
 function lastSessionForDay(dayId){ const arr=state.sessions.filter(sd=>sd.dayId===dayId); return arr[arr.length-1]||null; }
@@ -1945,7 +2060,8 @@ function renderCoach(){
     const typePill = session?'<span class="pill">'+sessionTypeLabel(session.type)+'</span>':'';
     html += '<div class="card" style="margin-bottom:22px">';
     html += '<div class="day-head"><b style="font-size:17px">'+title+'</b>'+typePill+'<span class="muted small">'+dateStr+'</span>';
-    html += '<div class="spacer"></div><span class="pill">'+suggestions.length+' suggestion'+(suggestions.length!==1?'s':'')+'</span></div>';
+    html += '<div class="spacer"></div><span class="pill">'+suggestions.length+' suggestion'+(suggestions.length!==1?'s':'')+'</span>';
+    html += '<button type="button" class="rec-del" data-del-pend="'+pend.id+'" aria-label="Delete all suggestions from this session">✕</button></div>';
     if (session && session.summary) html += '<p class="small" style="color:var(--ink-3);margin:6px 0 12px">'+esc(session.summary)+'</p>';
     if (!suggestions.length){ html += '<div class="muted small">No concrete changes to apply — plan stays as is.</div>'; }
     suggestions.forEach(sug=>{
@@ -1957,6 +2073,19 @@ function renderCoach(){
   s.innerHTML = html;
   // data attributes set on buttons; wire accept/reject actions
   $$("[data-recid][data-act]", s).forEach(b=>b.addEventListener("click", ()=>recAct(b.dataset)));
+  // delete an entire session's suggestion batch (keeps the logged workout in History)
+  $$("[data-del-pend]", s).forEach(b=>b.addEventListener("click", ()=>{
+    if (!confirm("Delete all coach suggestions from this session? The logged workout stays in History.")) return;
+    state.pending = state.pending.filter(p=>p.id!==b.dataset.delPend);
+    saveState(); renderCoach();
+  }));
+  // delete a single suggestion card
+  $$("[data-del-sug]", s).forEach(b=>b.addEventListener("click", ()=>{
+    const pend = state.pending.find(p=>p.id===b.dataset.delSug);
+    if (!pend) return;
+    pend.suggestions = (pend.suggestions||[]).filter(sg=>!(sg.exId===b.dataset.ai));
+    saveState(); renderCoach();
+  }));
 }
 
 function recCard(sug, ex, open, pendId){
@@ -1980,7 +2109,8 @@ function recCard(sug, ex, open, pendId){
       '<div class="rec-head"><span class="ex-name">'+fromN+'</span>'+
         '<span class="change-tag">harder progression</span><span class="arrow">→</span>'+
         '<span class="ex-name">'+toN+'</span>'+
-        '<span class="rec-status" style="margin-left:auto">'+status+'</span></div>'+
+        '<span class="rec-status" style="margin-left:auto">'+status+'</span>'+
+        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this suggestion">✕</button></div>'+
       (sug.reason?'<div class="rec-expl">'+esc(sug.reason)+'</div>':"")+
       actions+'</div>';
   }
@@ -1995,7 +2125,8 @@ function recCard(sug, ex, open, pendId){
     return '<div class="rec-card">'+
       '<div class="rec-head"><span class="ex-name">'+label+'</span>'+
         '<span class="change-tag">hold</span>'+
-        '<span class="rec-status" style="margin-left:auto">no change</span></div>'+
+        '<span class="rec-status" style="margin-left:auto">no change</span>'+
+        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this note">✕</button></div>'+
       '<div class="rec-expl">'+esc(sug.reason||"Hold the current plan — no change needed next session.")+'</div>'+
     '</div>';
   }
@@ -2007,7 +2138,8 @@ function recCard(sug, ex, open, pendId){
     '<div class="rec-head"><span class="ex-name">'+esc(ex?ex.name:"unknown")+'</span>'+
       '<span class="change-tag">'+esc(field)+'</span><span class="arrow"></span>'+
       '<span class="mono small">'+fromTxt+'</span> <span class="arrow">→</span> <span class="mono small">'+toTxt+'</span>'+
-      '<span class="rec-status" style="margin-left:auto">'+status+'</span></div>'+
+      '<span class="rec-status" style="margin-left:auto">'+status+'</span>'+
+      '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this suggestion">✕</button></div>'+
     (sug.reason?'<div class="rec-expl">'+esc(sug.reason)+'</div>':"")+
     actions+'</div>';
 }
