@@ -691,7 +691,7 @@
 
 const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
-const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy" };
+const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy", defaultSessionType:"hypertrophy" };
 
 /* Harder exercise progressions, auto-resolved from the user's own library.
    PROGRESSION_CHAINS maps each base movement to an ordered (easiest → hardest)
@@ -748,6 +748,13 @@ const SESSION_TYPES = {
 };
 function sessionTypeLabel(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).label; }
 function sessionZone(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).zone; }
+/* Effective training zone for one exercise in a day. In hybrid sessions each
+   exercise can be tagged hypertrophy- or strength-focused; that focus then
+   defines the ideal rep zone the coach judges (and progresses) it against. */
+function exerciseZone(de, type){
+  const t = (type==="hybrid" && de && (de.focus==="hypertrophy"||de.focus==="strength")) ? de.focus : type;
+  return SESSION_TYPES[t] || SESSION_TYPES.hypertrophy;
+}
 
 /* Per-set types let a routine mark individual sets (drop sets, AMRAP failure
    sets, warm-ups). 'regular' is the default and never needs to be stored. */
@@ -806,13 +813,13 @@ function seedDefaultState() {
   // auto-resolve each exercise's harder variations from its movement chain
   resolveProgressions(exercises);
   const days = [
-    { id:"day-1", name:"Workout A", exercises:[
+    { id:"day-1", name:"Workout A", type:"hypertrophy", exercises:[
       { exId:"ex-3", targetSets:3, reps:8, time:30, weight:0 },  // Ring Dip
       { exId:"ex-5", targetSets:3, reps:6, time:30, weight:0 },  // Pull-Up
       { exId:"ex-12", targetSets:3, reps:5, time:20, weight:0 }, // Ring L-Sit
       { exId:"ex-4", targetSets:3, reps:8, time:30, weight:0 },  // Ring Row
     ]},
-    { id:"day-2", name:"Workout B", exercises:[
+    { id:"day-2", name:"Workout B", type:"strength", exercises:[
       { exId:"ex-1", targetSets:3, reps:10, time:30, weight:0 }, // Push-Up
       { exId:"ex-10", targetSets:3, reps:3, time:30, weight:0 }, // Ring Muscle-Up (DL)
       { exId:"ex-14", targetSets:3, reps:5, time:20, weight:0 }, // Hollow-Body Hold
@@ -847,6 +854,8 @@ function loadState() {
     s.sessions = s.sessions || [];
     s.pending = s.pending || [];
     s.counts = s.counts || { nextId:1 };
+    // session type now lives on each routine/day; backfill for older saved data
+    (s.days || []).forEach(d => { if (!d.type) d.type = "hypertrophy"; });
     // auto-resolve progression chains from the user's library so previously-saved
     // and custom exercises still get harder-variation recommendations (explicit
     // hand-edited chains are preserved)
@@ -1167,6 +1176,7 @@ function renderRoutineList(){
         '<span class="routine-open">Open <span class="btn-arrow">→</span></span>'+
       '</div>'+
       '<div class="routine-meta">'+
+        '<span class="pill">'+sessionTypeLabel(d.type||"hypertrophy")+'</span>'+
         '<span class="pill">'+exCount+' exercise'+(exCount!==1?"s":"")+'</span>'+
         '<span class="pill">'+setCount+' total sets</span>'+
         (last?'<span class="pill time">last logged · '+fmtDate(last.dateISO)+'</span>':"")+
@@ -1203,6 +1213,7 @@ function renderWorkoutEditor(){
   const s = $("#view-workouts");
   const d = getDay(planEditId);
   if (!d){ planMode="list"; planEditId=null; renderRoutineList(); return; }
+  const dayType = d.type || "hypertrophy";
   const exRows = d.exercises.map(de => {
     const ex = getEx(de.exId);
     const nm = ex ? ex.name : "(deleted exercise)";
@@ -1213,7 +1224,7 @@ function renderWorkoutEditor(){
     const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
       ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
     return '<div class="ex-row">'+
-      '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+"</div>"+
+      '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':"")+"</div>"+
       '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>'+
       '<div class="set-chips">'+setChips+'</div>'+
       '<div class="ex-actions">'+
@@ -1241,9 +1252,21 @@ function renderWorkoutEditor(){
         '<div class="spacer"></div>'+
         '<button class="btn primary" data-add-ex="'+d.id+'">+ Add exercise</button>'+
       '</div>'+
+      '<div class="day-head" style="border:none;margin:.2rem 0 1rem;padding:0">'+
+        '<label class="field" style="margin:0"><span>Session type — sets the rep range every exercise is judged against</span>'+
+          '<div class="seg">'+Object.keys(SESSION_TYPES).map(t=>'<button type="button" class="seg-btn'+(dayType===t?' active':'')+'" data-day-type="'+t+'">'+SESSION_TYPES[t].label+'</button>').join("")+'</div>'+
+          '<div class="micro" id="day-type-desc" style="margin-top:.5rem">'+esc(SESSION_TYPES[dayType].desc)+'</div>'+
+        '</label>'+
+      '</div>'+
       (exRows || '<div class="muted small">No exercises yet. Add one to get started.</div>')+
       '<div class="addhost" data-day="'+d.id+'"></div>'+
     '</div>';
+  $$("[data-day-type]", s).forEach(b=>b.addEventListener("click", ()=>{
+    $$("[data-day-type]", s).forEach(x=>x.classList.toggle("active", x===b));
+    d.type = b.dataset.dayType;
+    const dd = $("#day-type-desc", s); if (dd) dd.textContent = SESSION_TYPES[d.type].desc;
+    saveState();
+  }));
   $("#plan-back", s).addEventListener("click", ()=>{ planMode="list"; planEditId=null; render(); });
   $("#plan-del-day", s).addEventListener("click", ()=>{
     if(!confirm("Delete this routine and its plan?")) return;
@@ -1279,6 +1302,12 @@ function openAddEx(dayId, exId){
         '<label class="field"><span>Exercise</span><select id="add-ex-select">'+opts+'</select></label>'+
         '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>'+
       '</div>'+
+      (day.type==="hybrid"
+        ? '<label class="field"><span>Focus — hypertrophy or strength</span><select id="add-ex-focus">'+
+            '<option value="hypertrophy">Hypertrophy — 6–12 reps</option>'+
+            '<option value="strength">Strength — 3–6 reps</option>'+
+          '</select><div class="micro">This hybrid day blends both goals — pick which rep zone this exercise is judged against.</div></label>'
+        : '')+
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
       '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure).</p>'+
@@ -1333,6 +1362,7 @@ function openAddEx(dayId, exId){
     prevVals = (ex&&ex.mode==="time" ? editing.setTimes : editing.setReps) || [];
     prevTypes = editing.setTypes ? editing.setTypes.slice() : [];
     $("#add-ex-weight").value = editing.weight!=null ? editing.weight : 0;
+    if (editing.focus && $("#add-ex-focus", host)) $("#add-ex-focus").value = editing.focus;
   }
   updateFields(!editing);
   $("#add-ex-cancel").addEventListener("click", ()=>render());
@@ -1357,6 +1387,9 @@ function openAddEx(dayId, exId){
     }
     if (ex.weightAvailable||m==="weight") entry.weight = +$("#add-ex-weight").value||0;
     else delete entry.weight;
+    const focusEl = $("#add-ex-focus", host);
+    if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
+    else delete entry.focus;
     if (!editing) day.exercises.push(entry);
     saveState(); render(); toast(editing?"Exercise updated":"Added to day");
   });
@@ -1379,34 +1412,22 @@ function renderLog(){
 }
 
 function renderLogPicker(s){
-  const type = state.profile.lastSessionType || "hypertrophy";
+  // the session type lives on each routine — the picker just lists the days
   const dayCards = state.days.map(d => {
-    const first = d.exercises[0];
+    const dt = d.type || "hypertrophy";
     return '<div class="wo-card" data-start="'+d.id+'">'+
       '<div><div class="wo-name">'+esc(d.name)+'</div>'+
       '<div class="date">'+d.exercises.length+' exercises · '+d.exercises.reduce((a,x)=>a+(x.targetSets||0),0)+' sets</div></div>'+
-      '<span class="badge">log</span></div>';
+      '<span class="badge">'+sessionTypeLabel(dt)+'</span></div>';
   }).join("");
-  const seg = '<div class="seg" id="log-type-seg">'+
-    Object.keys(SESSION_TYPES).map(t=>
-      '<button type="button" class="seg-btn'+(t===type?' active':'')+'" data-logtype="'+t+'">'+SESSION_TYPES[t].label+'</button>'
-    ).join("")+'</div>'+
-    '<p class="seg-desc" id="log-type-desc">'+esc(SESSION_TYPES[type].desc)+'</p>';
   s.innerHTML =
     '<div class="view-hero slim">'+
       '<div class="view-hero-inner">'+
         '<h2 class="view-title">Log the <em class="serif-i">session</em></h2>'+
-        '<p class="view-sub fx-scrub">Pick the day you trained. Record each set as it happened and rate the effort — the coach does the rest.</p>'+
+        '<p class="view-sub fx-scrub">Pick the day you trained. Each routine already knows its training type — the coach judges every set against it.</p>'+
       '</div>'+
     '</div>'+
-    '<div style="margin:0 0 1.6rem">'+seg+'</div>'+
     (dayCards ? '<div class="wo-list">'+dayCards+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>Create a workout day first.</div>');
-  $$("[data-logtype]", s).forEach(b=>b.addEventListener("click", ()=>{
-    state.profile.lastSessionType = b.dataset.logtype;
-    saveState();
-    $$("[data-logtype]", s).forEach(x=>x.classList.toggle("active", x===b));
-    const d = $("#log-type-desc", s); if (d) d.textContent = SESSION_TYPES[b.dataset.logtype].desc;
-  }));
   $$("[data-start]", s).forEach(el=>el.addEventListener("click", ()=>startLog(el.dataset.start)));
 }
 
@@ -1415,7 +1436,7 @@ function startLog(dayId){
   if (!day || !day.exercises.length){ toast("This day has no exercises"); return; }
   logCtx = {
     dayId: dayId,
-    type: state.profile.lastSessionType || "hypertrophy",
+    type: day.type || "hypertrophy",
     startedAt: nowISO(),
     idx: 0,
     entries: {},           // exId -> { plan, sets:[...] }
@@ -1483,7 +1504,7 @@ function renderLogStep(s){
     '<div class="phase active">'+
       '<div class="log-head">'+
         '<div class="big-title">'+esc(ex.name)+'</div>'+
-        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(sessionZone(logCtx.type)[0])+'–'+(sessionZone(logCtx.type)[1])+' reps</div>'+
+        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'–'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>'+
       '</div>'+
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
       '<div class="log-step">'+
@@ -1593,10 +1614,6 @@ function renderRecovery(s){
    ========================================================================= */
 function computeSuggestions(day, entries, type){
   const sug = [];
-  // the session type defines the target rep zone the coach pushes toward
-  const zone = SESSION_TYPES[type] || SESSION_TYPES.hypertrophy;
-  const zMin = zone.zone[0], zMax = zone.zone[1];
-  const zoneName = zone.label.toLowerCase();
   // previous session on this day, if any, for light trend checks
   const prev = lastSessionForDay(day.id);
   day.exercises.forEach(de=>{
@@ -1648,6 +1665,10 @@ function computeSuggestions(day, entries, type){
       const performed = workedVals.length ? Math.max.apply(null, workedVals) : null;
       const loggedW = sets.map(s=>s.weight===""||s.weight==null?null:+s.weight).filter(w=>w!=null&&w>0);
       const usingWeight = loggedW.length>0;
+      // the zone the coach pushes this exercise toward (per-exercise in hybrid)
+      const exZone = exerciseZone(de, type);
+      const zMin = exZone.zone[0], zMax = exZone.zone[1];
+      const zoneName = exZone.label.toLowerCase();
       const zoneMax = Math.min(zMax, ex.repCeil||zMax);
       const drift = performed!=null && performed > zoneMax; // cruising past the zone top
       if (!allHit){
@@ -1668,7 +1689,7 @@ function computeSuggestions(day, entries, type){
           if (repTop < target) sug.push(mkSug(de.exId,"reps",target,repTop,"Dial the rep target back to "+repTop+" as you add weight — keep reps inside the "+zMin+"-"+zMax+" "+zoneName+" zone."));
         } else {
           // could not step load (maxed) → fall back to a hold/note
-          sug.push(mkSug(de.exId,"reps",target,target,"You did "+performed+" reps — past the top of the "+zone.label+" zone ("+zMin+"-"+zMax+"). Load is at its max here; add load only when available or track it as conditioning."));
+          sug.push(mkSug(de.exId,"reps",target,target,"You did "+performed+" reps — past the top of the "+exZone.label+" zone ("+zMin+"-"+zMax+"). Load is at its max here; add load only when available or track it as conditioning."));
         }
       }
       // Bodyweight / no-load movement drifting past the zone → recommend a harder
@@ -1679,21 +1700,21 @@ function computeSuggestions(day, entries, type){
         if (nextEx){
           sug.push({ exId:de.exId, field:"progression", from:de.exId, to:nextEx.id, fromName:ex.name, toName:nextEx.name, reason:"You did "+performed+" reps across "+n+" sets on "+ex.name+" — that drifts past the "+zMin+"-"+zMax+" "+zoneName+" zone toward endurance. Swap to "+nextEx.name+" (a harder progression) to keep the "+zoneName+" stimulus.", kept:null, method:"engine" });
         } else {
-          sug.push(mkSug(de.exId,"reps",Math.min(target,zoneMax),Math.min(target,zoneMax),"You did "+performed+" reps on "+ex.name+", past the top of the "+zone.label+" zone ("+zMin+"-"+zMax+"). Add a harder progression (e.g. raised feet, lean, full-ROM) or switch to a more demanding variation to keep the "+zoneName+" stimulus."));
+          sug.push(mkSug(de.exId,"reps",Math.min(target,zoneMax),Math.min(target,zoneMax),"You did "+performed+" reps on "+ex.name+", past the top of the "+exZone.label+" zone ("+zMin+"-"+zMax+"). Add a harder progression (e.g. raised feet, lean, full-ROM) or switch to a more demanding variation to keep the "+zoneName+" stimulus."));
         }
       }
       // In-zone: give a real, concrete progressive-overload bump wherever we can.
       else {
         let to = null, reason = "";
         if (performed!=null && performed > target){
-          to = Math.min(performed + zone.bump, 25);
+          to = Math.min(performed + exZone.bump, 25);
           reason = "Progressive overload: you did "+performed+" reps vs the "+target+" target this session — try "+to+" next time.";
         } else if (avgR_!=null && avgR_<=2){
-          to = Math.min(target + zone.bump, 25);
+          to = Math.min(target + exZone.bump, 25);
           reason = "All sets hit "+target+" comfortably — raise the rep target to "+to+" to keep progressing.";
         } else if (avgR_!=null && avgR_<=3){
           to = target;
-          reason = "All sets hit "+target+" with moderate effort — consolidate here before raising again ("+zone.label+" zone "+zMin+"-"+zMax+").";
+          reason = "All sets hit "+target+" with moderate effort — consolidate here before raising again ("+exZone.label+" zone "+zMin+"-"+zMax+").";
         }
         if (to!=null) sug.push(mkSug(de.exId,"reps",target,to,reason));
       }
@@ -1810,7 +1831,7 @@ function saveLogSession(){
   const { completedSets, recovery } = buildSession(day, logCtx.entries, logCtx.recovery);
   const session = {
     id: "sess-"+uid(), dayId: day.id, dateISO: logCtx.startedAt,
-    type: logCtx.type || state.profile.lastSessionType || "hypertrophy",
+    type: logCtx.type || "hypertrophy",
     completedSets, recovery, finalized: false
   };
   state.sessions.push(session);
@@ -1971,6 +1992,9 @@ const SYSTEM_PROMPT = [
   "Zone rule: if the athlete cruises past the top of the zone (e.g. hypertrophy work",
   "hitting 14+ reps), the session is drifting toward endurance — prefer adding weight",
   "(if the exercise takes load) or a harder progression over endless rep chasing.",
+  "In 'hybrid' sessions each exercise may carry a 'focus' of 'hypertrophy' or 'strength':",
+  "judge that exercise against that focus's rep zone (hypertrophy 6-12, strength 1-6)",
+  "instead of the blended hybrid zone.",
   "Rules you MUST respect:",
   "- NEVER change number of sets; only reps, hold-time, or weight.",
   "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -1986,6 +2010,7 @@ function buildAIPayload({ session, day, entries, base }){
     return { exId:de.exId, name:ex?ex.name:"?", mode:ex?ex.mode:"reps",
       weightAvailable: ex?!!ex.weightAvailable:false,
       targetSets:de.targetSets, targetReps:de.reps, targetTime:de.time, weight:de.weight,
+      focus: de.focus||"",
       setTypes: Array.isArray(de.setTypes) ? de.setTypes.map(t=>t||"regular") : [] };
   });
   const performed = session.completedSets.map(c=>({

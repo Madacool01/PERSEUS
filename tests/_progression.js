@@ -36,9 +36,8 @@ const section = t => console.log("\n== " + t + " ==");
   const zones = { strength: [3, 6], hypertrophy: [6, 12], hybrid: [4, 10], endurance: [15, 25] };
   for (const [type, [zmn, zmx]] of Object.entries(zones)) {
     section("Zone discipline on a " + type + " day (zone " + zmn + "-" + zmx + ")");
-    E("state.profile.lastSessionType = '" + type + "'");
     const dayId = "day-" + type;
-    E("state.days.push({ id:'" + dayId + "', name:'" + type.toUpperCase() + "', exercises:[ { exId:'ex-3', targetSets:3, reps:" + zmx + ", time:30, weight:20 }, { exId:'ex-1', targetSets:3, reps:" + zmx + ", time:30, weight:0 } ] })");
+    E("state.days.push({ id:'" + dayId + "', name:'" + type.toUpperCase() + "', type:'" + type + "', exercises:[ { exId:'ex-3', targetSets:3, reps:" + zmx + ", time:30, weight:20 }, { exId:'ex-1', targetSets:3, reps:" + zmx + ", time:30, weight:0 } ] })");
     E("startLog('" + dayId + "')");
     const ctx = G("logCtx");
     ["ex-3", "ex-1"].forEach(exId => {
@@ -68,8 +67,7 @@ const section = t => console.log("\n== " + t + " ==");
   }
 
   section("Accept the progression swap");
-  E("state.profile.lastSessionType = 'strength'");
-  E("state.days.push({ id:'day-s', name:'Strength', exercises:[ { exId:'ex-1', targetSets:3, reps:6, time:30, weight:0 } ] })");
+  E("state.days.push({ id:'day-s', name:'Strength', type:'strength', exercises:[ { exId:'ex-1', targetSets:3, reps:6, time:30, weight:0 } ] })");
   E("startLog('day-s')");
   const ctxs = G("logCtx");
   ctxs.entries["ex-1"].sets.forEach(s => { s.reps = 8; s.rating = 1; });
