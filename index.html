@@ -642,7 +642,7 @@
 
 const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
-const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", autoApply:false, lastSessionType:"hypertrophy" };
+const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy" };
 
 /* Harder exercise progressions, auto-resolved from the user's own library.
    PROGRESSION_CHAINS maps each base movement to an ordered (easiest → hardest)
@@ -1820,7 +1820,19 @@ function renderLogDone(s){
    Set ADD AI KEY optional in Settings. Falls back to rule text otherwise.
    ========================================================================= */
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL   = "llama-3.3-70b-versatile";
+/* Default reasoning model. Now defaults to a current free/developer-tier model:
+   the old llama-3.3-70b-versatile is Enterprise-only as of Aug 2026. The chosen
+   model for a session comes from state.profile.aiModel (picked in Settings). */
+const GROQ_MODEL = "openai/gpt-oss-20b";
+/* Catalogue of selectable AI models → short easy-to-read label + pros. The app
+   only ever sends these ids, so the picker stays aligned with what Groq serves. */
+const AI_MODELS = {
+  "openai/gpt-oss-20b":  { label:"GPT-OSS 20B",          pros:"Fastest & cheapest tier-1 option (~1000 tps). Handles structured coaching JSON crisply. The best default value — low cost, low latency, solid quality." },
+  "openai/gpt-oss-120b": { label:"GPT-OSS 120B",         pros:"Smarter reasoning (~500 tps). Better nuance for tricky progression/fatigue calls; costs more per token and a bit slower." },
+  "qwen/qwen3.6-27b":    { label:"Qwen3.6-27B (preview)", pros:"Strong all-round balance (~500 tps) with ample per-minute capacity. Preview model — capabilities may shift." },
+  "groq/compound":       { label:"Groq Compound",        pros:"Agentic system (~450 tps) that can web-search and run code if the response needs it. Great for research-y questions, heavier for routine looks." },
+  "groq/compound-mini":  { label:"Groq Compound Mini",   pros:"Lighter, faster lean version of Groq Compound — still tool-capable, lower latency." },
+};
 const SYSTEM_PROMPT = [
   "You are the reasoning engine inside a calisthenics strength-coach app.",
   "You receive a JSON payload with the user's training plan, latest session,",
@@ -1878,8 +1890,11 @@ async function callGroq(ctx){
   const key = (state.profile&&state.profile.apiKey||"").trim();
   if (!key){ throw new Error("no api key"); }
   const payload = buildAIPayload(ctx);
+  // use the model picked in Settings, falling back to the default if the stored
+  // value is stale/unknown (e.g. a deprecated model id)
+  const modelName = (state.profile&&state.profile.aiModel&&AI_MODELS[state.profile.aiModel]) ? state.profile.aiModel : GROQ_MODEL;
   const body = {
-    model: GROQ_MODEL,
+    model: modelName,
     temperature: 0.2,
     response_format: { type: "json_object" },
     messages: [
@@ -2162,6 +2177,10 @@ function sessionDetail(ses){
 function renderSettings(){
   const s = $("#view-settings");
   const prof = state.profile;
+  const curModel = (prof.aiModel && AI_MODELS[prof.aiModel]) ? prof.aiModel : GROQ_MODEL;
+  const modelOptions = Object.keys(AI_MODELS).map(id=>
+    '<option value="'+id+'"'+(curModel===id?' selected':'')+'>'+esc(AI_MODELS[id].label)+'</option>'
+  ).join("");
   s.innerHTML =
     '<div class="view-hero slim">'+
       '<div class="view-hero-inner">'+
@@ -2187,8 +2206,11 @@ function renderSettings(){
       '<div class="cell s5"><div class="card"><h3>AI explanations (GroqCloud)</h3>'+
         '<p class="micro">Optional. The coach’s progression rules run deterministically without AI. Adding a free GroqCloud API key lets a language model write the plain-language reasons and refine suggestions. Your key is stored only in your browser.</p>'+
         '<label class="field"><span>GroqCloud API key</span><input id="set-ai-key" type="password" placeholder="gsk_…" value=""/></label>'+
+        '<label class="field"><span>AI model</span><select id="set-ai-model">'+modelOptions+'</select>'+
+          '<div class="micro" id="set-ai-model-desc" style="margin-top:8px">'+esc(AI_MODELS[curModel].pros)+'</div></label>'+
         '<div class="btn-row">'+
           '<button class="btn" id="set-ai-save">Save key</button>'+
+          '<button class="btn" id="set-ai-model-save">Save model</button>'+
           '<a class="btn small" target="_blank" rel="noopener" href="https://console.groq.com/keys" style="text-decoration:none">Get a key →</a>'+
         '</div>'+
         (prof.apiKey?'<div class="micro" style="margin-top:8px;color:var(--green)">✓ Key is set (•••'+prof.apiKey.slice(-4)+').</div>':'<div class="micro" style="margin-top:8px">No key — rule-based explanations in use.</div>')+
@@ -2211,6 +2233,14 @@ function renderSettings(){
     const v = $("#set-ai-key", s).value.trim();
     prof.apiKey = v;
     saveState(); toast(v?"AI key saved":"AI key cleared"); renderSettings();
+  });
+  $("#set-ai-model-save", s).addEventListener("click", ()=>{
+    prof.aiModel = $("#set-ai-model", s).value;
+    saveState(); toast("AI model saved — "+AI_MODELS[prof.aiModel].label); renderSettings();
+  });
+  $("#set-ai-model", s).addEventListener("change", ()=>{
+    const d = $("#set-ai-model-desc", s);
+    if (d) d.textContent = AI_MODELS[$("#set-ai-model", s).value].pros;
   });
   $("#set-export", s).addEventListener("click", ()=>{
     const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
