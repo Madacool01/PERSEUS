@@ -644,6 +644,17 @@ const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
 const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", autoApply:false, lastSessionType:"hypertrophy" };
 
+/* Harder exercise progressions (by seeded exercise name → ordered list of harder
+   exercise ids). Lets the coach recommend a more challenging variation when a
+   weight-less movement drifts past the top of the session's rep zone. */
+const SEED_PROGRESSIONS = {
+  "Push-Up":["ex-5"],            // Archer Push-Up
+  "Diamond Push-Up":["ex-25"],  // Renegade Push-Up
+  "Ring Row":["ex-27"],         // One-Arm Ring Row
+  "Squat (Bodyweight)":["ex-17"], // Bulgarian Split Squat
+  "Pull-Up Negative":["ex-6"],  // Pull-Up
+};
+
 /* Session types drive the progression engine + AI coaching. Rep zones follow
    the repetition continuum (ACSM position stand; Schoenfeld et al. 2021):
    strength 1-6 @ >=80% 1RM, hypertrophy 6-12 (6-15 tolerable) @ 60-80% 1RM,
@@ -682,10 +693,10 @@ let state;      // assigned during bootstrap at the bottom, after persistence he
 /* Seed a default program the first time; re-run if a future version upgrades the seed */
 function seedDefaultState() {
   const defaultExercises = [
-    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0 },
-    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
+    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0, progressions:["ex-5"] }, // harder: Archer Push-Up
+    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, progressions:["ex-25"] }, // harder: Renegade Push-Up
     { name:"Ring Dip",                mode:"reps",   equipment:["rings"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt / ankle" },
-    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
+    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, progressions:["ex-27"] }, // harder: One-Arm Ring Row
     { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
     { name:"Pull-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
     { name:"Chin-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
@@ -697,12 +708,12 @@ function seedDefaultState() {
     { name:"Plank",                   mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:45, defaultWeight:0 },
     { name:"Hollow-Body Hold",        mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
     { name:"Ring Support Hold",       mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
-    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
+    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, progressions:["ex-17"] }, // harder: Bulgarian Split Squat
     { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held" },
     { name:"Hang (Dead Grip)",        mode:"time",   equipment:["pullup"], weightAvailable:false, defaultSets:2, defaultReps:5, defaultTime:30, defaultWeight:0 },
     { name:"Hindu Squat",             mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
     { name:"Ring Rollout",            mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
-    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0 },
+    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0, progressions:["ex-6"] }, // harder: Pull-Up
     { name:"Ring False-Grip Row",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
     { name:"Back Lever Hold",         mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:10, defaultWeight:0 },
     { name:"Front Lever Hold",        mode:"time",   equipment:["rings","pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:8, defaultWeight:0 },
@@ -753,6 +764,12 @@ function loadState() {
     s.sessions = s.sessions || [];
     s.pending = s.pending || [];
     s.counts = s.counts || { nextId:1 };
+    // backfill progression chains for exercises whose names match the seed, so
+    // previously-saved libraries still get harder-variation recommendations.
+    (s.exercises||[]).forEach(e => {
+      if (!e.progressions && SEED_PROGRESSIONS[e.name]) e.progressions = SEED_PROGRESSIONS[e.name];
+      e.progressions = Array.isArray(e.progressions) ? e.progressions : [];
+    });
     return s;
   } catch(e){ return null; }
 }
@@ -980,6 +997,11 @@ function openExEditor(id){
       '</label>'+
       '<p class="micro" style="margin:-.3rem 0 1rem">Weight is separate from mode: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily. Target sets and reps are set when you add this exercise to a workout day.</p>'+
       '<label class="field"><span>Notes (optional)</span><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'"/></label>'+
+      '<label class="field"><span>Harder progressions (optional — ordered easiest → hardest)</span>'+
+        '<select id="ex-progressions" multiple size="4">'+
+          state.exercises.filter(x=>x.id!==e.id).map(x=>'<option value="'+x.id+'"'+(Array.isArray(e.progressions)&&e.progressions.includes(x.id)?" selected":"")+'>'+esc(x.name)+'</option>').join("")+
+        '</select>'+
+        '<div class="micro">When a bodyweight exercise drifts past the session rep zone, the coach can suggest stepping up to the next variation you list here (e.g. Push-Up → Archer Push-Up).</div></label>'+
       '<div class="btn-row">'+
         '<button class="btn primary" id="ex-save">'+(ex?"Save changes":"Add exercise")+"</button>"+
         '<button class="btn" id="ex-cancel">Cancel</button>'+
@@ -1022,7 +1044,10 @@ function openExEditor(id){
       defaultTime: ex ? (ex.defaultTime||30) : 30,
       defaultWeight: ex ? (ex.defaultWeight||0) : 0,
       notes: $("#ex-notes", host).value.trim(),
+      progressions: ex ? (Array.isArray(ex.progressions) ? ex.progressions.slice() : []) : [],
     };
+    const progSel = $("#ex-progressions", host);
+    if (progSel) data.progressions = Array.from(progSel.selectedOptions).map(o=>o.value);
     if (ex){
       Object.assign(ex, data);
     } else {
@@ -1311,6 +1336,7 @@ function startLog(dayId){
     entries: {},           // exId -> { plan, sets:[...] }
     recoveryScreen:false,
     finished:false,
+    saved:false,           // true once saveLogSession has committed; blocks duplicate saves
   };
   // prefill entries skeleton
   day.exercises.forEach(de => {
@@ -1505,34 +1531,60 @@ function computeSuggestions(day, entries, type){
         return r!=null && r>= setTarget(plan,"reps",i);
       });
       // warm-up + failure sets are intensity/prep tools, not progression signals
-      const avgR_ = avgR(sets.filter((s,i)=>setTypeOf(plan,i)!=="warmup" && setTypeOf(plan,i)!=="failure"));
-      if (allHit){
-        if (avgR_<=2){
-          // easy: progress. Offer weight instead of reps when the exercise can take
-          // load and the user actually used it (or reps sit at the zone cap).
-          const loggedW = sets.map(s=>s.weight===""||s.weight==null?null:+s.weight).filter(w=>w!=null&&w>0);
-          const usingWeight = loggedW.length>0;
-          const zoneMax = Math.min(zMax, ex.repCeil||zMax);
-          const capped = (target>=zoneMax) || (ex.weightAvailable && usingWeight);
-          if (capped && prev && prevOkForExercise(prev, de.exId, "reps") && ex.weightAvailable){
-            const baseW = usingWeight ? Math.max.apply(null, loggedW) : plan.weight;
-            const nextW = stepUpWeight(baseW, ex.weightStep);
-            if (nextW>baseW){
-              sug.push(mkSug(de.exId,"weight",baseW,nextW,"You have been repping "+target+" easily with load — time to add "+(nextW-baseW)+" "+weightUnit()+" instead of chasing more reps."));
-              sug.push(mkSug(de.exId,"reps",target,target-2,"Drop the rep target slightly when adding weight so form stays honest."));
-            }
-          } else if (capped){
-            // no load available: flag the drift out of the target zone instead of chasing reps
-            sug.push(mkSug(de.exId,"reps",target,target,"You are past the top of the "+zone.label+" zone ("+zMin+"-"+zMax+" reps) — "+target+" reps shifts toward endurance work. Add load or switch to a harder progression to keep the "+zoneName+" stimulus."));
-          } else {
-            const to = target+zone.bump;
-            sug.push(mkSug(de.exId,"reps",target,to,"All sets reached "+target+" easily — raise the rep target by "+zone.bump+" to stay inside the "+zMin+"-"+zMax+" "+zoneName+" range."));
-          }
-        } else if (avgR_<=3){
-          sug.push(mkSug(de.exId,"reps",target,target,"All sets hit "+target+" with moderate effort — consolidate here before raising again ("+zone.label+" zone "+zMin+"-"+zMax+")."));
-        }
-      } else {
+      const working = sets.filter((s,i)=>setTypeOf(plan,i)!=="warmup" && setTypeOf(plan,i)!=="failure");
+      const avgR_ = avgR(working);
+      const workedVals = working.map(s=>val(s.reps)).filter(v=>v!=null);
+      const performed = workedVals.length ? Math.max.apply(null, workedVals) : null;
+      const loggedW = sets.map(s=>s.weight===""||s.weight==null?null:+s.weight).filter(w=>w!=null&&w>0);
+      const usingWeight = loggedW.length>0;
+      const zoneMax = Math.min(zMax, ex.repCeil||zMax);
+      const drift = performed!=null && performed > zoneMax; // cruising past the zone top
+      if (!allHit){
         sug.push(mkSug(de.exId,"reps",target,target,"A set fell short of the "+target+" target this session — keep the same target and re-attempt."));
+      }
+      // Zone discipline for every session type. When reps drift past the session's
+      // target zone the answer is NOT more reps — it's load (if the exercise takes it)
+      // or a harder progression.
+      else if (drift && ex.weightAvailable){
+        // Prefer adding load to hold the session's training stimulus.
+        const baseW = usingWeight ? Math.max.apply(null, loggedW) : (plan.weight>0 ? plan.weight : 0);
+        const nextW = stepUpWeight(baseW, ex.weightStep);
+        const addAmt = nextW - baseW;
+        if (addAmt>0){
+          sug.push(mkSug(de.exId,"weight",baseW,nextW,"You did "+performed+" reps across "+n+" sets — past the top of the "+zMin+"-"+zMax+" "+zoneName+" zone. Add "+addAmt+" "+weightUnit()+" next time to keep the "+zoneName+" stimulus."));
+          // pull reps back inside the zone so it stays on-mission for this session type
+          const repTop = Math.min(zoneMax, Math.max(0, target-2));
+          if (repTop < target) sug.push(mkSug(de.exId,"reps",target,repTop,"Dial the rep target back to "+repTop+" as you add weight — keep reps inside the "+zMin+"-"+zMax+" "+zoneName+" zone."));
+        } else {
+          // could not step load (maxed) → fall back to a hold/note
+          sug.push(mkSug(de.exId,"reps",target,target,"You did "+performed+" reps — past the top of the "+zone.label+" zone ("+zMin+"-"+zMax+"). Load is at its max here; add load only when available or track it as conditioning."));
+        }
+      }
+      // Bodyweight / no-load movement drifting past the zone → recommend a harder
+      // progression (a more demanding variation of the same movement).
+      else if (drift){
+        const nextId = (ex.progressions||[])[0];
+        const nextEx = nextId ? getEx(nextId) : null;
+        if (nextEx){
+          sug.push({ exId:de.exId, field:"progression", from:de.exId, to:nextEx.id, fromName:ex.name, toName:nextEx.name, reason:"You did "+performed+" reps across "+n+" sets on "+ex.name+" — that drifts past the "+zMin+"-"+zMax+" "+zoneName+" zone toward endurance. Swap to "+nextEx.name+" (a harder progression) to keep the "+zoneName+" stimulus.", kept:null, method:"engine" });
+        } else {
+          sug.push(mkSug(de.exId,"reps",Math.min(target,zoneMax),Math.min(target,zoneMax),"You did "+performed+" reps on "+ex.name+", past the top of the "+zone.label+" zone ("+zMin+"-"+zMax+"). Add a harder progression (e.g. raised feet, lean, full-ROM) or switch to a more demanding variation to keep the "+zoneName+" stimulus."));
+        }
+      }
+      // In-zone: give a real, concrete progressive-overload bump wherever we can.
+      else {
+        let to = null, reason = "";
+        if (performed!=null && performed > target){
+          to = Math.min(performed + zone.bump, 25);
+          reason = "Progressive overload: you did "+performed+" reps vs the "+target+" target this session — try "+to+" next time.";
+        } else if (avgR_!=null && avgR_<=2){
+          to = Math.min(target + zone.bump, 25);
+          reason = "All sets hit "+target+" comfortably — raise the rep target to "+to+" to keep progressing.";
+        } else if (avgR_!=null && avgR_<=3){
+          to = target;
+          reason = "All sets hit "+target+" with moderate effort — consolidate here before raising again ("+zone.label+" zone "+zMin+"-"+zMax+").";
+        }
+        if (to!=null) sug.push(mkSug(de.exId,"reps",target,to,reason));
       }
     }
     else { // weight mode
@@ -1601,6 +1653,10 @@ function buildSession(day, entries, recovery){
 }
 
 function saveLogSession(){
+  // Guard against double-clicks on "Generate coach suggestions": each save must
+  // produce exactly one session + one coach record, even while the async AI
+  // enrichment is still in flight.
+  if (!logCtx || logCtx.saved) return;
   const day = getDay(logCtx.dayId);
   const { completedSets, recovery } = buildSession(day, logCtx.entries, logCtx.recovery);
   const session = {
@@ -1612,7 +1668,12 @@ function saveLogSession(){
   state.pending.push({ id:"pend-"+uid(), sessionId: session.id, generatedAt: nowISO(), suggestions:[] });
   saveState();
   logCtx.session = session;
+  logCtx.saved = true;
   logCtx.finished = true;
+  // Leave the logger immediately so the user sees a real "done" screen instead of
+  // waiting on (possibly slow / failing) AI enrichment that would otherwise leave
+  // the recovery form on screen, inviting duplicate clicks.
+  render();
   // now produce coach suggestions (rules + AI)
   produceCoach(session.id);
 }
@@ -1637,8 +1698,18 @@ async function produceCoach(sessionId){
   let final = base;
   try {
     const aiOut = await callGroq({ session, day, entries, base });
-    if (aiOut && Array.isArray(aiOut.changes) && aiOut.changes.length){ final = clampWithBounds(aiOut.changes, day, session.type); }
     if (aiOut && aiOut.summary) session.summary = aiOut.summary;
+    if (aiOut && Array.isArray(aiOut.changes) && aiOut.changes.length){
+      // Merge: start from the engine's structural decisions (load/harder-progression
+      // calls) and let the AI refine the reps/time/weight numbers it addresses. This
+      // keeps zone-discipline suggestions even when an API key is configured.
+      const aiClamped = clampWithBounds(aiOut.changes, day, session.type);
+      final = base.slice();
+      aiClamped.forEach(c => {
+        const i = final.findIndex(f => f.exId===c.exId && f.field===c.field);
+        if (i>=0) final[i] = c; else final.push(c);
+      });
+    }
   } catch(e){ console.warn("AI enrichment failed", e); }
   final.forEach(s=>{
     const ex = getEx(s.exId);
@@ -1842,13 +1913,43 @@ function renderCoach(){
 function recCard(sug, ex, open, pendId){
   const field = sug.field;
   const unit = weightUnit();
-  const fromTxt = shortRepr(field, sug.from);
-  const toTxt = shortRepr(field, sug.to);
   let status = '';
   let cardClass = '';
   if (sug.kept===true){ status='<span class="st-kept">✓ kept</span>'; cardClass=' keep'; }
   else if (sug.kept===false){ status='<span class="st-rejected">✗ rejected</span>'; cardClass=' reject'; }
   else status='<span class="st-pending">pending review</span>';
+  // Harder-progression swap: replace the exercise in the plan with a more demanding
+  // variation. Rendered as a distinct card carrying from→to exercise names.
+  if (field==="progression"){
+    const actions = (sug.kept===null && open)
+      ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="keep">Accept</button>'+
+        '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="reject">Reject</button></div>'
+      : '';
+    const fromN = esc(sug.fromName||(ex?ex.name:exId));
+    const toN = esc(sug.toName||sug.to);
+    return '<div class="rec-card'+cardClass+'">'+
+      '<div class="rec-head"><span class="ex-name">'+fromN+'</span>'+
+        '<span class="change-tag">harder progression</span><span class="arrow">→</span>'+
+        '<span class="ex-name">'+toN+'</span>'+
+        '<span class="rec-status" style="margin-left:auto">'+status+'</span></div>'+
+      (sug.reason?'<div class="rec-expl">'+esc(sug.reason)+'</div>':"")+
+      actions+'</div>';
+  }
+  const fromTxt = shortRepr(field, sug.from);
+  const toTxt = shortRepr(field, sug.to);
+  // A "hold" suggestion rewrites the field to the same value (from === to) — there is
+  // nothing to apply, so show it as an informational note instead of a confusing
+  // "8 reps → 8 reps" Accept/Reject card.
+  const noop = sug.from === sug.to && (field==="reps" || field==="time" || field==="weight");
+  if (noop){
+    const label = ex?esc(ex.name):"unknown";
+    return '<div class="rec-card">'+
+      '<div class="rec-head"><span class="ex-name">'+label+'</span>'+
+        '<span class="change-tag">hold</span>'+
+        '<span class="rec-status" style="margin-left:auto">no change</span></div>'+
+      '<div class="rec-expl">'+esc(sug.reason||"Hold the current plan — no change needed next session.")+'</div>'+
+    '</div>';
+  }
   const actions = (sug.kept===null && open)
     ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="keep">Accept</button>'+
       '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="reject">Reject</button></div>'
@@ -1872,27 +1973,40 @@ function recAct(ds, actVal){
   const sug = pend.suggestions.find(s=>s.exId===exId);
   if (!sug){ toast("Change not found"); return; }
   if (act==="keep"){
-    // apply to the day's exercise plan (only reps/time/weight, never sets)
+    // apply to the day's exercise plan (only reps/time/weight/swap, never sets)
     const session = state.sessions.find(x=>x.id===pend.sessionId);
     const day = session?getDay(session.dayId):null;
     if (day){
       const de = day.exercises.find(x=>x.exId===exId);
       if (de){
-        const delta = (sug.to!=null && sug.from!=null) ? (sug.to - sug.from) : null;
-        if (sug.field==="reps" && Array.isArray(de.setReps) && delta!==null){
-          de.setReps = de.setReps.map(v=>Math.max(0,(+v||0)+delta));
-          de.reps = Math.max(0,(de.reps||0)+delta);
-        } else if (sug.field==="time" && Array.isArray(de.setTimes) && delta!==null){
-          de.setTimes = de.setTimes.map(v=>Math.max(0,(+v||0)+delta));
-          de.time = Math.max(0,(de.time||0)+delta);
+        if (sug.field==="progression"){
+          // Swap to the harder variation and adopt its default plan.
+          const nextEx = getEx(sug.to);
+          de.exId = sug.to;
+          if (nextEx){
+            const reps = nextEx.defaultReps!=null ? nextEx.defaultReps : (nextEx.mode==="time" ? 0 : de.reps||nextEx.defaultReps||0);
+            const time = nextEx.defaultTime!=null ? nextEx.defaultTime : de.time||0;
+            const weight = nextEx.defaultWeight||de.weight||0;
+            de.reps = reps; de.time = time; de.weight = weight;
+          }
+          toast("Applied — swapped to "+(nextEx?nextEx.name:"harder progression")+".");
         } else {
-          de[sug.field] = sug.to;
+          const delta = (sug.to!=null && sug.from!=null) ? (sug.to - sug.from) : null;
+          if (sug.field==="reps" && Array.isArray(de.setReps) && delta!==null){
+            de.setReps = de.setReps.map(v=>Math.max(0,(+v||0)+delta));
+            de.reps = Math.max(0,(de.reps||0)+delta);
+          } else if (sug.field==="time" && Array.isArray(de.setTimes) && delta!==null){
+            de.setTimes = de.setTimes.map(v=>Math.max(0,(+v||0)+delta));
+            de.time = Math.max(0,(de.time||0)+delta);
+          } else {
+            de[sug.field] = sug.to;
+          }
+          toast("Applied — "+exId+" next session updated.");
         }
+        confettiSmall();
       }
     }
     sug.kept = true;
-    toast("Applied — "+exId+" next session updated.");
-    confettiSmall();
   } else {
     sug.kept = false;
     toast("Rejected — plan unchanged for that exercise.");

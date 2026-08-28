@@ -72,8 +72,12 @@ const check=(c,m)=>{ if(c){pass++;console.log("  ✓ "+m);}else{fail++;console.l
 
   console.log("== Confirm AI JSON was clamped + applied ==");
   const pend = G("state.pending")[G("state.pending.length")-1];
-  check(pend.suggestions && pend.suggestions.length===3, "clampWithBounds dropped the illegal 'sets' suggestion (kept "+ (pend.suggestions||[]).length +")");
+  // Merge semantics: AI refines entries it touches on top of the engine's structural
+  // suggestions. The illegal 'sets' change is dropped, and the engine's untouched
+  // Ring Row suggestion (ex-4) survives alongside the AI's three valid changes.
+  check(pend.suggestions && pend.suggestions.length===4, "engine+AI merged to 4 suggestions (kept "+ (pend.suggestions||[]).length +")");
   check(!pend.suggestions.some(s=>s.field==="sets"), "no 'sets' field survived AI clamp");
+  check(pend.suggestions.some(s=>s.exId==="ex-4" && s.field==="reps"), "engine suggestion for unaddressed ex-4 preserved");
   check(pend.suggestions.some(s=>s.field==="reps" && s.to===10), "AI reps suggestion (8->10) kept");
   check(pend.suggestions.some(s=>s.field==="time" && s.to===25), "AI time suggestion (20->25) kept");
   check(G("state.sessions")[G("state.sessions.length")-1].summary && G("state.sessions")[G("state.sessions.length")-1].summary.length>0, "session got AI summary");
