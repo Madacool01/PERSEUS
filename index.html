@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PERSEUS — Adaptive Strength Coach</title>
+<link rel="icon" type="image/png" href="icon/icon.png">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,11 +90,12 @@
   .brand { display: flex; align-items: center; gap: .75rem; margin-right: auto; }
   .brand .logo {
     width: 38px; height: 38px; border-radius: 12px;
-    background: linear-gradient(160deg, var(--accent), var(--accent-deep));
+    background: transparent;
     color: #fff; display: grid; place-items: center;
     box-shadow: 0 8px 20px -8px rgba(192,74,30,.55);
+    overflow: hidden;
   }
-  .brand .logo svg { width: 22px; height: 22px; }
+  .brand .logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
   .brand h1 { margin: 0; font-family: var(--font-display); font-size: 1.02rem; letter-spacing: .24em; color: var(--ink); }
   .brand small { display: block; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-3); margin-top: 2px; }
   nav.tabs {
@@ -559,11 +561,7 @@
   <div class="app-inner">
     <div class="brand">
       <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="16" r="14.4" stroke="currentColor" stroke-width="1.4" opacity=".45"/>
-          <path d="M9.5 22.5 16 8.5l6.5 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M12.6 17.8h6.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
+        <img src="icon/icon.png" alt="" width="38" height="38">
       </div>
       <div>
         <h1>PERSEUS</h1>
