@@ -584,6 +584,33 @@
   /* ---------- Session detail ---------- */
   .sess-detail.card { background: var(--paper); }
 
+  /* ---------- Sessions box header + close-all ---------- */
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .card-head h3 { margin: 0; }
+  button.btn.close-all {
+    font-family: var(--font-mono); font-size: .62rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    padding: .45rem .9rem; border-radius: 999px;
+    color: var(--ink-3); border-color: var(--line); background: var(--surface-2);
+    transition: color .2s, background .2s, border-color .2s, box-shadow .2s, transform .22s cubic-bezier(.34,1.56,.64,1);
+  }
+  button.btn.close-all svg { width: 13px; height: 13px; }
+  button.btn.close-all.active {
+    color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft);
+    box-shadow: 0 8px 18px -10px rgba(192,74,30,.55);
+  }
+  button.btn.close-all.active:hover {
+    color: #fff; background: var(--accent); border-color: var(--accent);
+    transform: translateY(-2px); box-shadow: 0 12px 24px -10px rgba(192,74,30,.6);
+  }
+  button.btn.sess-close {
+    font-size: .78rem; font-weight: 600; gap: .45rem;
+    padding: .55rem 1.05rem; border-radius: 999px;
+    color: var(--ink-2); border-color: var(--line); background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+  button.btn.sess-close svg { width: 13px; height: 13px; }
+  button.btn.sess-close:hover { color: var(--red); border-color: var(--red); background: var(--red-soft); box-shadow: var(--shadow-1); }
+
   /* ---------- Confetti ---------- */
   .confetti { position: fixed; font-size: 20px; pointer-events: none; z-index: 60; animation: floatUp 1.4s ease-out forwards; }
   @keyframes floatUp { to { transform: translateY(-120px); opacity: 0; } }
@@ -2224,6 +2251,25 @@ function recAct(ds, actVal){
 /* =========================================================================
    HISTORY & PROGRESSION TRENDS
    ========================================================================= */
+/* Smoothly collapse an open session detail (GSAP when available, else instant).
+   Falls back to instant removal for reduced motion / missing GSAP / any error,
+   per the FX motion-layer convention: nothing here may throw. */
+function collapseDetail(el, done, delay){
+  if(!el){ if(done) done(); return; }
+  if(!FX.ok || FX.reduced()){ el.remove(); if(done) done(); return; }
+  try{
+    const g = window.gsap;
+    el.style.overflow = "hidden";
+    g.to(el, {
+      height: 0, minHeight: 0, paddingTop: 0, paddingBottom: 0,
+      marginTop: 0, marginBottom: 0, borderTopWidth: 0, borderBottomWidth: 0,
+      opacity: 0, y: -10,
+      duration: .34, ease: "power2.inOut", overwrite: "auto", delay: delay || 0,
+      onComplete: ()=>{ el.remove(); if(done) done(); }
+    });
+  }catch(e){ el.remove(); if(done) done(); }
+}
+
 function renderHistory(){
   const s = $("#view-history");
   const sessions = state.sessions.slice().reverse();
@@ -2294,17 +2340,32 @@ function renderHistory(){
       '<div class="span-4 stat-card"><div><div class="stat-num">'+sessions.length+'</div><div class="stat-lbl">sessions logged</div></div></div>'+
       '<div class="span-4 stat-card"><div><div class="stat-num">'+pct+'<small>%</small></div><div class="stat-lbl">sets on target</div></div></div>'+
       '<div class="span-4 stat-card"><div><div class="stat-num">'+avgEff+'</div><div class="stat-lbl">avg effort · 1–5</div></div></div>'+
-      '<div class="span-5"><div class="card h100"><h3>Sessions</h3><div class="wo-list">'+sessRows+'</div></div></div>'+
+      '<div class="span-5"><div class="card h100"><div class="card-head"><h3>Sessions</h3><button class="btn close-all" data-close-all disabled title="Close all open sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18l-5-5-5 5"/><path d="M17 11l-5-5-5 5"/></svg><span>Close all</span></button></div><div class="wo-list">'+sessRows+'</div></div></div>'+
       '<div class="span-7"><div class="card h100"><h3>Per-exercise progression</h3>'+(progHtml||'<div class="muted small">Log sessions to see trends.</div>')+'</div></div>'+
     '</div>';
-  // session detail view inline
+  // session detail view inline (toggle per card) + close-all (animated collapse)
+  const updateCloseAll = ()=>{
+    const btn = $("[data-close-all]", s); if(!btn) return;
+    const n = $$(".sess-detail", s).length;
+    btn.disabled = n === 0;
+    btn.classList.toggle("active", n > 0);
+    const lbl = btn.querySelector("span"); if(lbl) lbl.textContent = n > 0 ? "Close all · "+n : "Close all";
+  };
+  const ca = $("[data-close-all]", s);
+  if(ca) ca.addEventListener("click", ()=>{
+    $$(".sess-detail", s).forEach((d,i)=>collapseDetail(d, updateCloseAll, i*0.045));
+  });
   $$("[data-sess]", s).forEach(el=>el.addEventListener("click", ()=>{
+    const open = el.nextElementSibling;
+    if(open && open.classList && open.classList.contains("sess-detail")){ collapseDetail(open, updateCloseAll); return; }
     const id = el.dataset.sess; const ses = state.sessions.find(x=>x.id===id); if(!ses) return;
     el.insertAdjacentHTML("afterend", sessionDetail(ses));
     const bin = el.nextElementSibling; if(bin.classList&&bin.classList.contains("sess-detail")){
-      bin.addEventListener("click", e=>{ if(e.target.closest("[data-close]")){ bin.remove(); } });
+      bin.addEventListener("click", e=>{ if(e.target.closest("[data-close]")){ collapseDetail(bin, updateCloseAll); } });
     }
+    updateCloseAll();
   }));
+  updateCloseAll();
 }
 
 function sessionDetail(ses){
@@ -2319,7 +2380,7 @@ function sessionDetail(ses){
   const rec = ses.recovery||{};
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
     '<div class="day-head"><b>'+esc(day?day.name:"Session")+'</b><span class="pill">'+sessionTypeLabel(ses.type)+'</span><span class="muted small">'+fmtDate(ses.dateISO)+'</span>'+
-      '<div class="spacer"></div><button class="btn small ghost" data-close>close ✕</button></div>'+
+      '<div class="spacer"></div><button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
     '<table class="striped"><tr><th>Exercise</th><th>Set</th><th>Done</th><th>Effort</th><th>Hit</th><th>Note</th></tr>'+rows+'</table>'+
     '<div class="small muted" style="margin-top:8px">Recovery '+(rec.recovery||'-')+' · sleep '+(rec.sleep||'-')+' · soreness '+(rec.soreness||'-')+(rec.pain?' · pain: "'+esc(rec.pain)+'"':'')+'</div>'+
     '<div class="small">'+(rec.note?esc(rec.note):'')+'</div>'+
