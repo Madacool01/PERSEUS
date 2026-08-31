@@ -220,10 +220,12 @@
     position: fixed; inset: 0; z-index: 55;
     display: grid; place-items: center; padding: 1.2rem;
     overscroll-behavior: contain;
-    text-transform: uppercase;
   }
-  /* helper note stays sentence-case for readability */
+  /* everything in the editor renders in sentence case (only the first letter capitalized), not all-caps */
   #ex-editor-host .micro { text-transform: none; }
+  #ex-editor-host label.field > span,
+  #ex-editor-host .field-head > span:first-child,
+  #ex-editor-host .mgroup-lbl { text-transform: none; }
   #ex-editor-host:empty { display: none; }
   #ex-editor-host:not(:empty) {
     background: rgba(34,29,21,.44);
@@ -267,6 +269,62 @@
   .ex-weightable-row input[type=checkbox] { width: 17px; height: 17px; flex: none; }
   .ex-weightable-row span { margin: 0 !important; text-transform: none; letter-spacing: 0; font-size: .9rem; font-weight: 600; color: var(--ink); }
   .set-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: .5rem; margin-top: .35rem; }
+
+  /* ---------- Exercise editor: type cards + muscle / body-part pickers ---------- */
+  .field-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin: 1.1rem 0 .45rem; padding-top: 1rem; border-top: 1px dashed var(--line); }
+  .field-head:first-of-type { border-top: none; margin-top: .2rem; padding-top: 0; }
+  .field-head > span:first-child { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .field-head .hint { font-size: .72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+  #ex-editor-host .field-head { text-transform: none; }
+  .ex-type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+  @media (max-width: 560px) { .ex-type-cards { grid-template-columns: 1fr; } }
+  .ex-type-card { border: 1px solid var(--line); background: var(--surface-2); border-radius: var(--r-md); padding: .7rem .8rem; cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .ex-type-card b { display: block; font-family: var(--font-display); font-size: .88rem; color: var(--ink); letter-spacing: .01em; }
+  .ex-type-card small { display: block; text-transform: none; letter-spacing: 0; color: var(--ink-3); font-size: .72rem; font-weight: 400; line-height: 1.35; margin-top: .25rem; }
+  .ex-type-card:hover { border-color: var(--accent-line); }
+  .ex-type-card.selected { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .ex-type-card.selected b { color: var(--accent); }
+  .eq-cards { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .eqpick, .bpchip, .mchip { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid var(--line); border-radius: var(--r-md); padding: .4rem .8rem; font-size: .83rem; font-weight: 500; cursor: pointer; background: var(--surface); transition: border-color .15s, background .15s; }
+  .bpchip, .mchip { border-radius: 999px; }
+  .eqpick { border-radius: 999px; }
+  .eqpick:hover, .bpchip:hover, .mchip:hover { border-color: var(--accent-line); }
+  .eqpick.on, .bpchip.on, .mchip.on { border-color: var(--accent); background: var(--accent-soft); }
+  .eqpick input, .bpchip input, .mchip input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .bodypart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .4rem; }
+  /* pop-up pickers: a summary rectangle opens a checklist overlay */
+  .ex-pick {
+    display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+    width: 100%; text-align: left; min-height: 2.7rem; padding: .55rem .8rem;
+    border: 1px dashed var(--line-2); border-radius: var(--r-md);
+    background: var(--surface-2); color: var(--ink); cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .ex-pick:hover { border-color: var(--accent-line); background: var(--surface); }
+  .ex-pick .tag {
+    display: inline-flex; align-items: center;
+    font-size: .78rem; font-weight: 500;
+    padding: .2rem .62rem; border-radius: 999px;
+    border: 1px solid var(--accent-line);
+    background: var(--accent-soft); color: var(--ink-2);
+  }
+  .ex-pick-hint { font-size: .85rem; color: var(--ink-3); }
+  .ex-pick-overlay {
+    position: fixed; inset: 0; z-index: 60;
+    display: grid; place-items: center; padding: 1.2rem;
+    background: rgba(34,21,14,.5);
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+    animation: modalBack .2s ease;
+  }
+  .ex-pick-card {
+    width: min(540px, 100%); max-height: 82vh; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    padding: 1.2rem 1.3rem; animation: modalIn .28s cubic-bezier(.22,1,.36,1);
+  }
+  .mgroups { display: flex; flex-direction: column; gap: .6rem; }
+  .mgroup { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .mgroup-lbl { width: 100%; font-size: .66rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .15rem; }
   .set-target { display: flex; flex-direction: column; gap: .3rem; }
   .set-target span { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .eq-select { width: auto; min-width: 175px; }
@@ -1018,6 +1076,37 @@ function equipmentTags(ex){
    EXERCISES LIBRARY
    ========================================================================= */
 const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell"];
+const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells" };
+const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
+const EX_TYPES = {
+  duration:   { label:"Duration",      desc:"Held & timed — plank, wall sit, hollow hold, L-sit." },
+  bodyweight: { label:"Bodyweight",    desc:"Rep-based calisthenics — push-up, pull-up, dip, squat." },
+  weight:     { label:"Weight & reps", desc:"Loaded lifts — dumbbell / barbell / machine (load + reps)." }
+};
+const BODY_PARTS = ["Chest","Back","Shoulders","Arms","Forearms","Core","Hips","Glutes","Thighs","Calves","Neck"];
+const MUSCLES = [
+  ["Chest","Pectoralis major"],
+  ["Shoulders","Anterior deltoid"],["Shoulders","Lateral deltoid"],["Shoulders","Posterior deltoid"],
+  ["Traps","Upper trapezius"],["Traps","Middle trapezius"],["Traps","Lower trapezius"],
+  ["Back","Teres major"],["Back","Teres minor"],["Back","Latissimus dorsi"],["Back","Erector spinae"],
+  ["Core","Rectus abdominis"],["Core","Obliques"],
+  ["Hips","Hip flexors"],
+  ["Legs","Glutes"],["Legs","Abductors"],["Legs","Hamstrings"],["Legs","Quadriceps"],
+  ["Arms","Biceps brachii"],["Arms","Triceps brachii"],["Arms","Brachialis"],
+  ["Forearms","Brachioradialis"],["Forearms","Wrist flexors"],["Forearms","Wrist extensors"],
+  ["Calves","Gastrocnemius (calf)"],["Calves","Soleus (calf)"]
+];
+/* Multi-select of specific muscles, grouped by region. */
+function musclePills(sel){
+  const s = new Set(sel||[]);
+  let html="", lastG=null;
+  MUSCLES.forEach(pair=>{
+    const g=pair[0], m=pair[1];
+    if (g!==lastG){ html+=(lastG?"</div>":"")+'<div class="mgroup"><div class="mgroup-lbl">'+esc(g)+"</div>"; lastG=g; }
+    html+='<label class="mchip'+(s.has(m)?" on":"")+'"><input type="checkbox" value="'+esc(m)+'"'+(s.has(m)?" checked":"")+" />"+esc(m)+"</label>";
+  });
+  return html+"</div>";
+}
 const LIB_EMPTY = '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></div>No exercises match. Adjust the filter or add one.</div>';
 function exerciseRow(e){
   const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");
@@ -1026,6 +1115,8 @@ function exerciseRow(e){
     '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
     '<div class="attr">defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
     (e.notes?'<div class="attr micro">'+"↳ "+esc(e.notes)+"</div>":"")+
+    ((e.bodyParts&&e.bodyParts.length)?'<div class="attr micro">body: <b>'+esc(e.bodyParts.join(", "))+"</b></div>":"")+
+    ((e.primaryMuscles&&e.primaryMuscles.length)?'<div class="attr micro">primary: <b>'+esc(e.primaryMuscles.join(", "))+"</b>"+((e.secondaryMuscles&&e.secondaryMuscles.length)?' · secondary: '+esc(e.secondaryMuscles.join(", ")):"")+"</div>":"")+
     '</div>';
 }
 function libraryMatches(){
@@ -1087,51 +1178,154 @@ function openExEditor(id){
     activeView.appendChild(host);
   }
   if (!host) host = document.body;
+  const isEdit = !!ex;
   const e = ex || { id:null, name:"", mode:"reps", equipment:["bodyweight"], weightAvailable:false,
-    defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"" };
-  // legacy "weight" mode maps to reps + the weighted option (kept for old data)
-  const mode = e.mode==="weight" ? "reps" : e.mode;
-  const eqTags = ALL_EQUIP.map(k=>'<label style="font-weight:400;display:inline-flex;gap:6px;margin-right:14px"><input type="checkbox" class="eqbox" value="'+k+'"'+(e.equipment.includes(k)?" checked":"")+'>'+k+"</label>").join("");
+    defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"", instructions:"", type:"bodyweight", bodyParts:[], primaryMuscles:[], secondaryMuscles:[] };
+  // Body-part / muscle selections are made in pop-up pickers; keep them here
+  // until the form is saved (or the editor is dismissed).
+  const pickSel = {
+    bodyParts: (e.bodyParts||[]).slice(),
+    primaryMuscles: (e.primaryMuscles||[]).slice(),
+    secondaryMuscles: (e.secondaryMuscles||[]).slice()
+  };
+  // Exercise type drives everything below. New exercises default to Bodyweight.
+  // Legacy data: "time" mode -> Duration, "bodyweight"/"weight" reps -> the rest of the type.
+  let curType = EX_TYPES.hasOwnProperty(e.type) ? e.type
+    : (e.mode==="time" ? "duration"
+       : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight"));
+  const eqTags = ALL_EQUIP.map(k=>{
+    const on = (e.equipment||[]).includes(k) ? " on" : "";
+    return '<label class="eqpick'+on+'"><input type="checkbox" class="eqbox" value="'+esc(k)+'"'+(on?" checked":"")+">"+esc(EQUIP_LABELS[k]||k)+"</label>";
+  }).join("");
+  const typeCards = EX_TYPE_ORDER.map(t=>{
+    const T = EX_TYPES[t];
+    return '<button type="button" class="ex-type-card'+(curType===t?" selected":"")+'" data-type="'+t+'">'+
+      "<b>"+T.label+"</b><small>"+T.desc+"</small></button>";
+  }).join("");
+  const showWeighted = curType!=="weight";
   host.innerHTML =
-    '<div class="card" role="dialog" aria-modal="true" aria-label="'+(ex?"Edit exercise":"New exercise")+'">'+
+    '<div class="card" role="dialog" aria-modal="true" aria-label="'+(isEdit?"Edit exercise":"New exercise")+'">'+
       '<div class="day-head" style="border:none;padding:0;margin:0 0 1.1rem">'+
-        '<h3 style="margin:0">'+(ex?"Edit exercise":"New exercise")+"</h3>"+
+        '<h3 style="margin:0">'+(isEdit?"Edit exercise":"New exercise")+"</h3>"+
         '<div class="spacer"></div>'+
         '<button class="btn ghost small" id="ex-close" aria-label="Close">✕</button>'+
       '</div>'+
-      '<div class="grid two">'+
-        '<label class="field"><span>Name</span><input id="ex-name" type="text" value="'+esc(e.name)+'"/></label>'+
-        '<label class="field"><span>Progression mode</span><select id="ex-mode">'+
-          '<option value="reps"'+(mode==="reps"?" selected":"")+'>reps</option>'+
-          '<option value="time"'+(mode==="time"?" selected":"")+'>timer (hold / duration)</option>'+
-        '</select></label>'+
-        '<label class="field"><span>Equipment</span><div>'+eqTags+'</div></label>'+
-        '<div></div>'+
-      '</div>'+
-      '<label class="field ex-weightable-row">'+
-        '<input type="checkbox" id="ex-weightable"'+(e.weightAvailable?" checked":"")+'/>'+
+      '<label class="field"><span>Exercise name</span><input id="ex-name" type="text" value="'+esc(e.name)+'" placeholder="e.g. Weighted Plank"/></label>'+
+
+      '<div class="field-head"><span>Instructions</span><span class="hint">optional — shown when you expand the exercise</span></div>'+
+      '<label class="field" style="margin-top:.4rem"><textarea id="ex-instructions" rows="3" placeholder="How to do this exercise properly…">'+esc(e.instructions||"")+'</textarea></label>'+
+
+      '<div class="field-head"><span>Details</span><span class="hint">how the movement is measured</span></div>'+
+      '<div class="ex-type-cards" id="ex-type-cards">'+typeCards+'</div>'+
+      '<p id="ex-type-note" class="micro" style="margin:.55rem 0 .9rem">'+esc(EX_TYPES[curType].desc)+'</p>'+
+      '<label class="ex-weightable-row" id="ex-weightable-row" style="display:'+(showWeighted?"flex":"none")+'">'+
+        '<input type="checkbox" id="ex-weightable"'+(e.weightAvailable&&showWeighted?" checked":"")+'/>'+
         '<span>Weighted — this exercise can add load later</span>'+
       '</label>'+
-      '<p class="micro" style="margin:-.3rem 0 1rem">Weight is separate from mode: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily. Target sets and reps are set when you add this exercise to a workout day.</p>'+
-      '<label class="field"><span>Notes (optional)</span><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'"/></label>'+
+      '<p class="micro" id="ex-weight-note" style="margin:-.1rem 0 1rem">Weight is handled separately from the exercise type: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily.</p>'+
+
+      '<div class="field-head"><span>Equipment</span></div>'+
+      '<div class="eq-cards">'+eqTags+'</div>'+
+
+      '<div class="field-head"><span>Body parts</span><span class="hint">all areas involved</span></div>'+
+      '<button type="button" class="ex-pick" data-pick="bodyParts" aria-haspopup="dialog">'+pickTags("bodyParts")+'</button>'+
+
+      '<div class="field-head"><span>Primary muscles</span><span class="hint">the main movers</span></div>'+
+      '<button type="button" class="ex-pick" data-pick="primaryMuscles" aria-haspopup="dialog">'+pickTags("primaryMuscles")+'</button>'+
+
+      '<div class="field-head"><span>Secondary muscles</span><span class="hint">used, but not the main movers — e.g. forearms in pull-ups</span></div>'+
+      '<button type="button" class="ex-pick" data-pick="secondaryMuscles" aria-haspopup="dialog">'+pickTags("secondaryMuscles")+'</button>'+
+
+      '<div class="field-head"><span>Notes</span></div>'+
+      '<label class="field" style="margin-top:.4rem"><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'" placeholder="optional — any extra context"/></label>'+
       '<label class="field"><span>Harder progressions (optional — ordered easiest → hardest)</span>'+
         '<select id="ex-progressions" multiple size="4">'+
           state.exercises.filter(x=>x.id!==e.id).map(x=>'<option value="'+x.id+'"'+(Array.isArray(e.progressions)&&e.progressions.includes(x.id)?" selected":"")+'>'+esc(x.name)+'</option>').join("")+
         '</select>'+
         '<div class="micro">When a bodyweight exercise drifts past the session rep zone, the coach can suggest stepping up to the next variation you list here (e.g. Push-Up → Archer Push-Up).</div></label>'+
       '<div class="btn-row">'+
-        '<button class="btn primary" id="ex-save">'+(ex?"Save changes":"Add exercise")+"</button>"+
+        '<button class="btn primary" id="ex-save">'+(isEdit?"Save changes":"Add exercise")+"</button>"+
         '<button class="btn" id="ex-cancel">Cancel</button>'+
-        (ex?'<button class="btn danger" id="ex-delete">Delete</button>':"")+
+        (isEdit?'<button class="btn danger" id="ex-delete">Delete</button>':"")+
       '</div>'+
     '</div>';
   const eqs = ()=>$$(".eqbox", host).filter(c=>c.checked).map(c=>c.value);
+  // live selection highlighting for chip-style pickers
+  $$("input[type=checkbox]", host).forEach(cb=>{
+    cb.addEventListener("change", ()=>{ const l=cb.closest("label"); if (l) l.classList.toggle("on", cb.checked); });
+  });
+  // exercise-type picker: swapping type updates cards, the hint and the weighted toggle
+  function pickType(t){
+    curType = t;
+    $$(".ex-type-card", host).forEach(c=>c.classList.toggle("selected", c.dataset.type===t));
+    const note = $("#ex-type-note", host);
+    if (note) note.textContent = EX_TYPES[t].desc;
+    const wr = $("#ex-weightable-row", host);
+    if (wr) wr.style.display = (t==="weight") ? "none" : "flex";
+  }
+  $$(".ex-type-card", host).forEach(c=>c.addEventListener("click", ()=>pickType(c.dataset.type)));
+  /* ---- pop-up pickers for body parts / primary & secondary muscles ---- */
+  function pickerTitle(w){ return w==="bodyParts" ? "Body parts" : w==="primaryMuscles" ? "Primary muscles" : "Secondary muscles"; }
+  function pickTags(w){
+    const list = pickSel[w];
+    return list.length
+      ? list.map(v=>'<span class="tag">'+esc(v)+"</span>").join("")
+      : '<span class="ex-pick-hint">None selected — click to choose</span>';
+  }
+  function pickerBody(w){
+    if (w==="bodyParts"){
+      const s = new Set(pickSel.bodyParts);
+      return '<div class="bodypart-grid">'+BODY_PARTS.map(b=>
+        '<label class="bpchip'+(s.has(b)?" on":"")+'"><input type="checkbox" class="bpbox" value="'+esc(b)+'"'+(s.has(b)?" checked":"")+">"+esc(b)+"</label>"
+      ).join("")+'</div>';
+    }
+    return musclePills(pickSel[w]);
+  }
+  function collectPicker(ov){ return $$("input[type=checkbox]:checked", ov).map(c=>c.value); }
+  function closePicker(){
+    const ov = $(".ex-pick-overlay", host);
+    if (ov) ov.remove();
+  }
+  function updatePicks(){ $$(".ex-pick", host).forEach(b=>{ b.innerHTML = pickTags(b.dataset.pick); }); }
+  function openPicker(w){
+    closePicker();
+    const ov = document.createElement("div");
+    ov.className = "ex-pick-overlay";
+    ov.setAttribute("role","dialog");
+    ov.setAttribute("aria-modal","true");
+    ov.setAttribute("aria-label", pickerTitle(w));
+    ov.innerHTML =
+      '<div class="ex-pick-card">'+
+        '<div class="day-head" style="border:none;padding:0;margin:0 0 .9rem">'+
+          '<h3 style="margin:0">'+pickerTitle(w)+'</h3>'+
+          '<div class="spacer"></div>'+
+          '<button type="button" class="btn ghost small ex-pick-x" aria-label="Close">✕</button>'+
+        '</div>'+
+        pickerBody(w)+
+        '<div class="btn-row" style="margin-top:1.1rem">'+
+          '<button type="button" class="btn primary ex-pick-ok">OK</button>'+
+          '<button type="button" class="btn ex-pick-cancel">Cancel</button>'+
+        '</div>'+
+      '</div>';
+    host.appendChild(ov);
+    $$("input[type=checkbox]", ov).forEach(cb=>cb.addEventListener("change", ()=>{
+      const l = cb.closest("label"); if (l) l.classList.toggle("on", cb.checked);
+    }));
+    $(".ex-pick-ok", ov).addEventListener("click", ()=>{ pickSel[w] = collectPicker(ov); closePicker(); updatePicks(); });
+    $(".ex-pick-cancel", ov).addEventListener("click", closePicker);
+    $(".ex-pick-x", ov).addEventListener("click", closePicker);
+    ov.addEventListener("click", ev=>{ if (ev.target===ov) closePicker(); });
+    const first = $("input[type=checkbox]", ov);
+    if (first && first.focus) first.focus();
+  }
+  $$(".ex-pick", host).forEach(b=>b.addEventListener("click", ()=>openPicker(b.dataset.pick)));
   function dismiss(){
     document.removeEventListener("keydown", onKey);
     render();
   }
   function onKey(ev){
     if (ev.key!=="Escape") return;
+    if ($(".ex-pick-overlay", host)){ closePicker(); return; }
     const h = document.querySelector("#ex-editor-host");
     if (h && h.innerHTML.trim().length) dismiss();
   }
@@ -1150,17 +1344,21 @@ function openExEditor(id){
   $("#ex-save", host).addEventListener("click", ()=>{
     const name = $("#ex-name", host).value.trim();
     if (!name){ toast("Name is required"); return; }
-    const m = $("#ex-mode", host).value;
     const data = {
       name: name,
-      mode: m,
+      type: curType,
+      mode: curType==="duration" ? "time" : "reps",
       equipment: eqs().length ? eqs() : ["bodyweight"],
-      weightAvailable: $("#ex-weightable", host).checked,
+      weightAvailable: curType==="weight" ? true : $("#ex-weightable", host).checked,
       defaultSets: ex ? (ex.defaultSets||3) : 3,
-      defaultReps: ex ? (ex.defaultReps||0) : (m==="time" ? 0 : 8),
+      defaultReps: ex ? (ex.defaultReps||0) : (curType==="duration" ? 0 : 8),
       defaultTime: ex ? (ex.defaultTime||30) : 30,
       defaultWeight: ex ? (ex.defaultWeight||0) : 0,
       notes: $("#ex-notes", host).value.trim(),
+      instructions: $("#ex-instructions", host).value.trim(),
+      bodyParts: pickSel.bodyParts.slice(),
+      primaryMuscles: pickSel.primaryMuscles.slice(),
+      secondaryMuscles: pickSel.secondaryMuscles.slice(),
     };
     const progSel = $("#ex-progressions", host);
     const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
@@ -1176,7 +1374,7 @@ function openExEditor(id){
       resolveProgressions(state.exercises);
     }
     document.removeEventListener("keydown", onKey);
-    saveState(); render(); toast(ex?"Exercise updated":"Exercise added");
+    saveState(); render(); toast(isEdit?"Exercise updated":"Exercise added");
   });
 }
 
