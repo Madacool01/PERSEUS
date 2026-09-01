@@ -513,7 +513,7 @@
     font-size: clamp(2rem, 4vw, 3.1rem) !important; letter-spacing: -.022em !important;
     width: 100% !important; padding: .25rem .35rem !important; text-align: center;
     background: transparent !important; border: 1px solid transparent !important;
-    border-radius: var(--r-md); color: var(--on-dark);
+    border-radius: var(--r-md); color: var(--on-dark) !important;
   }
   .editor-name:hover { border-color: var(--dark-line) !important; background: rgba(247,241,227,.07) !important; }
   .editor-name:focus { border-color: rgba(217,95,43,.7) !important; box-shadow: 0 0 0 3px rgba(217,95,43,.22) !important; outline: none; }
@@ -1761,8 +1761,10 @@ function openAddEx(dayId, exId){
 function renderLog(){
   const s = $("#view-log");
   if (!logCtx){ renderLogPicker(s); return; }
-  if (logCtx.recoveryScreen){ renderRecovery(s); return; }
+  // A saved session always wins: once "Generate coach suggestions" is pressed the
+  // flow must leave the recovery form immediately, even if recoveryScreen is stale.
   if (logCtx.finished){ renderLogDone(s); return; }
+  if (logCtx.recoveryScreen){ renderRecovery(s); return; }
   renderLogStep(s);
 }
 
@@ -2196,6 +2198,7 @@ function saveLogSession(){
   logCtx.session = session;
   logCtx.saved = true;
   logCtx.finished = true;
+  logCtx.recoveryScreen = false;
   // Leave the logger immediately so the user sees a real "done" screen instead of
   // waiting on (possibly slow / failing) AI enrichment that would otherwise leave
   // the recovery form on screen, inviting duplicate clicks.
@@ -2288,8 +2291,7 @@ function templateReason(s, ex){
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">Session <em class="serif-i">logged</em></h2>' +
         '<p class="view-sub">Your performance is recorded and the coach has prepared suggestions for next session. Review them in the Coach feed.</p>' +
-        '<div class="hero-cta">' +
-          '<button class="btn btn-xl primary" id="log-finish">Finish logging</button>' +
+        '<div class="hero-cta">' +            '<button class="btn btn-xl primary" id="log-finish">Finish workout</button>' +
           '<button class="btn btn-xl ghost-dark" data-goto="coach">Review coach suggestions <span class="btn-arrow">→</span></button>' +
           '<button class="btn ghost-dark" data-goto="workouts">Back to workouts</button>' +
         '</div>' +
