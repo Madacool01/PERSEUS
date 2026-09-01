@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PERSEUS — Adaptive Strength Coach</title>
+<title>PERSEUS · Adaptive Strength Coach</title>
 <link rel="icon" type="image/png" href="icon/icon.png">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================================
-     PERSEUS design system v2 — editorial ink, ember, sharp rules
+     PERSEUS design system v2: editorial ink, ember, sharp rules
      ============================================================ */
   :root {
     --paper: #ece5d2;
@@ -824,7 +824,7 @@
   <footer class="foot">
     <div class="foot-inner">
       <span class="foot-mark" aria-hidden="true">PS</span>
-      <span>Adaptive strength coach — your data never leaves this browser</span>
+      <span>Adaptive strength coach · your data never leaves this browser</span>
     </div>
   </footer>
 </main>
@@ -909,10 +909,10 @@ function resolveProgressions(exercises){
    strength 1-6 @ >=80% 1RM, hypertrophy 6-12 (6-15 tolerable) @ 60-80% 1RM,
    endurance 15+ @ <60% 1RM, hybrid a blend of the strength + hypertrophy zones. */
 const SESSION_TYPES = {
-  hypertrophy: { label:"Hypertrophy", zone:[6,12],  bump:2, desc:"6-12 reps at moderate load (60-80% 1RM), 1-3 reps in reserve. The most time-efficient growth zone — when reps drift past 12, add load or a harder variation." },
-  strength:    { label:"Strength",    zone:[3,6],   bump:1, desc:"1-6 reps per set at heavy load (≥80% 1RM), long rests. Maximal strength through neural drive — progress with weight or harder progressions, not endless reps." },
-  hybrid:      { label:"Hybrid",      zone:[4,10],  bump:2, desc:"4-10 reps — blends strength and hypertrophy blocks: heavier low-rep work with moderate higher-rep sets." },
-  endurance:   { label:"Endurance",   zone:[15,25], bump:2, desc:"15+ reps at light load with short rests. Muscular endurance — progress by adding reps or shortening rest, load matters less." },
+  hypertrophy: { label:"Hypertrophy", zone:[6,12],  bump:2, desc:"6-12 reps at moderate load (60-80% 1RM), 1-3 reps in reserve. The most time-efficient growth zone. When reps drift past 12, add load or a harder variation." },
+  strength:    { label:"Strength",    zone:[3,6],   bump:1, desc:"1-6 reps per set at heavy load (≥80% 1RM), long rests. Maximal strength through neural drive. Progress with weight or harder progressions, not endless reps." },
+  hybrid:      { label:"Hybrid",      zone:[4,10],  bump:2, desc:"4-10 reps, blending strength and hypertrophy blocks. Heavier low-rep work with moderate higher-rep sets." },
+  endurance:   { label:"Endurance",   zone:[15,25], bump:2, desc:"15+ reps at light load with short rests. Muscular endurance. Progress by adding reps or shortening rest; load matters less." },
 };
 function sessionTypeLabel(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).label; }
 function sessionZone(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).zone; }
@@ -928,9 +928,9 @@ function exerciseZone(de, type){
    sets, warm-ups). 'regular' is the default and never needs to be stored. */
 const SET_TYPES = {
   regular: { label:"Regular",  tag:"SET",   desc:"Standard working set to the target." },
-  warmup:  { label:"Warm-up",  tag:"WARM",  desc:"Light prep set — never counted toward progression." },
+  warmup:  { label:"Warm-up",  tag:"WARM",  desc:"Light prep set, never counted toward progression." },
   drop:    { label:"Drop set", tag:"DROP",  desc:"Take the set to failure, drop the load, keep going." },
-  failure: { label:"Failure",  tag:"FAIL",  desc:"AMRAP — go to complete muscular failure; no fixed rep target." },
+  failure: { label:"Failure",  tag:"FAIL",  desc:"AMRAP. Go to complete muscular failure; no fixed rep target." },
 };
 function setTypeOf(de, i){ return (de && de.setTypes && de.setTypes[i]) || "regular"; }
 /* compact ladder display: "8 / 8·DROP / 6·FAIL reps" */
@@ -1083,7 +1083,7 @@ function setTarget(de, field, i){
 /* plan text for a set in the logger, aware of set type */
 function setPlanTxt(de, ex, i){
   const st = setTypeOf(de, i);
-  if (st==="failure") return ex.mode==="time" ? "hold to failure" : "AMRAP — to failure";
+  if (st==="failure") return ex.mode==="time" ? "hold to failure" : "AMRAP to failure";
   if (st==="warmup") return "light warm-up";
   const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
     : (de.weight? (setTarget(de,"reps",i)+'×'+fmtWeight(de.weight)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
@@ -1093,11 +1093,11 @@ function setPlanTxt(de, ex, i){
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
 function shortRepr(field, value){
-  if (field==="reps") return value==null ? "—" : value+" reps";
-  if (field==="time") return value==null ? "—" : value+"s";
+  if (field==="reps") return value==null ? "-" : value+" reps";
+  if (field==="time") return value==null ? "-" : value+"s";
   if (field==="weight") return value==null ? "0" : fmtWeight(value)+" "+weightUnit();
   if (field==="sets") return value+" sets";
-  if (field==="repRange") return (value.min==null?"–":value.min)+"–"+(value.max==null?"–":value.max)+" reps";
+  if (field==="repRange") return (value.min==null?"-":value.min)+"-"+(value.max==null?"-":value.max)+" reps";
   return String(value);
 }
 function toast(msg){
@@ -1162,9 +1162,9 @@ const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell"];
 const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells" };
 const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
 const EX_TYPES = {
-  duration:   { label:"Duration",      desc:"Held & timed — plank, wall sit, hollow hold, L-sit." },
-  bodyweight: { label:"Bodyweight",    desc:"Rep-based calisthenics — push-up, pull-up, dip, squat." },
-  weight:     { label:"Weight & reps", desc:"Loaded lifts — dumbbell / barbell / machine (load + reps)." }
+  duration:   { label:"Duration",      desc:"Held and timed. Plank, wall sit, hollow hold, L-sit." },
+  bodyweight: { label:"Bodyweight",    desc:"Rep-based calisthenics. Push-up, pull-up, dip, squat." },
+  weight:     { label:"Weight & reps", desc:"Loaded lifts with dumbbells, barbells, or machines (load + reps)." }
 };
 const BODY_PARTS = ["Chest","Back","Shoulders","Arms","Forearms","Core","Hips","Glutes","Thighs","Calves","Neck"];
 const MUSCLES = [
@@ -1231,7 +1231,7 @@ function renderLibrary(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-library/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">The movement <span class="img-chip"><span style="background-image:url(https://picsum.photos/seed/perseus-rings/220/84)"></span></span><em class="serif-i">library</em></h2>' +
-        '<p class="view-sub fx-scrub">Calisthenics, rings and bar work — pre-curated with progression modes. Search, filter by gear, or add your own.</p>' +
+        '<p class="view-sub fx-scrub">Calisthenics, rings and bar work, pre-curated with progression modes. Search, filter by gear, or add your own.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
@@ -1297,7 +1297,7 @@ function openExEditor(id){
       '</div>'+
       '<label class="field"><span>Exercise name</span><input id="ex-name" type="text" value="'+esc(e.name)+'" placeholder="e.g. Weighted Plank"/></label>'+
 
-      '<div class="field-head"><span>Instructions</span><span class="hint">optional — shown when you expand the exercise</span></div>'+
+      '<div class="field-head"><span>Instructions</span><span class="hint">optional, shown when you expand the exercise</span></div>'+
       '<label class="field" style="margin-top:.4rem"><textarea id="ex-instructions" rows="3" placeholder="How to do this exercise properly…">'+esc(e.instructions||"")+'</textarea></label>'+
 
       '<div class="field-head"><span>Details</span><span class="hint">how the movement is measured</span></div>'+
@@ -1305,7 +1305,7 @@ function openExEditor(id){
       '<p id="ex-type-note" class="micro" style="margin:.55rem 0 .9rem">'+esc(EX_TYPES[curType].desc)+'</p>'+
       '<label class="ex-weightable-row" id="ex-weightable-row" style="display:'+(showWeighted?"flex":"none")+'">'+
         '<input type="checkbox" id="ex-weightable"'+(e.weightAvailable&&showWeighted?" checked":"")+'/>'+
-        '<span>Weighted — this exercise can add load later</span>'+
+        '<span>Weighted: this exercise can add load later</span>'+
       '</label>'+
       '<p class="micro" id="ex-weight-note" style="margin:-.1rem 0 1rem">Weight is handled separately from the exercise type: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily.</p>'+
 
@@ -1318,12 +1318,12 @@ function openExEditor(id){
       '<div class="field-head"><span>Primary muscles</span><span class="hint">the main movers</span></div>'+
       '<button type="button" class="ex-pick" data-pick="primaryMuscles" aria-haspopup="dialog">'+pickTags("primaryMuscles")+'</button>'+
 
-      '<div class="field-head"><span>Secondary muscles</span><span class="hint">used, but not the main movers — e.g. forearms in pull-ups</span></div>'+
+      '<div class="field-head"><span>Secondary muscles</span><span class="hint">used, but not the main movers, e.g. forearms in pull-ups</span></div>'+
       '<button type="button" class="ex-pick" data-pick="secondaryMuscles" aria-haspopup="dialog">'+pickTags("secondaryMuscles")+'</button>'+
 
       '<div class="field-head"><span>Notes</span></div>'+
-      '<label class="field" style="margin-top:.4rem"><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'" placeholder="optional — any extra context"/></label>'+
-      '<label class="field"><span>Harder progressions (optional — ordered easiest → hardest)</span>'+
+      '<label class="field" style="margin-top:.4rem"><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'" placeholder="optional, any extra context"/></label>'+
+      '<label class="field"><span>Harder progressions (optional, ordered easiest to hardest)</span>'+
         '<select id="ex-progressions" multiple size="4">'+
           state.exercises.filter(x=>x.id!==e.id).map(x=>'<option value="'+x.id+'"'+(Array.isArray(e.progressions)&&e.progressions.includes(x.id)?" selected":"")+'>'+esc(x.name)+'</option>').join("")+
         '</select>'+
@@ -1355,7 +1355,7 @@ function openExEditor(id){
     const list = pickSel[w];
     return list.length
       ? list.map(v=>'<span class="tag">'+esc(v)+"</span>").join("")
-      : '<span class="ex-pick-hint">None selected — click to choose</span>';
+      : '<span class="ex-pick-hint">None selected. Click to choose</span>';
   }
   function pickerBody(w){
     if (w==="bodyParts"){
@@ -1533,7 +1533,7 @@ function renderRoutineList(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-forest/1920/1080),url(img/dense-forest-light.png)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">Shape the week<span class="serif-i">,</span> then <span class="img-chip"><span style="background-image:url(https://picsum.photos/seed/perseus-flower/220/84),url(img/single-flower-macro-light.png)"></span></span><em class="serif-i">let the coach</em> push it forward.</h2>' +
-        '<p class="view-sub fx-scrub">Your routines, stored here. Open one to plan it — sets never change, the coach only tunes reps, hold time, or weight.</p>' +
+        '<p class="view-sub fx-scrub">Your routines live here. Open one to plan it. Sets never change; the coach only tunes reps, hold time, or weight.</p>' +
         '<div class="hero-cta">' +
           '<button class="btn btn-xl primary" id="add-day"><span>+ New routine</span><span class="btn-arrow">→</span></button>' +
           '<button class="btn btn-xl ghost-dark" data-goto="log">Log today’s session <span class="btn-arrow">→</span></button>' +
@@ -1598,7 +1598,7 @@ function renderWorkoutEditor(){
           '<button class="btn small danger-dark" id="plan-del-day">Delete routine</button>' +
         '</div>' +
         '<input type="text" data-dayname="'+d.id+'" value="'+esc(d.name)+'" class="editor-name" aria-label="Routine name"/>' +
-        '<p class="view-sub">Set the target for every set — the coach only tunes reps, hold time, or weight, never set count.</p>' +
+        '<p class="view-sub">Set the target for every set. The coach only tunes reps, hold time, or weight, never set count.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap"><div class="card day-card editor-day">' +
@@ -1609,7 +1609,7 @@ function renderWorkoutEditor(){
         '<button class="btn primary" data-add-ex="'+d.id+'">+ Add exercise</button>'+
       '</div>'+
       '<div class="day-head" style="border:none;margin:.2rem 0 1rem;padding:0">'+
-        '<label class="field" style="margin:0"><span>Session type — sets the rep range every exercise is judged against</span>'+
+        '<label class="field" style="margin:0"><span>Session type: sets the rep range every exercise is judged against</span>'+
           '<div class="seg">'+Object.keys(SESSION_TYPES).map(t=>'<button type="button" class="seg-btn'+(dayType===t?' active':'')+'" data-day-type="'+t+'">'+SESSION_TYPES[t].label+'</button>').join("")+'</div>'+
           '<div class="micro" id="day-type-desc" style="margin-top:.5rem">'+esc(SESSION_TYPES[dayType].desc)+'</div>'+
         '</label>'+
@@ -1658,10 +1658,10 @@ function openAddEx(dayId, exId){
         '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>'+
       '</div>'+
       (day.type==="hybrid"
-        ? '<label class="field"><span>Focus — hypertrophy or strength</span><select id="add-ex-focus">'+
-            '<option value="hypertrophy">Hypertrophy — 6–12 reps</option>'+
-            '<option value="strength">Strength — 3–6 reps</option>'+
-          '</select><div class="micro">This hybrid day blends both goals — pick which rep zone this exercise is judged against.</div></label>'
+        ? '<label class="field"><span>Focus: hypertrophy or strength</span><select id="add-ex-focus">'+
+            '<option value="hypertrophy">Hypertrophy: 6-12 reps</option>'+
+            '<option value="strength">Strength: 3-6 reps</option>'+
+          '</select><div class="micro">This hybrid day blends both goals. Pick which rep zone this exercise is judged against.</div></label>'
         : '')+
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
@@ -1686,7 +1686,7 @@ function openAddEx(dayId, exId){
     const isTime = ex.mode==="time";
     const fallback = isTime ? (ex.defaultTime||30) : (ex.defaultReps||8);
     const typeOpts = Object.keys(SET_TYPES).map(t=>'<option value="'+t+'">'+SET_TYPES[t].label+'</option>').join("");
-    let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' & set type — per set</span><div class="set-targets">';
+    let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' and set type, per set</span><div class="set-targets">';
     for (let i=0;i<n;i++){
       const v = (prevVals && prevVals[i]!=null && prevVals[i]!=="") ? prevVals[i] : fallback;
       const t = (prevTypes && prevTypes[i]) || "regular";
@@ -1769,7 +1769,7 @@ function renderLog(){
 }
 
 function renderLogPicker(s){
-  // the session type lives on each routine — the picker just lists the days
+  // the session type lives on each routine; the picker just lists the days
   const dayCards = state.days.map(d => {
     const dt = d.type || "hypertrophy";
     return '<div class="wo-card" data-start="'+d.id+'">'+
@@ -1781,7 +1781,7 @@ function renderLogPicker(s){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-log/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">Log the <span class="img-chip"><span style="background-image:url(https://picsum.photos/seed/perseus-grip/220/84)"></span></span><em class="serif-i">session</em></h2>' +
-        '<p class="view-sub fx-scrub">Pick the day you trained. Each routine already knows its training type — the coach judges every set against it.</p>' +
+        '<p class="view-sub fx-scrub">Pick the day you trained. Each routine already knows its training type, and the coach judges every set against it.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
@@ -1830,7 +1830,7 @@ function renderLogStep(s){
     const rated = set.rating>0;
     const v = rated ? set.rating : 1;
     const pct = ((v-1)/4)*100;
-    const txt = rated ? set.rating.toFixed(1) : "—";
+    const txt = rated ? set.rating.toFixed(1) : "-";
     return '<div class="effort'+(rated?' rated':'')+'" data-effort="'+i+'">'+
       '<div class="effort-head"><span class="effort-label">Effort</span>'+
         '<span class="effort-val'+(rated?' rated':'')+'">'+txt+'</span></div>'+
@@ -1839,7 +1839,7 @@ function renderLogStep(s){
         '<span class="effort-bubble" style="left:'+Math.max(4,Math.min(96,pct))+'%">'+txt+'</span>'+
       '</div>'+
       '<div class="effort-scale"><span>Very easy</span><span>Near failure</span></div>'+
-      '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort — half-point steps")+'</div>'+
+      '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort in half-point steps")+'</div>'+
       '<button type="button" class="effort-clear" data-i="'+i+'">clear</button>'+
     '</div>';
   };
@@ -1862,7 +1862,7 @@ function renderLogStep(s){
     '<div class="wrap"><div class="phase active">' +
       '<div class="log-head">' +
         '<div class="big-title">'+esc(ex.name)+'</div>' +
-        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'–'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
+        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
       '<div class="log-step">' +
@@ -1938,7 +1938,7 @@ function renderRecovery(s){
         '<label class="field"><span>Energy / motivation</span><select data-recv="energy"><option value=3 selected>Normal</option><option value=4>High</option><option value=5>Pumped</option><option value=2>Low</option><option value=1>Exhausted</option></select></label>'+
         '<label class="field"><span>Soreness</span><select data-recv="soreness"><option value=0 selected>None / normal</option><option value=1>Mild</option><option value=2>Notable</option><option value=3>Heavy</option></select></label>'+
       '</div>'+
-      '<label class="field"><span>Pain or discomfort?</span><input type="text" data-recv="pain" placeholder="e.g. left shoulder on dips — leave blank if none"/>'+
+      '<label class="field"><span>Pain or discomfort?</span><input type="text" data-recv="pain" placeholder="e.g. left shoulder on dips. Leave blank if none"/>'+
         '<div class="micro">Pain is handled conservatively: the coach will hold or reduce load and note it, not push through.</div></label>'+
       '<label class="field"><span>Session note (optional)</span><textarea data-recv="note" placeholder="How did it go overall? Anything you noticed?"></textarea></label>'+      '<div class="btn-row">' +
         '<button class="btn" id="rec-back">‹ Back to exercises</button>' +
@@ -1996,13 +1996,13 @@ function computeSuggestions(day, entries, type){
       if (allHit && avgRating<=2){
         if (prev && prevOkForExercise(prev, de.exId, "time")){
           const to = capRound(target+5, 5);
-          if (to>target) sug.push(mkSug(de.exId,"time",target,to,"Hold time up by 5s — all sets beat last week with reps kept easily in reserve, two sessions in a row."));
+          if (to>target) sug.push(mkSug(de.exId,"time",target,to,"Hold time up by 5s. All sets beat last week with reps kept easily in reserve, two sessions in a row."));
         } else {
           const to = capRound(target+5, 5);
-          if (to>target) sug.push(mkSug(de.exId,"time",target,to,"Add 5s to hold time — every set hit the target with good reserves."));
+          if (to>target) sug.push(mkSug(de.exId,"time",target,to,"Add 5s to hold time. Every set hit the target with good reserves."));
         }
       } else if (!allHit){
-        sug.push(mkSug(de.exId,"time",target,target,"Hold the same hold time — a set fell short of target this session."));
+        sug.push(mkSug(de.exId,"time",target,target,"Hold the same hold time. A set fell short of target this session."));
       }
     }
     else if (ex.mode==="reps"){
@@ -2030,10 +2030,10 @@ function computeSuggestions(day, entries, type){
       const zoneMax = Math.min(zMax, ex.repCeil||zMax);
       const drift = performed!=null && performed > zoneMax; // cruising past the zone top
       if (!allHit){
-        sug.push(mkSug(de.exId,"reps",target,target,"A set fell short of the "+target+" target this session — keep the same target and re-attempt."));
+        sug.push(mkSug(de.exId,"reps",target,target,"A set fell short of the "+target+" target this session. Keep the same target and re-attempt."));
       }
       // Zone discipline for every session type. When reps drift past the session's
-      // target zone the answer is NOT more reps — it's load (if the exercise takes it)
+      // target zone the answer is NOT more reps; it's load (if the exercise takes it)
       // or a harder progression.
       else if (drift && ex.weightAvailable){
         // Prefer adding load to hold the session's training stimulus.
@@ -2041,13 +2041,13 @@ function computeSuggestions(day, entries, type){
         const nextW = stepUpWeight(baseW, ex.weightStep);
         const addAmt = nextW - baseW;
         if (addAmt>0){
-          sug.push(mkSug(de.exId,"weight",baseW,nextW,"You did "+performed+" reps across "+n+" sets — past the top of the "+zMin+"-"+zMax+" "+zoneName+" zone. Add "+addAmt+" "+weightUnit()+" next time to keep the "+zoneName+" stimulus."));
+          sug.push(mkSug(de.exId,"weight",baseW,nextW,"You did "+performed+" reps across "+n+" sets, past the top of the "+zMin+"-"+zMax+" "+zoneName+" zone. Add "+addAmt+" "+weightUnit()+" next time to keep the "+zoneName+" stimulus."));
           // pull reps back inside the zone so it stays on-mission for this session type
           const repTop = Math.min(zoneMax, Math.max(0, target-2));
-          if (repTop < target) sug.push(mkSug(de.exId,"reps",target,repTop,"Dial the rep target back to "+repTop+" as you add weight — keep reps inside the "+zMin+"-"+zMax+" "+zoneName+" zone."));
+          if (repTop < target) sug.push(mkSug(de.exId,"reps",target,repTop,"Dial the rep target back to "+repTop+" as you add weight. Keep reps inside the "+zMin+"-"+zMax+" "+zoneName+" zone."));
         } else {
           // could not step load (maxed) → fall back to a hold/note
-          sug.push(mkSug(de.exId,"reps",target,target,"You did "+performed+" reps — past the top of the "+exZone.label+" zone ("+zMin+"-"+zMax+"). Load is at its max here; add load only when available or track it as conditioning."));
+          sug.push(mkSug(de.exId,"reps",target,target,"You did "+performed+" reps, past the top of the "+exZone.label+" zone ("+zMin+"-"+zMax+"). Load is at its max here; add load only when available or track it as conditioning."));
         }
       }
       // Bodyweight / no-load movement drifting past the zone → recommend a harder
@@ -2056,7 +2056,7 @@ function computeSuggestions(day, entries, type){
         const nextId = (ex.progressions||[])[0];
         const nextEx = nextId ? getEx(nextId) : null;
         if (nextEx){
-          sug.push({ exId:de.exId, field:"progression", from:de.exId, to:nextEx.id, fromName:ex.name, toName:nextEx.name, reason:"You did "+performed+" reps across "+n+" sets on "+ex.name+" — that drifts past the "+zMin+"-"+zMax+" "+zoneName+" zone toward endurance. Swap to "+nextEx.name+" (a harder progression) to keep the "+zoneName+" stimulus.", kept:null, method:"engine" });
+          sug.push({ exId:de.exId, field:"progression", from:de.exId, to:nextEx.id, fromName:ex.name, toName:nextEx.name, reason:"You did "+performed+" reps across "+n+" sets on "+ex.name+", drifting past the "+zMin+"-"+zMax+" "+zoneName+" zone toward endurance. Swap to "+nextEx.name+" (a harder progression) to keep the "+zoneName+" stimulus.", kept:null, method:"engine" });
         } else {
           sug.push(mkSug(de.exId,"reps",Math.min(target,zoneMax),Math.min(target,zoneMax),"You did "+performed+" reps on "+ex.name+", past the top of the "+exZone.label+" zone ("+zMin+"-"+zMax+"). Add a harder progression (e.g. raised feet, lean, full-ROM) or switch to a more demanding variation to keep the "+zoneName+" stimulus."));
         }
@@ -2066,13 +2066,13 @@ function computeSuggestions(day, entries, type){
         let to = null, reason = "";
         if (performed!=null && performed > target){
           to = Math.min(performed + exZone.bump, 25);
-          reason = "Progressive overload: you did "+performed+" reps vs the "+target+" target this session — try "+to+" next time.";
+          reason = "Progressive overload: you did "+performed+" reps vs the "+target+" target this session. Try "+to+" next time.";
         } else if (avgR_!=null && avgR_<=2){
           to = Math.min(target + exZone.bump, 25);
-          reason = "All sets hit "+target+" comfortably — raise the rep target to "+to+" to keep progressing.";
+          reason = "All sets hit "+target+" comfortably. Raise the rep target to "+to+" to keep progressing.";
         } else if (avgR_!=null && avgR_<=3){
           to = target;
-          reason = "All sets hit "+target+" with moderate effort — consolidate here before raising again ("+exZone.label+" zone "+zMin+"-"+zMax+").";
+          reason = "All sets hit "+target+" with moderate effort. Consolidate here before raising again ("+exZone.label+" zone "+zMin+"-"+zMax+").";
         }
         if (to!=null) sug.push(mkSug(de.exId,"reps",target,to,reason));
       }
@@ -2088,11 +2088,11 @@ function computeSuggestions(day, entries, type){
       const avgR_ = avgR(sets);
       if (allReps && avgR_<=2){
         const nextW = stepUpWeight(w, ex.weightStep);
-        sug.push(mkSug(de.exId,"weight",w,nextW,"Did "+repsTarget+" reps at "+fmtWeight(w)+" "+weightUnit()+" comfortably — add "+(nextW-w)+" "+weightUnit()+"."));
+        sug.push(mkSug(de.exId,"weight",w,nextW,"Did "+repsTarget+" reps at "+fmtWeight(w)+" "+weightUnit()+" comfortably. Add "+(nextW-w)+" "+weightUnit()+"."));
       } else if (allReps && avgR_<=3){
-        sug.push(mkSug(de.exId,"weight",w,w,"Hit the reps at "+fmtWeight(w)+" "+weightUnit()+" but it was work — hold weight, re-attempt."));
+        sug.push(mkSug(de.exId,"weight",w,w,"Hit the reps at "+fmtWeight(w)+" "+weightUnit()+" but it was work. Hold weight and re-attempt."));
       } else {
-        sug.push(mkSug(de.exId,"weight",w,w,"Reps fell short at "+fmtWeight(w)+" "+weightUnit()+" — keep weight, shore up the reps."));
+        sug.push(mkSug(de.exId,"weight",w,w,"Reps fell short at "+fmtWeight(w)+" "+weightUnit()+". Keep weight and shore up the reps."));
       }
     }
   });
@@ -2103,15 +2103,15 @@ function mkSug(exId,field,from,to,reason){ return { exId, field, from, to, reaso
 function avgR(sets){ const rs=sets.map(s=>s.rating||0).filter(r=>r>0); return rs.length? rs.reduce((a,b)=>a+b,0)/rs.length : null; }
 /* Plain-language readout for the effort slider's 0.5-step ratings. */
 function effortDesc(r){
-  if (r<=1)   return "Very easy — barely taxing";
-  if (r<=1.5) return "Easy — smooth, plenty in reserve";
-  if (r<=2)   return "Easy — comfortable control";
-  if (r<=2.5) return "Light-moderate — moving, still easy";
-  if (r<=3)   return "Moderate — solid work";
-  if (r<=3.5) return "Moderate-hard — noticeable effort";
-  if (r<=4)   return "Hard — a few reps in reserve";
-  if (r<=4.5) return "Very hard — one or two left";
-  return "Near failure — last rep was the limit";
+  if (r<=1)   return "Very easy, barely taxing";
+  if (r<=1.5) return "Easy, smooth, plenty in reserve";
+  if (r<=2)   return "Easy, comfortable control";
+  if (r<=2.5) return "Light to moderate, moving, still easy";
+  if (r<=3)   return "Moderate, solid work";
+  if (r<=3.5) return "Moderate to hard, noticeable effort";
+  if (r<=4)   return "Hard, a few reps in reserve";
+  if (r<=4.5) return "Very hard, one or two reps left";
+  return "Near failure, the last rep was the limit";
 }
 /* Live-sync the effort slider DOM (track fill, bubble, readout, descriptor, cell
    state) without a full re-render so dragging stays fluid. */
@@ -2121,7 +2121,7 @@ function syncEffort(rangeEl, set){
   const cell = rangeEl.closest(".set-cell");
   const v = rated ? set.rating : 1;
   const pct = ((v-1)/4)*100;
-  const txt = rated ? set.rating.toFixed(1) : "—";
+  const txt = rated ? set.rating.toFixed(1) : "-";
   rangeEl.value = v;
   rangeEl.style.background = "linear-gradient(90deg,var(--accent) 0%,var(--accent) "+pct+"%,var(--line) "+pct+"%,var(--line) 100%)";
   const bubble = eff.querySelector(".effort-bubble");
@@ -2129,7 +2129,7 @@ function syncEffort(rangeEl, set){
   const valEl = eff.querySelector(".effort-val");
   if (valEl){ valEl.textContent = txt; valEl.classList.toggle("rated", rated); }
   const descEl = eff.querySelector(".effort-desc");
-  if (descEl){ descEl.textContent = rated ? effortDesc(set.rating) : "Drag to rate effort — half-point steps"; descEl.classList.toggle("rated", rated); }
+  if (descEl){ descEl.textContent = rated ? effortDesc(set.rating) : "Drag to rate effort in half-point steps"; descEl.classList.toggle("rated", rated); }
   eff.classList.toggle("rated", rated);
   if (cell){
     const perfSet = (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
@@ -2248,7 +2248,7 @@ async function produceCoach(sessionId){
   session.finalized = true;
   saveState();
   render();
-  toast("Coach suggestions ready — review them.");
+  toast("Coach suggestions are ready. Review them.");
 }
 
 function clampWithBounds(aiChanges, day, type){
@@ -2290,7 +2290,7 @@ function templateReason(s, ex){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-done/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">Session <em class="serif-i">logged</em></h2>' +
-        '<p class="view-sub">Your performance is recorded and the coach has prepared suggestions for next session. Review them in the Coach feed.</p>' +
+        '<p class="view-sub">Your session is saved and the coach has prepared suggestions for next time. Review them in the Coach feed.</p>' +
         '<div class="hero-cta">' +            '<button class="btn btn-xl primary" id="log-finish">Finish workout</button>' +
           '<button class="btn btn-xl ghost-dark" data-goto="coach">Review coach suggestions <span class="btn-arrow">→</span></button>' +
           '<button class="btn ghost-dark" data-goto="workouts">Back to workouts</button>' +
@@ -2316,11 +2316,11 @@ const GROQ_MODEL = "openai/gpt-oss-20b";
 /* Catalogue of selectable AI models → short easy-to-read label + pros. The app
    only ever sends these ids, so the picker stays aligned with what Groq serves. */
 const AI_MODELS = {
-  "openai/gpt-oss-20b":  { label:"GPT-OSS 20B",          pros:"Fastest & cheapest tier-1 option (~1000 tps). Handles structured coaching JSON crisply. The best default value — low cost, low latency, solid quality." },
+  "openai/gpt-oss-20b":  { label:"GPT-OSS 20B",          pros:"Fastest and cheapest tier-1 option, around 1000 tokens per second. Handles structured coaching JSON well. A good default: cheap, fast, solid quality." },
   "openai/gpt-oss-120b": { label:"GPT-OSS 120B",         pros:"Smarter reasoning (~500 tps). Better nuance for tricky progression/fatigue calls; costs more per token and a bit slower." },
-  "qwen/qwen3.6-27b":    { label:"Qwen3.6-27B (preview)", pros:"Strong all-round balance (~500 tps) with ample per-minute capacity. Preview model — capabilities may shift." },
+  "qwen/qwen3.6-27b":    { label:"Qwen3.6-27B (preview)", pros:"Strong all-round balance (~500 tps) with ample per-minute capacity. Preview model; capabilities may shift." },
   "groq/compound":       { label:"Groq Compound",        pros:"Agentic system (~450 tps) that can web-search and run code if the response needs it. Great for research-y questions, heavier for routine looks." },
-  "groq/compound-mini":  { label:"Groq Compound Mini",   pros:"Lighter, faster lean version of Groq Compound — still tool-capable, lower latency." },
+  "groq/compound-mini":  { label:"Groq Compound Mini",   pros:"Lighter, faster lean version of Groq Compound. Still tool-capable, lower latency." },
 };
 const SYSTEM_PROMPT = [
   "You are the reasoning engine inside a calisthenics strength-coach app.",
@@ -2334,18 +2334,18 @@ const SYSTEM_PROMPT = [
   "standard working set; 'warmup' = light prep, never counts toward progression;",
   "'drop' = taken to failure then load dropped and continued; 'failure' = AMRAP to",
   "complete muscular failure, no fixed target (performing it counts as a hit).",
-  "Drive progression from the regular/drop working sets — warm-up and failure sets",
+  "Drive progression from the regular/drop working sets; warm-up and failure sets",
   "are intensity tools, not progression signals.",
   "The payload includes 'sessionType'. Judge progression against that type's zone",
   "(repetition continuum, ACSM position stand + Schoenfeld 2021):",
   "- strength: 1-6 reps per set at heavy load (>=80% 1RM), 2-5 min rest. Maximal",
-  "  strength — progress with weight or harder progressions, small rep bumps.",
+  "  strength: progress with weight or harder progressions, small rep bumps.",
   "- hypertrophy: 6-12 reps at moderate load (60-80% 1RM), 1-3 reps in reserve,",
   "  30-90s rest. The most time-efficient growth zone.",
-  "- hybrid: 4-10 reps — blends strength and hypertrophy blocks.",
+  "- hybrid: 4-10 reps, blending strength and hypertrophy blocks.",
   "- endurance: 15+ reps at light load, short rest. Muscular endurance.",
   "Zone rule: if the athlete cruises past the top of the zone (e.g. hypertrophy work",
-  "hitting 14+ reps), the session is drifting toward endurance — prefer adding weight",
+  "hitting 14+ reps), the session is drifting toward endurance; prefer adding weight",
   "(if the exercise takes load) or a harder progression over endless rep chasing.",
   "In 'hybrid' sessions each exercise may carry a 'focus' of 'hypertrophy' or 'strength':",
   "judge that exercise against that focus's rep zone (hypertrophy 6-12, strength 1-6)",
@@ -2418,7 +2418,7 @@ function renderCoach(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-coach/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">The coach <em class="serif-i">weighs in</em></h2>' +
-        '<p class="view-sub">Review what changes for next session. Accept or reject each call — set count is never altered.</p>' +
+        '<p class="view-sub">Review what changes for next session. Accept or reject each call. Set count is never altered.</p>' +
         '<div class="hero-cta">' +
           '<button class="btn btn-xl primary" data-goto="log">Log a session <span class="btn-arrow">→</span></button>' +
         '</div>' +
@@ -2432,7 +2432,7 @@ function renderCoach(){
     '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-coach/1920/1080)"></div>' +
     '<div class="view-hero-inner">' +
       '<h2 class="view-title">The coach <em class="serif-i">weighs in</em></h2>' +
-      '<p class="view-sub fx-scrub">Review what changes for next session. Accept or reject each call — set count is never altered.</p>' +
+      '<p class="view-sub fx-scrub">Review what changes for next session. Accept or reject each call. Set count is never altered.</p>' +
     '</div>' +
   '</div>' +
   '<div class="wrap">';
@@ -2449,7 +2449,7 @@ function renderCoach(){
     html += '<div class="spacer"></div><span class="pill">'+suggestions.length+' suggestion'+(suggestions.length!==1?'s':'')+'</span>';
     html += '<button type="button" class="rec-del" data-del-pend="'+pend.id+'" aria-label="Delete all suggestions from this session">✕</button></div>';
     if (session && session.summary) html += '<p class="small" style="color:var(--ink-3);margin:6px 0 12px">'+esc(session.summary)+'</p>';
-    if (!suggestions.length){ html += '<div class="muted small">No concrete changes to apply — plan stays as is.</div>'; }
+    if (!suggestions.length){ html += '<div class="muted small">No concrete changes to apply. Plan stays as is.</div>'; }
     suggestions.forEach(sug=>{
       const ex = getEx(sug.exId);
       html += recCard(sug, ex, open, pend.id);
@@ -2502,7 +2502,7 @@ function recCard(sug, ex, open, pendId){
   }
   const fromTxt = shortRepr(field, sug.from);
   const toTxt = shortRepr(field, sug.to);
-  // A "hold" suggestion rewrites the field to the same value (from === to) — there is
+  // A "hold" suggestion rewrites the field to the same value (from === to); there is
   // nothing to apply, so show it as an informational note instead of a confusing
   // "8 reps → 8 reps" Accept/Reject card.
   const noop = sug.from === sug.to && (field==="reps" || field==="time" || field==="weight");
@@ -2513,7 +2513,7 @@ function recCard(sug, ex, open, pendId){
         '<span class="change-tag">hold</span>'+
         '<span class="rec-status" style="margin-left:auto">no change</span>'+
         '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this note">✕</button></div>'+
-      '<div class="rec-expl">'+esc(sug.reason||"Hold the current plan — no change needed next session.")+'</div>'+
+      '<div class="rec-expl">'+esc(sug.reason||"Hold the current plan. No change needed next session.")+'</div>'+
     '</div>';
   }
   const actions = (sug.kept===null && open)
@@ -2556,7 +2556,7 @@ function recAct(ds, actVal){
             const weight = nextEx.defaultWeight||de.weight||0;
             de.reps = reps; de.time = time; de.weight = weight;
           }
-          toast("Applied — swapped to "+(nextEx?nextEx.name:"harder progression")+".");
+          toast("Applied. Swapped to "+(nextEx?nextEx.name:"harder progression")+".");
         } else {
           const delta = (sug.to!=null && sug.from!=null) ? (sug.to - sug.from) : null;
           if (sug.field==="reps" && Array.isArray(de.setReps) && delta!==null){
@@ -2568,7 +2568,7 @@ function recAct(ds, actVal){
           } else {
             de[sug.field] = sug.to;
           }
-          toast("Applied — "+exId+" next session updated.");
+          toast("Applied. "+exId+" updated for next session.");
         }
         confettiSmall();
       }
@@ -2576,7 +2576,7 @@ function recAct(ds, actVal){
     sug.kept = true;
   } else {
     sug.kept = false;
-    toast("Rejected — plan unchanged for that exercise.");
+    toast("Rejected. Plan unchanged for that exercise.");
   }
   saveState();
   renderCoach();
@@ -2611,7 +2611,7 @@ function renderHistory(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-history/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">History <em class="serif-i">& momentum</em></h2>' +
-        '<p class="view-sub">Every session, every trend — how each movement is progressing over time.</p>' +
+        '<p class="view-sub">Every session, every trend. Watch how each movement progresses over time.</p>' +
       '</div>' +
     '</div>' +
       '<div class="wrap"><div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg></div>Nothing logged yet. Complete a session to start building your progression history.</div></div>';
@@ -2621,7 +2621,7 @@ function renderHistory(){
   const totSets = state.sessions.reduce((a,ses)=>a+ses.completedSets.length,0);
   const hitSets = state.sessions.reduce((a,ses)=>a+ses.completedSets.filter(c=>c.hit).length,0);
   const ratings = state.sessions.flatMap(ses=>ses.completedSets.map(c=>c.rating)).filter(r=>r>0);
-  const avgEff = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : "—";
+  const avgEff = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : "-";
   const pct = totSets ? Math.round(hitSets/totSets*100) : 0;
   // session list
   const sessRows = sessions.map(ses=>{
@@ -2667,13 +2667,13 @@ function renderHistory(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-history/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">History <em class="serif-i">& momentum</em></h2>' +
-        '<p class="view-sub fx-scrub">Every session, every trend — how each movement is progressing over time.</p>' +
+        '<p class="view-sub fx-scrub">Every session, every trend. Watch how each movement progresses over time.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap"><div class="bento">' +
       '<div class="span-4 stat-card"><div><div class="stat-num">'+sessions.length+'</div><div class="stat-lbl">sessions logged</div></div></div>' +
       '<div class="span-4 stat-card t2"><div><div class="stat-num">'+pct+'<small>%</small></div><div class="stat-lbl">sets on target</div></div></div>' +
-      '<div class="span-4 stat-card t3"><div><div class="stat-num">'+avgEff+'</div><div class="stat-lbl">avg effort · 1–5</div></div></div>' +
+      '<div class="span-4 stat-card t3"><div><div class="stat-num">'+avgEff+'</div><div class="stat-lbl">avg effort · 1-5</div></div></div>' +
       '<div class="span-5"><div class="card h100"><div class="card-head"><h3>Sessions</h3><button class="btn close-all" data-close-all disabled title="Close all open sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18l-5-5-5 5"/><path d="M17 11l-5-5-5 5"/></svg><span>Close all</span></button></div><div class="wo-list">'+sessRows+'</div></div></div>' +
       '<div class="span-7"><div class="card h100"><h3>Per-exercise progression</h3>'+(progHtml||'<div class="muted small">Log sessions to see trends.</div>')+'</div></div>' +
     '</div></div>';
@@ -2735,7 +2735,7 @@ function renderSettings(){
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-settings/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
         '<h2 class="view-title">Tune the <em class="serif-i">system</em></h2>' +
-        '<p class="view-sub fx-scrub">Profile, coach behaviour, AI key, and your data — everything lives in this browser.</p>' +
+        '<p class="view-sub fx-scrub">Profile, coach behaviour, AI key, and your data. Everything lives in this browser.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap"><div class="settings-grid">' +
@@ -2746,9 +2746,9 @@ function renderSettings(){
           '<option value="lb"'+(prof.weightUnit==="lb"?" selected":"")+'>lb</option>'+
         '</select></label>'+
         '<label class="field"><span>Coaching depth</span><select id="set-exp">'+
-          '<option value="beginner"'+(prof.experience==="beginner"?" selected":"")+'>Beginner — conservative, simple</option>'+
-          '<option value="intermediate"'+(prof.experience==="intermediate"?" selected":"")+'>Intermediate — balanced</option>'+
-          '<option value="advanced"'+(prof.experience==="advanced"?" selected":"")+'>Advanced — more nuance</option>'+
+          '<option value="beginner"'+(prof.experience==="beginner"?" selected":"")+'>Beginner, conservative and simple</option>'+
+          '<option value="intermediate"'+(prof.experience==="intermediate"?" selected":"")+'>Intermediate, balanced</option>'+
+          '<option value="advanced"'+(prof.experience==="advanced"?" selected":"")+'>Advanced, with more nuance</option>'+
         '</select></label>'+
         '<button class="btn" id="set-profile-save">Save profile</button>'+
       '</div>'+
@@ -2763,7 +2763,7 @@ function renderSettings(){
           '<button class="btn" id="set-ai-model-save">Save model</button>'+
           '<a class="btn small" target="_blank" rel="noopener" href="https://console.groq.com/keys" style="text-decoration:none">Get a key →</a>'+
         '</div>'+
-        (prof.apiKey?'<div class="micro" style="margin-top:8px;color:var(--green)">✓ Key is set (•••'+prof.apiKey.slice(-4)+').</div>':'<div class="micro" style="margin-top:8px">No key — rule-based explanations in use.</div>')+
+        (prof.apiKey?'<div class="micro" style="margin-top:8px;color:var(--green)">✓ Key is set (•••'+prof.apiKey.slice(-4)+').</div>':'<div class="micro" style="margin-top:8px">No key. Rule-based explanations are in use.</div>')+
       '</div>'+
       '</div>'+
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
@@ -2785,7 +2785,7 @@ function renderSettings(){
   });
   $("#set-ai-model-save", s).addEventListener("click", ()=>{
     prof.aiModel = $("#set-ai-model", s).value;
-    saveState(); toast("AI model saved — "+AI_MODELS[prof.aiModel].label); renderSettings();
+    saveState(); toast("AI model saved: "+AI_MODELS[prof.aiModel].label); renderSettings();
   });
   $("#set-ai-model", s).addEventListener("change", ()=>{
     const d = $("#set-ai-model-desc", s);
