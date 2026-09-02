@@ -1854,11 +1854,25 @@ function openExVisualizer(id){
       visAlternativesHtml(e);
   }
   function visAlternativesHtml(e){
-    const rel = state.exercises.filter(o=>o.id!==e.id && (
-      (o.bodyParts||[]).some(b=>(e.bodyParts||[]).includes(b)) ||
-      (o.equipment||[]).some(k=>(e.equipment||[]).includes(k)) ||
-      (Array.isArray(e.progressions) && e.progressions.includes(o.id))
-    )).slice(0,8);
+    const prim = e.primaryMuscles || [];
+    let rel;
+    if (prim.length){
+      // Similar = movements working the same primary drivers; best matches first.
+      rel = state.exercises
+        .filter(o=>o.id!==e.id)
+        .map(o=>({ o:o, score:(o.primaryMuscles||[]).filter(m=>prim.includes(m)).length }))
+        .filter(x=>x.score>0)
+        .sort((a,b)=>b.score-a.score)
+        .map(x=>x.o);
+    } else {
+      // Nothing tagged on this movement yet — fall back to body part / equipment / progression links.
+      rel = state.exercises.filter(o=>o.id!==e.id && (
+        (o.bodyParts||[]).some(b=>(e.bodyParts||[]).includes(b)) ||
+        (o.equipment||[]).some(k=>(e.equipment||[]).includes(k)) ||
+        (Array.isArray(e.progressions) && e.progressions.includes(o.id))
+      ));
+    }
+    rel = rel.slice(0,8);
     if (!rel.length) return "";
     const cards = rel.map(o=>{
       const img = o.image ? o.image : "https://picsum.photos/seed/"+seedOf(o.name)+"/320/240";

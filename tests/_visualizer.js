@@ -87,6 +87,16 @@ check(Boolean(mtRow), "movement type row present");
 check(Boolean(mtRow && mtRow.querySelector("b").textContent === "Bodyweight (weights available)"), "weighted bodyweight reads 'Bodyweight (weights available)', not 'Weight & reps'");
 click($("#ex-vis-host [data-vis-back]"));
 
+// Similar movements = exercises working the same primary muscles
+E("state.exercises.find(e=>e.id==='ex-1').primaryMuscles=['Pectoralis major']");
+E("state.exercises.find(e=>e.id==='ex-2').primaryMuscles=['Pectoralis major','Triceps brachii']");
+E("state.exercises.find(e=>e.id==='ex-16').primaryMuscles=['Quadriceps']"); // same equipment, different muscle
+E("openExVisualizer('ex-1')");
+const altNames = $$("#ex-vis-host .alt-card .alt-name").map(n=>n.textContent);
+check(altNames.length === 1 && altNames[0] === "Diamond Push-Up", "similar movements share primary muscles (got: " + (altNames.join(", ") || "none") + ")");
+check(!altNames.includes("Squat (Bodyweight)"), "same-equipment different-muscle exercise excluded from similar movements");
+click($("#ex-vis-host [data-vis-back]"));
+
 // Pencil click opens the editor (not the visualizer)
 click($("#view-library .exercise-item [data-edit]"));
 const editor = $("#ex-editor-host");
