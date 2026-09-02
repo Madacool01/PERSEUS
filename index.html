@@ -1230,6 +1230,21 @@ function loadState() {
   } catch(e){ return null; }
 }
 var memStore = {};
+/* Which tab the user was on — remembered across refreshes via its own tiny key
+   so restoring it doesn't rewrite the (possibly photo-heavy) whole state. */
+var VIEW_KEY = "perseus-view-v1";
+var VIEW_IDS = ["workouts","log","coach","history","library","settings"];
+function rememberView(v){
+  if (hasStorage()){ try{ localStorage.setItem(VIEW_KEY, v); return; }catch(e){} }
+  memStore[VIEW_KEY] = v;
+}
+function lastView(){
+  try{
+    const v = hasStorage() ? localStorage.getItem(VIEW_KEY) : null;
+    if (v == null && memStore[VIEW_KEY] != null) return memStore[VIEW_KEY];
+    return v;
+  }catch(e){ return null; }
+}
 var storageOK = null;
 function hasStorage(){
   if (storageOK !== null) return storageOK;
@@ -1347,6 +1362,7 @@ let libraryFilters = { eq:"", search:"" };
    ========================================================================= */
 function switchView(v){
   currentView = v;
+  if (VIEW_IDS.indexOf(v) !== -1) rememberView(v);
   if (v==="workouts"){ planMode = "list"; planEditId = null; }
   render();
   window.scrollTo({top:0});
@@ -3550,6 +3566,13 @@ if (!state) {
   state = seedDefaultState();
   saveState();
 }
+
+/* Return to whichever section the user was on before a refresh (workouts on a fresh visit). */
+function restoreView(){
+  const saved = lastView();
+  currentView = (VIEW_IDS.indexOf(saved) !== -1) ? saved : "workouts";
+}
+restoreView();
 
 function init(){
   $$(".tab-btn").forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.view)));
