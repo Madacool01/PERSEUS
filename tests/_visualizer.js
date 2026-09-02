@@ -79,6 +79,14 @@ check($("#ex-vis-host #ex-vis-img").classList.contains("play") === false, "play/
 click($("#ex-vis-host [data-vis-back]"));
 E("state.exercises[0].image = ''");
 
+// Movement-type nuance: a rep-based movement with weights available still reads as Bodyweight
+E("openExVisualizer('ex-3')"); // Ring Dip seed: bodyweight-style movement, weightAvailable=true
+const mtRows = $$("#ex-vis-host .vis-kv");
+const mtRow = mtRows.find(r => r.querySelector("span") && r.querySelector("span").textContent === "Movement type");
+check(Boolean(mtRow), "movement type row present");
+check(Boolean(mtRow && mtRow.querySelector("b").textContent === "Bodyweight (weights available)"), "weighted bodyweight reads 'Bodyweight (weights available)', not 'Weight & reps'");
+click($("#ex-vis-host [data-vis-back]"));
+
 // Pencil click opens the editor (not the visualizer)
 click($("#view-library .exercise-item [data-edit]"));
 const editor = $("#ex-editor-host");

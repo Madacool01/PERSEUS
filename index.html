@@ -1731,9 +1731,14 @@ const VIS_ICO_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const VIS_ICO_BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg>';
 
 function seedOf(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "perseus"; }
-function exTypeOf(e){
-  return EX_TYPES.hasOwnProperty(e.type) ? e.type
-    : (e.mode==="time" ? "duration" : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight"));
+/* Human label for the About "Movement type" row. A rep-based movement that can
+   optionally take load (the Weighted toggle) still reads as Bodyweight — just
+   with weights available — instead of collapsing into the "Weight & reps" type,
+   which is reserved for genuinely loaded lifts (mode "weight"). */
+function movementTypeLabel(e){
+  if (e.mode==="time") return "Duration";
+  if ((EX_TYPES.hasOwnProperty(e.type) && e.type==="weight") || e.mode==="weight") return "Weight & reps";
+  return e.weightAvailable ? "Bodyweight (weights available)" : "Bodyweight";
 }
 function exSessions(exId){
   return [...state.sessions].filter(s=>s.completedSets.some(c=>c.exId===exId))
@@ -1823,7 +1828,7 @@ function openExVisualizer(id){
       : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit())
       : (e.defaultReps+" reps");
     const eqTags = (e.equipment||[]).map(k=>'<span class="pill">'+esc(EQUIP_LABELS[k]||k)+'</span>').join(" ");
-    const typeLbl = EX_TYPES[exTypeOf(e)] ? EX_TYPES[exTypeOf(e)].label : "Custom";
+    const typeLbl = movementTypeLabel(e);
     const prog = (Array.isArray(e.progressions) && e.progressions.length)
       ? e.progressions.map(pid=>{ const p=getEx(pid); return p ? '<span class="prog-step">'+esc(p.name)+'</span>' : ""; }).filter(Boolean).join('<i class="prog-arrow">→</i>')
       : '<span class="muted small">None yet — the coach auto-links harder variations from the movement chain.</span>';
