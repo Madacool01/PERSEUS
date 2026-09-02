@@ -395,6 +395,9 @@
   .set-target span { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .eq-select { width: auto; min-width: 175px; }
 
+  button.btn.sess-del { font-size: .78rem; font-weight: 600; gap: .45rem; padding: .55rem 1.05rem; border-radius: var(--r-md); }
+  button.btn.sess-del svg { width: 13px; height: 13px; }
+
   /* ---------- Tags (sharp micro-labels) ---------- */
   .pill {
     display: inline-flex; align-items: center; gap: .35rem;
@@ -3356,14 +3359,28 @@ function renderHistory(){
     const id = el.dataset.sess; const ses = state.sessions.find(x=>x.id===id); if(!ses) return;
     el.insertAdjacentHTML("afterend", sessionDetail(ses));
     const bin = el.nextElementSibling; if(bin.classList&&bin.classList.contains("sess-detail")){
-      bin.addEventListener("click", e=>{ if(e.target.closest("[data-close]")){ collapseDetail(bin, updateCloseAll); } });
+      bin.addEventListener("click", e=>{
+        if(e.target.closest("[data-del-sess]")){ deleteSession(e.target.closest("[data-del-sess]").dataset.delSess); return; }
+        if(e.target.closest("[data-close]")){ collapseDetail(bin, updateCloseAll); }
+      });
     }
     updateCloseAll();
   }));
   updateCloseAll();
-}
-
-function sessionDetail(ses){
+}  /* Remove a session (and its coach record) from history, then refresh the view. */
+  function deleteSession(sid){
+    const ses = state.sessions.find(x=>x.id===sid);
+    if (!ses) return false;
+    const day = getDay(ses.dayId);
+    if (!confirm('Delete the '+(day?day.name:"session")+' from '+fmtDate(ses.dateISO)+'? This removes it from history and stats.')) return false;
+    state.sessions = state.sessions.filter(x=>x.id!==sid);
+    state.pending = state.pending.filter(p=>p.sessionId!==sid);
+    saveState();
+    render();
+    toast("Session deleted");
+    return true;
+  }
+  function sessionDetail(ses){
   const day = getDay(ses.dayId);
   const rows = ses.completedSets.map(c=>{
     const ex = getEx(c.exId);
@@ -3375,7 +3392,9 @@ function sessionDetail(ses){
   const rec = ses.recovery||{};
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
     '<div class="day-head"><b>'+esc(day?day.name:"Session")+'</b><span class="pill">'+sessionTypeLabel(ses.type)+'</span><span class="muted small">'+fmtDate(ses.dateISO)+'</span>'+
-      '<div class="spacer"></div><button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
+      '<div class="spacer"></div>'+
+      '<button type="button" class="btn danger sess-del" data-del-sess="'+ses.id+'" title="Delete session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>'+
+      '<button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
     '<table class="striped"><tr><th>Exercise</th><th>Set</th><th>Done</th><th>Effort</th><th>Hit</th><th>Note</th></tr>'+rows+'</table>'+
     '<div class="small muted" style="margin-top:8px">Recovery '+(rec.recovery||'-')+' · sleep '+(rec.sleep||'-')+' · soreness '+(rec.soreness||'-')+(rec.pain?' · pain: "'+esc(rec.pain)+'"':'')+'</div>'+
     '<div class="small">'+(rec.note?esc(rec.note):'')+'</div>'+
