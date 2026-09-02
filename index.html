@@ -762,7 +762,9 @@
   .foot-mark {
     width: 28px; height: 28px; border-radius: var(--r); background: var(--accent); color: #fff;
     display: grid; place-items: center; font-weight: 700; font-size: .62rem; letter-spacing: .04em;
+    overflow: hidden;
   }
+  .foot-mark img { width: 100%; height: 100%; display: block; object-fit: cover; }
 
   /* ---------- Focus / reduced motion ---------- */
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -823,8 +825,8 @@
   <section id="view-settings" class="view"></section>
   <footer class="foot">
     <div class="foot-inner">
-      <span class="foot-mark" aria-hidden="true">PS</span>
-      <span>Adaptive strength coach · your data never leaves this browser</span>
+      <span class="foot-mark" aria-hidden="true"><img src="icon/icon.png" alt="" width="28" height="28"></span>
+      <span>Perseus · your data never leaves this browser</span>
     </div>
   </footer>
 </main>
