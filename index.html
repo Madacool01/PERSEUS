@@ -1395,6 +1395,8 @@ function equipmentTags(ex){
    ========================================================================= */
 const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell"];
 const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells" };
+/* Short display names for the library equipment filter dropdown. */
+const EQUIP_FILTER_LABELS = { bodyweight:"Body Weight", rings:"Rings", pullup:"Pull-up Bar", dumbbell:"Dumbbell" };
 const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
 const EX_TYPES = {
   duration:   { label:"Duration",      desc:"Held and timed. Plank, wall sit, hollow hold, L-sit." },
@@ -1462,7 +1464,7 @@ function renderLibrary(){
   const s = $("#view-library");
   const eq = libraryFilters.eq;
   const equipOpts = ['<option value="">All equipment</option>'].concat(
-    ALL_EQUIP.map(e=>'<option value="'+e+'"'+(eq===e?" selected":"")+'>'+esc(e)+"</option>")
+    ALL_EQUIP.map(e=>'<option value="'+e+'"'+(eq===e?" selected":"")+'>'+esc(EQUIP_FILTER_LABELS[e]||e)+"</option>")
   ).join("");  s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-library/1920/1080)"></div>' +
