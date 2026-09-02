@@ -458,9 +458,204 @@
   }
   .exercise-item:hover { transform: translateY(-4px); border-color: var(--accent-line); box-shadow: var(--shadow-2); }
   .exercise-item:hover::before { opacity: 1; }
-  .exercise-item .name { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .exercise-item .name { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding-right: 2rem; }
   .exercise-item .meta { margin-top: .55rem; display: flex; gap: .4rem; flex-wrap: wrap; }
   .exercise-item .attr { font-size: .78rem; color: var(--ink-3); margin-top: .55rem; }
+  .ex-edit-btn {
+    position: absolute; top: .55rem; right: .55rem; z-index: 2;
+    width: 30px; height: 30px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+    color: var(--ink-3); cursor: pointer; opacity: 0; transform: translateY(-2px);
+    transition: opacity .2s, transform .2s, color .2s, border-color .2s, background .2s;
+  }
+  .exercise-item:hover .ex-edit-btn { opacity: 1; transform: none; }
+  .ex-edit-btn:hover { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+  .ex-edit-btn:focus-visible { opacity: 1; transform: none; }
+  .ex-edit-btn svg { width: 15px; height: 15px; }
+  @media (hover: none) { .ex-edit-btn { opacity: 1; transform: none; } }
+
+  /* ---------- Exercise editor: photo upload ---------- */
+  .ex-photo-row { display: flex; align-items: center; gap: .9rem; margin: .45rem 0 1rem; }
+  .ex-photo-thumb {
+    width: 74px; height: 74px; border-radius: var(--r-md);
+    border: 1px dashed var(--line-2); background: var(--surface-2);
+    display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  }
+  .ex-photo-thumb.has { border-style: solid; }
+  .ex-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ex-photo-empty { font-family: var(--font-display); font-size: 1.6rem; color: var(--ink-3); line-height: 1; }
+  .ex-photo-thumb input[type=file] { display: none; }
+  .ex-photo-meta { display: flex; flex-direction: column; gap: .4rem; align-items: flex-start; }
+
+  /* ---------- Exercise visualizer (card click) ---------- */
+  #ex-vis-host:empty { display: none; }
+  #ex-vis-host {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(18,15,11,.72);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: modalBack .25s ease;
+    display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.6rem);
+  }
+  .ex-vis-shell {
+    width: min(760px, 100%); height: 100%; max-height: 900px;
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    overflow: hidden; animation: modalIn .32s cubic-bezier(.22,1,.36,1);
+  }
+  .ex-vis-top { display: flex; align-items: center; gap: .35rem; padding: .65rem .8rem; border-bottom: 1px solid var(--line); }
+  .ex-vis-top h2 { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 1.04rem; letter-spacing: .01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-vis-top .spacer { flex: 0 0 .25rem; }
+  .ex-vis-icon {
+    width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+    border: 1px solid transparent; border-radius: var(--r-md); background: transparent; color: var(--ink-2);
+    cursor: pointer; transition: background .2s, color .2s;
+  }
+  .ex-vis-icon:hover { background: var(--surface-2); color: var(--ink); }
+  .ex-vis-icon svg { width: 18px; height: 18px; }
+  .ex-vis-menuwrap { position: relative; flex: 0 0 auto; }
+  .ex-vis-pop {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 5; min-width: 176px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+    box-shadow: var(--shadow-2); padding: .35rem; display: none; flex-direction: column;
+  }
+  .ex-vis-pop.open { display: flex; }
+  .ex-vis-pop button {
+    text-align: left; padding: .52rem .72rem; border: 0; background: transparent;
+    border-radius: var(--r-sm); color: var(--ink-2); font: inherit; font-size: .85rem; cursor: pointer;
+  }
+  .ex-vis-pop button:hover { background: var(--surface-2); color: var(--ink); }
+  .ex-vis-pop button.danger { color: var(--red); }
+  .ex-vis-pop button.danger:hover { background: rgba(198,69,49,.1); }
+  .ex-vis-tabs {
+    display: flex; gap: .3rem; overflow-x: auto; padding: .6rem .9rem;
+    border-bottom: 1px solid var(--line); scrollbar-width: none;
+  }
+  .ex-vis-tabs::-webkit-scrollbar { display: none; }
+  .ex-vis-tab {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: .66rem; line-height: 1; white-space: nowrap;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); background: transparent; border: 0; border-radius: 999px;
+    padding: .52rem .85rem; cursor: pointer; transition: background .2s, color .2s;
+  }
+  .ex-vis-tab:hover { color: var(--ink); background: var(--surface-2); }
+  .ex-vis-tab.active { background: var(--ink); color: var(--paper); }
+  .ex-vis-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .ex-vis-inner { max-width: 660px; margin: 0 auto; padding: 1rem 1.1rem 2.6rem; display: flex; flex-direction: column; gap: .95rem; }
+  .ex-vis-media {
+    position: relative; border-radius: var(--r-lg); overflow: hidden;
+    background: #14110c; border: 1px solid var(--line); aspect-ratio: 16 / 10;
+  }
+  .ex-vis-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ex-vis-media img.play { animation: visKenburns 20s ease-in-out infinite alternate; }
+  @keyframes visKenburns { from { transform: scale(1) translateX(0); } to { transform: scale(1.1) translateX(-2%); } }
+  .ex-vis-media-empty { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 1rem; }
+  .vis-media-hint { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: rgba(247,241,227,.4); }
+  .ex-vis-oc { position: absolute; display: flex; gap: .4rem; }
+  .ex-vis-oc.tl { top: .7rem; right: .7rem; }
+  .ex-vis-oc.br { bottom: .7rem; right: .7rem; }
+  .ex-vis-oc-btn {
+    width: 36px; height: 36px; display: grid; place-items: center; border-radius: 999px;
+    background: rgba(12,10,8,.55); border: 1px solid rgba(255,255,255,.16); color: #fff;
+    cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    transition: background .2s, transform .2s;
+  }
+  .ex-vis-oc-btn:hover { background: rgba(12,10,8,.8); transform: scale(1.06); }
+  .ex-vis-oc-btn svg { width: 16px; height: 16px; }
+  .ex-vis-actions { display: flex; gap: .5rem; overflow-x: auto; padding: .15rem 0; scrollbar-width: none; }
+  .ex-vis-actions::-webkit-scrollbar { display: none; }
+  .ex-vis-pill {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: .45rem;
+    font-family: var(--font-mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase;
+    padding: .5rem .85rem; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--ink-2); cursor: pointer;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .ex-vis-pill:hover { border-color: var(--accent-line); color: var(--ink); }
+  .ex-vis-pill svg { width: 14px; height: 14px; }
+  .ex-vis-pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vis-block { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 1rem 1.1rem; background: var(--surface); }
+  .vis-h { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: -.01em; color: var(--ink); margin-bottom: .7rem; }
+  .vis-copy { font-size: .92rem; line-height: 1.6; color: var(--ink-2); margin: 0; white-space: pre-wrap; }
+  .vis-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: .42rem 0; border-bottom: 1px dashed var(--line); font-size: .86rem; }
+  .vis-kv:last-child { border-bottom: 0; }
+  .vis-kv > span { color: var(--ink-3); font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; flex: 0 0 auto; }
+  .vis-kv > b { color: var(--ink); font-weight: 600; text-align: right; }
+  .vis-mgroup { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .5rem; }
+  .vis-mtag { font-family: var(--font-mono); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; color: #fff; padding: .3rem .7rem; border-radius: var(--r-md); }
+  .vis-mtag.prim { background: #E5533D; }
+  .vis-mtag.sec { background: #5C9CE6; }
+  .vis-legend { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.prim { background: #E5533D; }
+  .dot.sec { background: #5C9CE6; }
+  .vis-prog { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; }
+  .prog-step { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r-md); padding: .32rem .7rem; color: var(--ink-2); background: var(--surface-2); }
+  .prog-arrow { color: var(--accent); font-style: normal; font-size: .7rem; }
+  .vis-carousel { display: flex; gap: .7rem; overflow-x: auto; padding: .2rem .1rem .5rem; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .vis-carousel::-webkit-scrollbar { display: none; }
+  .alt-card {
+    flex: 0 0 168px; scroll-snap-align: start; text-align: left; cursor: pointer;
+    border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+    overflow: hidden; padding: 0; font: inherit;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .25s;
+  }
+  .alt-card:hover { transform: translateY(-3px) scale(1.01); border-color: var(--accent-line); box-shadow: var(--shadow-2); }
+  .alt-thumb { display: block; height: 96px; background-size: cover; background-position: center; filter: saturate(.85) contrast(1.02); transition: transform .7s ease-out; }
+  .alt-card:hover .alt-thumb { transform: scale(1.05); }
+  .alt-name { display: block; font-family: var(--font-display); font-weight: 700; font-size: .9rem; color: var(--ink); padding: .55rem .7rem .1rem; }
+  .alt-part { display: block; font-size: .72rem; color: var(--ink-3); padding: 0 .7rem .7rem; }
+  .vis-sess-row { display: grid; grid-template-columns: 96px 1fr auto; gap: .6rem 1rem; align-items: center; padding: .6rem .2rem; border-bottom: 1px dashed var(--line); }
+  .vis-sess-row:last-child { border-bottom: 0; }
+  .vis-sess-date { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .vis-sess-name { font-size: .86rem; color: var(--ink); font-weight: 600; }
+  .vis-sess-best { font-family: var(--font-mono); font-size: .68rem; color: var(--accent); font-weight: 700; white-space: nowrap; }
+  .vis-sess-chips { grid-column: 1 / -1; display: flex; gap: .35rem; flex-wrap: wrap; }
+  .vis-empty { border: 1px dashed var(--line-2); border-radius: var(--r-lg); padding: 2rem 1.2rem; text-align: center; color: var(--ink-3); font-size: .85rem; }
+  .vis-chart-head { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .6rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .vis-trend { font-weight: 700; }
+  .vis-trend.up { color: #3f9c63; }
+  .vis-trend.down { color: var(--red); }
+  .vis-trend.flat { color: var(--ink-3); }
+  .vis-chart { width: 100%; height: 110px; border-radius: var(--r-md); background: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 27px); }
+  .vis-chart rect { fill: var(--accent); opacity: .8; }
+  .vis-chart rect:last-child { fill: var(--accent); opacity: 1; }
+  .vis-chart-x { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: .35rem; }
+  .vis-rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); grid-auto-flow: dense; gap: .7rem; }
+  .vis-rec { border: 1px solid var(--line); border-radius: var(--r-md); padding: .85rem .95rem; background: var(--surface); }
+  .vis-rec b { display: block; font-family: var(--font-display); font-size: 1.25rem; letter-spacing: -.01em; color: var(--ink); }
+  .vis-rec span { display: block; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .35rem; }
+  .vis-rec small { display: block; color: var(--ink-3); font-size: .72rem; margin-top: .2rem; }
+  .vis-rank-card {
+    display: flex; align-items: center; gap: .9rem;
+    border: 1px solid var(--accent-line); border-radius: var(--r-lg);
+    background: linear-gradient(120deg, var(--accent-soft), transparent 70%);
+    padding: .9rem 1.1rem;
+  }
+  .vis-rank-avs { display: flex; }
+  .vis-rank-avs .vis-avatar { margin-left: -8px; }
+  .vis-avatar { width: 34px; height: 34px; border-radius: 50%; background-size: cover; background-position: center; border: 2px solid var(--surface); display: inline-block; }
+  .vis-avatar.sm { width: 26px; height: 26px; border-width: 1.5px; }
+  .vis-rank-main { flex: 1; min-width: 0; }
+  .vis-rank-main b { display: block; font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
+  .vis-rank-main span { font-size: .78rem; color: var(--ink-2); display: block; margin-top: 2px; }
+  .vis-rank-link { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); background: transparent; border: 0; cursor: pointer; padding: .3rem .2rem; }
+  .vis-rank-link:hover { text-decoration: underline; }
+  .vis-lb-list { display: flex; flex-direction: column; }
+  .vis-lb-row { display: flex; align-items: center; gap: .7rem; padding: .58rem .2rem; border-bottom: 1px dashed var(--line); }
+  .vis-lb-row:last-child { border-bottom: 0; }
+  .vis-lb-row.top { background: var(--accent-soft); border-radius: var(--r-md); padding-left: .6rem; }
+  .vis-rank { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; color: var(--ink-3); width: 2.2rem; flex: 0 0 auto; }
+  .vis-lb-row.top .vis-rank { color: var(--accent); }
+  .vis-lb-name { flex: 1; min-width: 0; font-size: .86rem; color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vis-lb-date { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .vis-lb-val { font-family: var(--font-mono); font-size: .72rem; color: var(--ink); white-space: nowrap; }
+  .ex-vis-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 1.2rem; background: rgba(23,19,12,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: modalBack .2s ease; }
+  .ex-vis-modal .ex-pick-card { width: min(540px, 100%); }
+  .vis-swap { animation: visSwap .25s ease; }
+  @keyframes visSwap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
 
   /* ---------- Workout builder (stacking editor cards) ---------- */
   .stack { display: flex; flex-direction: column; gap: 1.1rem; }
@@ -848,7 +1043,7 @@
                     equipment: ['bodyweight','rings','pullup','dumbbell',...],
                     weightAvailable: bool,
                     defaultSets, defaultReps, defaultTime, defaultWeight,
-                    notes } ],
+                    notes, image: ''|'data:image/jpeg;base64,...', favorite: bool } ],
      days: [ { id, name, exercises: [ { exId, targetSets, reps, time, weight } ] } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
                     weight, rating, note, appliedFromId } ],
@@ -1076,6 +1271,27 @@ function fmtWeight(w){ return state.profile.weightUnit==="lb" ? Math.round(w*2.2
 function weightUnit(){ return state.profile.weightUnit; }
 function getEx(id){ return state.exercises.find(e=>e.id===id); }
 function getDay(id){ return state.days.find(d=>d.id===id); }
+/* Downscale an uploaded image to a compact JPEG data URL so it survives
+   localStorage without blowing the quota. */
+function readImageFile(file, cb){
+  const reader = new FileReader();
+  reader.onerror = ()=>toast("Could not read that image");
+  reader.onload = ()=>{
+    const img = new Image();
+    img.onerror = ()=>toast("Could not load that image");
+    img.onload = ()=>{
+      const MAX = 720;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.width * scale));
+      c.height = Math.max(1, Math.round(img.height * scale));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      cb(c.toDataURL("image/jpeg", .82));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
 /* per-set target for a set index: falls back to the single value when no per-set array exists */
 function setTarget(de, field, i){
   const arr = field==="time" ? de.setTimes : de.setReps;
@@ -1194,8 +1410,8 @@ function musclePills(sel){
 }
 const LIB_EMPTY = '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></div>No exercises match. Adjust the filter or add one.</div>';
 function exerciseRow(e){
-  const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");
-  return '<div class="exercise-item" data-open="'+e.id+'">'+
+  const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");  return '<div class="exercise-item" data-open="'+e.id+'">' +
+    '<button type="button" class="ex-edit-btn" data-edit="'+e.id+'" title="Edit '+esc(e.name)+'" aria-label="Edit '+esc(e.name)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>' +
     '<div class="name">'+esc(e.name)+modePill(e)+"</div>"+
     '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
     '<div class="attr">defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
@@ -1221,7 +1437,9 @@ function renderLibraryResults(){
     ? '<div class="exercise-list">'+list.map(exerciseRow).join("")+'</div>'
     : LIB_EMPTY;
   $$(".exercise-item[data-open]", s).forEach(el=>
-    el.addEventListener("click", ()=>openExEditor(el.dataset.open)));
+    el.addEventListener("click", ()=>openExVisualizer(el.dataset.open)));
+  $$(".exercise-item [data-edit]", s).forEach(btn=>
+    btn.addEventListener("click", ev=>{ ev.stopPropagation(); openExEditor(btn.dataset.edit); }));
 }
 function renderLibrary(){
   const s = $("#view-library");
@@ -1267,7 +1485,7 @@ function openExEditor(id){
   if (!host) host = document.body;
   const isEdit = !!ex;
   const e = ex || { id:null, name:"", mode:"reps", equipment:["bodyweight"], weightAvailable:false,
-    defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"", instructions:"", type:"bodyweight", bodyParts:[], primaryMuscles:[], secondaryMuscles:[] };
+    defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"", instructions:"", type:"bodyweight", bodyParts:[], primaryMuscles:[], secondaryMuscles:[], image:"" };
   // Body-part / muscle selections are made in pop-up pickers; keep them here
   // until the form is saved (or the editor is dismissed).
   const pickSel = {
@@ -1298,6 +1516,16 @@ function openExEditor(id){
         '<button class="btn ghost small" id="ex-close" aria-label="Close">✕</button>'+
       '</div>'+
       '<label class="field"><span>Exercise name</span><input id="ex-name" type="text" value="'+esc(e.name)+'" placeholder="e.g. Weighted Plank"/></label>'+
+
+      '<div class="field-head"><span>Photo</span><span class="hint">shown at the top of the exercise visualizer</span></div>'+
+      '<div class="ex-photo-row">'+
+        '<span class="ex-photo-thumb" id="ex-photo-thumb" role="img" aria-label="Exercise photo preview"><span class="ex-photo-empty">+</span></span>'+
+        '<span class="ex-photo-meta">'+
+          '<button type="button" class="btn small" id="ex-image-pick">Upload photo</button>'+
+          '<button type="button" class="btn ghost small" id="ex-image-clear" style="display:none">Remove</button>'+
+          '<input type="file" id="ex-image-input" accept="image/*"/>'+
+        '</span>'+
+      '</div>'+
 
       '<div class="field-head"><span>Instructions</span><span class="hint">optional, shown when you expand the exercise</span></div>'+
       '<label class="field" style="margin-top:.4rem"><textarea id="ex-instructions" rows="3" placeholder="How to do this exercise properly…">'+esc(e.instructions||"")+'</textarea></label>'+
@@ -1419,6 +1647,27 @@ function openExEditor(id){
   document.addEventListener("keydown", onKey);
   const nameEl = $("#ex-name", host);
   if (nameEl && nameEl.focus) nameEl.focus();
+  /* ---- photo upload: downscaled JPEG data URL kept in this closure ---- */
+  let pendingImage = null;
+  const pThumb = $("#ex-photo-thumb", host);
+  const pPick = $("#ex-image-pick", host);
+  const pClear = $("#ex-image-clear", host);
+  const pInput = $("#ex-image-input", host);
+  function renderPhoto(){
+    const src = pendingImage != null ? pendingImage : (e.image || "");
+    if (pThumb) pThumb.classList.toggle("has", !!src);
+    if (pThumb) pThumb.innerHTML = src ? '<img src="'+src+'" alt=""/>' : '<span class="ex-photo-empty">+</span>';
+    if (pClear) pClear.style.display = src ? "" : "none";
+  }
+  if (pPick && pInput) pPick.addEventListener("click", ()=>pInput.click());
+  if (pInput) pInput.addEventListener("change", ()=>{
+    const f = pInput.files && pInput.files[0];
+    if (!f) return;
+    if (!/^image\//.test(f.type)){ toast("Please pick an image file"); pInput.value=""; return; }
+    readImageFile(f, dataUrl=>{ pendingImage = dataUrl; renderPhoto(); });
+  });
+  if (pClear) pClear.addEventListener("click", ()=>{ pendingImage = ""; if (pInput) pInput.value=""; renderPhoto(); });
+  renderPhoto();
   $("#ex-cancel", host).addEventListener("click", dismiss);
   $("#ex-close", host).addEventListener("click", dismiss);
   host.addEventListener("click", ev=>{ if (ev.target===host) dismiss(); });
@@ -1446,6 +1695,7 @@ function openExEditor(id){
       bodyParts: pickSel.bodyParts.slice(),
       primaryMuscles: pickSel.primaryMuscles.slice(),
       secondaryMuscles: pickSel.secondaryMuscles.slice(),
+      image: pendingImage != null ? pendingImage : (ex ? (ex.image || "") : ""),
     };
     const progSel = $("#ex-progressions", host);
     const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
@@ -1462,6 +1712,377 @@ function openExEditor(id){
     }
     document.removeEventListener("keydown", onKey);
     saveState(); render(); toast(isEdit?"Exercise updated":"Exercise added");
+  });
+}
+
+/* =========================================================================
+   EXERCISE VISUALIZER (card click opens a full-screen movement profile)
+   ========================================================================= */
+const VIS_TABS = ["about","history","progress","records","leaderboard"];
+const VIS_TAB_LABELS = { about:"About", history:"History", progress:"Progress", records:"Records", leaderboard:"Leaderboard" };
+const VIS_ICO_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>';
+const VIS_ICO_MORE = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>';
+const VIS_ICO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5Z"/></svg>';
+const VIS_ICO_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+const VIS_ICO_FS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+const VIS_ICO_BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></svg>';
+const VIS_ICO_YT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="m10.2 9.3 4.6 2.7-4.6 2.7Z"/></svg>';
+const VIS_ICO_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13"/><path d="m7 8 5-5 5 5"/></svg>';
+const VIS_ICO_BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg>';
+
+function seedOf(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "perseus"; }
+function exTypeOf(e){
+  return EX_TYPES.hasOwnProperty(e.type) ? e.type
+    : (e.mode==="time" ? "duration" : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight"));
+}
+function exSessions(exId){
+  return [...state.sessions].filter(s=>s.completedSets.some(c=>c.exId===exId))
+    .sort((a,b)=> a.dateISO < b.dateISO ? -1 : 1);
+}
+/* Best measurable set across a session for one exercise. */
+function exSessionBest(ex, cs){
+  if (!cs || !cs.length) return null;
+  if (ex.mode==="time"){
+    const t = Math.max(...cs.map(c=>c.time||0));
+    const c = cs.find(x=>x.time===t) || cs[0];
+    return { value:t, label:t+"s", c:c };
+  }
+  if (ex.mode==="weight"){
+    const w = Math.max(...cs.map(c=>c.weight||0));
+    const c = [...cs].filter(x=>x.weight===w).sort((a,b)=>(b.reps||0)-(a.reps||0))[0] || cs[0];
+    return { value:w, label:(c.reps||0)+"×"+fmtWeight(w)+weightUnit(), c:c };
+  }
+  const c = [...cs].filter(x=>x.type!=="warmup")
+    .sort((a,b)=> ((b.weight||0)-(a.weight||0)) || ((b.reps||0)-(a.reps||0)))[0] || cs[0];
+  const w = c.weight||0;
+  return { value: w>0 ? w : (c.reps||0),
+           label: w>0 ? (c.reps||0)+"×"+fmtWeight(w)+weightUnit() : (c.reps||0)+" reps", c:c };
+}
+function setValTxt(ex, c){
+  if (ex.mode==="time") return (c.time!=null ? c.time+"s" : "—");
+  if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit();
+  return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()) : (c.reps!=null ? c.reps+" reps" : "—");
+}
+function openExVisualizer(id){
+  const ex = getEx(id);
+  if (!ex) return;
+  const activeView = $(".view.active") || $(".view") || document.body;
+  let host = activeView.querySelector("#ex-vis-host");
+  if (!host){ host = document.createElement("div"); host.id = "ex-vis-host"; activeView.appendChild(host); }
+  const vis = { tab:"about", playing:true };
+  function close(){
+    document.removeEventListener("keydown", onKey);
+    if (host.parentNode) host.parentNode.removeChild(host);
+  }
+  function onKey(ev){
+    if (ev.key!=="Escape") return;
+    if ($(".ex-vis-modal")){ $(".ex-vis-modal").remove(); return; }
+    const pop = $("#ex-vis-pop", host);
+    if (pop && pop.classList.contains("open")){ pop.classList.remove("open"); return; }
+    close();
+  }
+  document.addEventListener("keydown", onKey);
+  function visTopHtml(e){
+    return '<div class="ex-vis-top">'+
+      '<button type="button" class="ex-vis-icon" data-vis-back aria-label="Back">'+VIS_ICO_BACK+'</button>'+
+      '<h2>'+esc(e.name)+'</h2>'+
+      '<div class="spacer"></div>'+
+      '<div class="ex-vis-menuwrap">'+
+        '<button type="button" class="ex-vis-icon" data-vis-menu aria-label="More options" aria-haspopup="true" aria-expanded="false">'+VIS_ICO_MORE+'</button>'+
+        '<div class="ex-vis-pop" id="ex-vis-pop" role="menu">'+
+          '<button type="button" role="menuitem" data-menu="edit">Edit exercise</button>'+
+          '<button type="button" role="menuitem" class="danger" data-menu="delete">Delete exercise</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+  function visMediaHtml(e){
+    const img = e.image || "";
+    const has = !!img;
+    return '<div class="ex-vis-media" id="ex-vis-media">'+
+      (has
+        ? '<img id="ex-vis-img" class="vis-img'+(vis.playing?" play":"")+'" src="'+img+'" alt="'+esc(e.name)+'"/>'
+        : '<div class="ex-vis-media-empty"><span class="vis-media-hint">No photo yet — add one when editing</span></div>')+
+      (has
+        ? '<div class="ex-vis-oc tl"><button type="button" class="ex-vis-oc-btn" data-vis-oc="play" aria-label="'+(vis.playing?"Pause":"Play")+'">'+(vis.playing?VIS_ICO_PAUSE:VIS_ICO_PLAY)+'</button></div>'+
+          '<div class="ex-vis-oc br"><button type="button" class="ex-vis-oc-btn" data-vis-oc="fs" aria-label="Fullscreen">'+VIS_ICO_FS+'</button></div>'
+        : "")+
+    '</div>';
+  }
+  function visActionsHtml(e){
+    const on = !!e.favorite;
+    return '<nav class="ex-vis-actions" aria-label="Exercise actions">'+
+      '<button type="button" class="ex-vis-pill'+(on?" on":"")+'" data-vis-action="favorite" aria-pressed="'+on+'">'+VIS_ICO_BOOK+'<span>Favorites</span></button>'+
+      '<button type="button" class="ex-vis-pill" data-vis-action="youtube">'+VIS_ICO_YT+'<span>YouTube</span></button>'+
+      '<button type="button" class="ex-vis-pill" data-vis-action="share">'+VIS_ICO_SHARE+'<span>Share</span></button>'+
+      '<button type="button" class="ex-vis-pill" data-vis-action="howto">'+VIS_ICO_BULB+'<span>How to…</span></button>'+
+    '</nav>';
+  }
+  function visAboutHtml(e){
+    const unit = e.mode==="time" ? (e.defaultTime+"s hold")
+      : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit())
+      : (e.defaultReps+" reps");
+    const eqTags = (e.equipment||[]).map(k=>'<span class="pill">'+esc(EQUIP_LABELS[k]||k)+'</span>').join(" ");
+    const typeLbl = EX_TYPES[exTypeOf(e)] ? EX_TYPES[exTypeOf(e)].label : "Custom";
+    const prog = (Array.isArray(e.progressions) && e.progressions.length)
+      ? e.progressions.map(pid=>{ const p=getEx(pid); return p ? '<span class="prog-step">'+esc(p.name)+'</span>' : ""; }).filter(Boolean).join('<i class="prog-arrow">→</i>')
+      : '<span class="muted small">None yet — the coach auto-links harder variations from the movement chain.</span>';
+    const prim = (e.primaryMuscles||[]).map(m=>'<span class="vis-mtag prim">'+esc(m)+'</span>').join("");
+    const sec = (e.secondaryMuscles||[]).map(m=>'<span class="vis-mtag sec">'+esc(m)+'</span>').join("");
+    return '<div class="vis-block">'+
+        '<div class="vis-kv"><span>Movement type</span><b>'+esc(typeLbl)+'</b></div>'+
+        '<div class="vis-kv"><span>Default target</span><b>'+esc(unit)+'</b></div>'+
+        '<div class="vis-kv"><span>Equipment</span><b>'+eqTags+'</b></div>'+
+        (e.notes?'<div class="vis-kv"><span>Notes</span><b>'+esc(e.notes)+'</b></div>':"")+
+      '</div>'+
+      '<div class="vis-block"><div class="vis-h">How to perform</div>'+
+        (e.instructions
+          ? '<p class="vis-copy">'+esc(e.instructions)+'</p>'
+          : '<p class="muted small">No instructions yet. Open Edit from the menu and add a walkthrough.</p>')+
+      '</div>'+
+      '<div class="vis-block"><div class="vis-h">Muscle focus</div>'+
+        '<div class="vis-mgroup">'+(prim||'<span class="muted small">No primary movers tagged.</span>')+'</div>'+
+        '<div class="vis-mgroup">'+(sec||'<span class="muted small">No secondary movers tagged.</span>')+'</div>'+
+        '<div class="vis-legend"><span class="dot prim"></span>primary driver<span class="dot sec"></span>secondary / stabilizer</div>'+
+      '</div>'+
+      '<div class="vis-block"><div class="vis-h">Harder progressions</div><div class="vis-prog">'+prog+'</div></div>'+
+      visAlternativesHtml(e);
+  }
+  function visAlternativesHtml(e){
+    const rel = state.exercises.filter(o=>o.id!==e.id && (
+      (o.bodyParts||[]).some(b=>(e.bodyParts||[]).includes(b)) ||
+      (o.equipment||[]).some(k=>(e.equipment||[]).includes(k)) ||
+      (Array.isArray(e.progressions) && e.progressions.includes(o.id))
+    )).slice(0,8);
+    if (!rel.length) return "";
+    const cards = rel.map(o=>{
+      const img = o.image ? o.image : "https://picsum.photos/seed/"+seedOf(o.name)+"/320/240";
+      const parts = (o.bodyParts||[]).slice(0,3).join(", ") || (o.primaryMuscles||[]).slice(0,2).join(", ") || "—";
+      return '<button type="button" class="alt-card" data-alt="'+o.id+'">'+
+        '<span class="alt-thumb" style="background-image:url(\''+img+'\')"></span>'+
+        '<span class="alt-name">'+esc(o.name)+'</span>'+
+        '<span class="alt-part">'+esc(parts)+'</span>'+
+      '</button>';
+    }).join("");
+    return '<div class="vis-block"><div class="vis-h">Similar movements</div><div class="vis-carousel">'+cards+'</div></div>';
+  }
+  function visHistoryHtml(e){
+    const rows = exSessions(e.id).slice(-12).reverse();
+    if (!rows.length) return '<div class="vis-empty">No sessions logged for '+esc(e.name)+' yet — log one from a workout.</div>';
+    return rows.map(ses=>{
+      const cs = ses.completedSets.filter(c=>c.exId===e.id);
+      const b = exSessionBest(e, cs);
+      const day = getDay(ses.dayId);
+      const chips = cs.slice(0,6).map(c=>'<span class="chip">'+setValTxt(e,c)+'</span>').join("");
+      return '<div class="vis-sess-row">'+
+        '<div class="vis-sess-date">'+fmtDate(ses.dateISO)+'</div>'+
+        '<div class="vis-sess-name">'+esc(day?day.name:"Session")+'</div>'+
+        '<div class="vis-sess-best">'+(b?b.label:"—")+'</div>'+
+        '<div class="vis-sess-chips">'+chips+'</div>'+
+      '</div>';
+    }).join("");
+  }
+  function visProgressHtml(e){
+    const rows = exSessions(e.id);
+    if (!rows.length) return '<div class="vis-empty">Log sessions to see '+esc(e.name)+"'s trend here.</div>";
+    const unitWord = e.mode==="time" ? "s" : (e.mode==="weight" ? weightUnit() : "reps");
+    const pts = rows.map(s=>{ const b=exSessionBest(e, s.completedSets.filter(c=>c.exId===e.id)); return b?b.value:0; });
+    const mx = Math.max(...pts, 1);
+    const W=320, H=96, bw = W/Math.max(pts.length,1), gap = Math.min(6, bw*.3);
+    const bars = pts.map((v,i)=>{
+      const hh = Math.max(2, Math.round((v/mx)*(H-16)));
+      return '<rect x="'+(i*bw+gap/2)+'" y="'+(H-8-hh)+'" width="'+(bw-gap)+'" height="'+hh+'" rx="2"/>';
+    }).join("");
+    const delta = pts[pts.length-1] - pts[0];
+    const trend = delta>0 ? '<span class="vis-trend up">▲ '+delta+' '+unitWord+'</span>'
+      : delta<0 ? '<span class="vis-trend down">▼ '+Math.abs(delta)+' '+unitWord+'</span>'
+      : '<span class="vis-trend flat">— steady</span>';
+    return '<div class="vis-chart-head">Best value per session · '+pts.length+' session'+(pts.length>1?"s":"")+' '+trend+'</div>'+
+      '<svg class="vis-chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+bars+'</svg>'+
+      '<div class="vis-chart-x">'+rows.map(s=>'<span>'+fmtDate(s.dateISO)+'</span>').join("")+'</div>';
+  }
+  function visRecordsHtml(e){
+    const rows = exSessions(e.id);
+    if (!rows.length) return '<div class="vis-empty">No records yet — log a session with '+esc(e.name)+' to start the board.</div>';
+    const all = rows.flatMap(s=> s.completedSets.filter(c=>c.exId===e.id).map(c=>({ c:c, date:s.dateISO })));
+    const bests = all.map(x=>{ const b=exSessionBest(e,[x.c]); return (b && b.value>0)?{ b:b, date:x.date }:null; }).filter(Boolean);
+    bests.sort((a,b)=>b.b.value-a.b.value);
+    const bestSet = bests[0];
+    const sessBests = rows.map(s=>{ const b=exSessionBest(e, s.completedSets.filter(c=>c.exId===e.id)); return b?{ b:b, s:s }:null; }).filter(Boolean);
+    sessBests.sort((a,b)=>b.b.value-a.b.value);
+    const topSes = sessBests[0];
+    const hitPct = all.length ? Math.round(all.filter(x=>x.c.hit).length/all.length*100) : 0;
+    const volUnit = e.mode==="time" ? "s" : "reps";
+    const vol = rows.map(s=>{
+      const cs = s.completedSets.filter(c=>c.exId===e.id);
+      const sum = cs.reduce((a,c)=> a + (e.mode==="time" ? (c.time||0) : ((c.reps||0)*((c.weight||0)>0?(c.weight||0):1))), 0);
+      return { sum:sum, date:s.dateISO };
+    }).sort((a,b)=>b.sum-a.sum)[0];
+    const rec = (lbl,val,sub)=>'<div class="vis-rec"><span>'+lbl+'</span><b>'+val+'</b><small>'+(sub||"")+'</small></div>';
+    return '<div class="vis-rec-grid">'+
+      rec("Sessions", rows.length, rows.length===1 ? "one session" : "all time")+
+      rec("Best set", bestSet?bestSet.b.label:"—", bestSet?fmtDate(bestSet.date):"")+
+      rec("Top session", topSes?topSes.b.label:"—", topSes?fmtDate(topSes.s.dateISO):"")+
+      rec("Volume peak", vol? vol.sum+volUnit : "—", vol?fmtDate(vol.date):"")+
+      rec("On target", hitPct+"%", "sets hit")+
+    '</div>';
+  }
+  function visLeaderboardHtml(e){
+    const rows = exSessions(e.id)
+      .map(s=>({ s:s, b: exSessionBest(e, s.completedSets.filter(c=>c.exId===e.id)) }))
+      .filter(r=>r.b && r.b.value>0)
+      .sort((a,b)=>b.b.value-a.b.value);
+    if (!rows.length) return '<div class="vis-empty">Nothing ranked yet — log a set of '+esc(e.name)+' to enter the board.</div>';
+    const rankTxt = i=> i===0?"1st" : i===1?"2nd" : i===2?"3rd" : (i+1)+"th";
+    const top = rows[0];
+    const effortWord = e.mode==="time" ? "hold" : (e.mode==="weight" ? "lift" : "effort");
+    const banner =
+      '<div class="vis-rank-card">'+
+        '<div class="vis-rank-avs">'+rows.slice(0,3).map(r=>'<span class="vis-avatar" style="background-image:url(https://picsum.photos/seed/'+seedOf(r.s.id)+'/96/96)"></span>').join("")+'</div>'+
+        '<div class="vis-rank-main"><b>Ranking — '+rankTxt(0)+'</b><span>Best '+effortWord+': '+top.b.label+'</span></div>'+
+        '<button type="button" class="vis-rank-link" data-goto="history">view history</button>'+
+      '</div>';
+    const list = rows.map((r,i)=>{
+      const day = getDay(r.s.dayId);
+      return '<div class="vis-lb-row'+(i===0?" top":"")+'">'+
+        '<span class="vis-rank">'+rankTxt(i)+'</span>'+
+        '<span class="vis-avatar sm" style="background-image:url(https://picsum.photos/seed/'+seedOf(r.s.id)+'/64/64)"></span>'+
+        '<span class="vis-lb-name">'+esc(day?day.name:"Session")+'</span>'+
+        '<span class="vis-lb-date">'+fmtDate(r.s.dateISO)+'</span>'+
+        '<b class="vis-lb-val">'+r.b.label+'</b>'+
+      '</div>';
+    }).join("");
+    return banner + '<div class="vis-lb-list">'+list+'</div>';
+  }
+  function visTabHtml(e, tab){
+    if (tab==="history") return visHistoryHtml(e);
+    if (tab==="progress") return visProgressHtml(e);
+    if (tab==="records") return visRecordsHtml(e);
+    if (tab==="leaderboard") return visLeaderboardHtml(e);
+    return visAboutHtml(e);
+  }
+  function openVisHowTo(e){
+    const m = document.createElement("div");
+    m.className = "ex-vis-modal";
+    m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-label","How to perform "+e.name);
+    m.innerHTML =
+      '<div class="ex-pick-card">'+
+        '<div class="day-head" style="border:none;padding:0;margin:0 0 .9rem">'+
+          '<h3 style="margin:0">How to perform '+esc(e.name)+'</h3>'+
+          '<div class="spacer"></div>'+
+          '<button type="button" class="btn ghost small vis-how-x" aria-label="Close">✕</button>'+
+        '</div>'+
+        '<p class="vis-copy">'+(e.instructions ? esc(e.instructions) : "No instructions yet for "+esc(e.name)+". Open Edit from the menu and add a walkthrough.")+'</p>'+
+        '<div class="btn-row" style="margin-top:1rem"><button type="button" class="btn primary vis-how-close">Got it</button></div>'+
+      '</div>';
+    host.appendChild(m);
+    const closeM = ()=>{ m.remove(); document.removeEventListener("keydown", howKey); };
+    const howKey = ev=>{ if (ev.key==="Escape") closeM(); };
+    document.addEventListener("keydown", howKey);
+    $$(".vis-how-x, .vis-how-close", m).forEach(b=>b.addEventListener("click", closeM));
+    m.addEventListener("click", ev=>{ if (ev.target===m) closeM(); });
+  }
+  host.innerHTML =
+    '<div class="ex-vis" role="dialog" aria-modal="true" aria-label="'+esc(ex.name)+'">'+
+      '<div class="ex-vis-shell">'+
+        visTopHtml(ex)+
+        '<nav class="ex-vis-tabs" aria-label="Exercise sections">'+
+          VIS_TABS.map(t=>'<button type="button" class="ex-vis-tab'+(vis.tab===t?" active":"")+'" data-vis-tab="'+t+'">'+VIS_TAB_LABELS[t]+'</button>').join("")+
+        '</nav>'+
+        '<div class="ex-vis-scroll"><div class="ex-vis-inner">'+
+          visMediaHtml(ex)+
+          visActionsHtml(ex)+
+          '<div id="ex-vis-content">'+visTabHtml(ex, vis.tab)+'</div>'+
+        '</div></div>'+
+      '</div>'+
+    '</div>';
+  const h = $(".ex-vis", host);
+  function bindTabContent(){
+    $$("[data-alt]", h).forEach(b=>b.addEventListener("click", ()=>{
+      const alt = getEx(b.dataset.alt);
+      if (alt){ close(); openExVisualizer(alt.id); }
+    }));
+    $$("[data-goto]", h).forEach(b=>b.addEventListener("click", ()=>{
+      vis.tab = b.dataset.goto;
+      $$("[data-vis-tab]", h).forEach(x=>x.classList.toggle("active", x.dataset.visTab===vis.tab));
+      const c = $("#ex-vis-content", h);
+      if (c){
+        c.innerHTML = visTabHtml(ex, vis.tab);
+        c.classList.remove("vis-swap"); void c.offsetWidth; c.classList.add("vis-swap");
+      }
+      bindTabContent();
+    }));
+  }
+  bindTabContent();
+  $("[data-vis-back]", h).addEventListener("click", close);
+  $$("[data-vis-oc]", h).forEach(b=>b.addEventListener("click", ()=>{
+    if (b.dataset.visOc==="play"){
+      vis.playing = !vis.playing;
+      const img = $("#ex-vis-img", h);
+      if (img) img.classList.toggle("play", vis.playing);
+      b.setAttribute("aria-label", vis.playing?"Pause":"Play");
+      b.innerHTML = vis.playing ? VIS_ICO_PAUSE : VIS_ICO_PLAY;
+    } else if (b.dataset.visOc==="fs"){
+      const mediaEl = $("#ex-vis-media", h);
+      if (mediaEl && mediaEl.requestFullscreen){
+        if (document.fullscreenElement) document.exitFullscreen(); else mediaEl.requestFullscreen();
+      }
+    }
+  }));
+  $$("[data-vis-action]", h).forEach(b=>b.addEventListener("click", ()=>{
+    const k = b.dataset.visAction;
+    if (k==="favorite"){
+      ex.favorite = !ex.favorite;
+      saveState();
+      b.classList.toggle("on", !!ex.favorite);
+      b.setAttribute("aria-pressed", String(!!ex.favorite));
+      toast(ex.favorite ? "Added to favorites" : "Removed from favorites");
+    } else if (k==="youtube"){
+      const url = ex.videoUrl || ("https://www.youtube.com/results?search_query="+encodeURIComponent(ex.name));
+      if (window.open) window.open(url, "_blank", "noopener");
+    } else if (k==="share"){
+      const txt = ex.name+" — tracked in Perseus. Your data never leaves this browser.";
+      if (navigator.share){ navigator.share({ title:ex.name, text:txt }).catch(()=>{}); }
+      else if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>toast("Copied to clipboard"), ()=>toast("Could not copy")); }
+      else toast("Share not available here");
+    } else if (k==="howto"){
+      openVisHowTo(ex);
+    }
+  }));
+  $$("[data-vis-tab]", h).forEach(b=>b.addEventListener("click", ()=>{
+    vis.tab = b.dataset.visTab;
+    $$("[data-vis-tab]", h).forEach(x=>x.classList.toggle("active", x===b));
+    const c = $("#ex-vis-content", h);
+    if (c){
+      c.innerHTML = visTabHtml(ex, vis.tab);
+      c.classList.remove("vis-swap"); void c.offsetWidth; c.classList.add("vis-swap");
+    }
+    bindTabContent();
+  }));
+  const menuBtn = $("[data-vis-menu]", h);
+  const pop = $("#ex-vis-pop", h);
+  if (menuBtn && pop){
+    menuBtn.addEventListener("click", ev=>{
+      ev.stopPropagation();
+      pop.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", String(pop.classList.contains("open")));
+    });
+    pop.addEventListener("click", ev=>{
+      const k = ev.target && ev.target.dataset ? ev.target.dataset.menu : null;
+      if (!k) return;
+      pop.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+      if (k==="edit"){ close(); openExEditor(ex.id); }
+      else if (k==="delete"){
+        if (!confirm('Delete "'+ex.name+'" from the library? Workouts keep their plan copy.')) return;
+        state.exercises = state.exercises.filter(x=>x.id!==ex.id);
+        saveState(); close(); render(); toast("Exercise deleted");
+      }
+    });
+  }
+  host.addEventListener("click", ev=>{
+    if (ev.target===host) close();
+    else if (pop && !ev.target.closest(".ex-vis-menuwrap")) pop.classList.remove("open");
   });
 }
 

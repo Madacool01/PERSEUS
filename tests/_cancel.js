@@ -72,7 +72,10 @@ console.log("\n== Edit existing exercise, then cancel ==");
 const firstEx = $("#view-library .exercise-item[data-open]");
 check(Boolean(firstEx), "exercise item present");
 if (firstEx){
-  firstEx.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+  // Card click now opens the visualizer; the pencil button opens the editor.
+  const editBtn = firstEx.querySelector("[data-edit]");
+  check(Boolean(editBtn), "pencil edit button present on card");
+  editBtn.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
   const nameInput2 = $("#ex-name");
   check(Boolean(nameInput2), "edit form shown");
   const before2 = E("state.exercises.find(e=>e.id==='ex-1').name");
