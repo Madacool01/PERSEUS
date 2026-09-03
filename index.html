@@ -562,6 +562,87 @@
   }
   .sub-tab:hover { color: var(--ink); background: var(--surface-2); }
   .sub-tab.active { background: var(--ink); color: var(--paper); }
+
+  /* ---------- You overview: analytics, charts & expanded screen ---------- */
+  .you-overview { display: flex; flex-direction: column; gap: 1.1rem; margin-top: 1.4rem; }
+  .you-count {
+    width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: .15rem;
+    text-align: left; padding: 1.25rem 1.4rem;
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1); cursor: pointer;
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .22s;
+  }
+  .you-count:hover { transform: translateY(-2px); border-color: #c9bda0; box-shadow: var(--shadow-2); }
+  .you-count-num { font-family: var(--font-display); font-weight: 700; font-size: 2.7rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); }
+  .you-count-cap { font-size: .95rem; font-weight: 600; color: var(--ink-2); }
+  .you-count-hint { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-top: .45rem; }
+  .you-count-static { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
+  .you-count-static .you-count-num { font-size: 2.1rem; }
+  .you-carousel {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; border-radius: var(--r-lg);
+  }
+  .you-carousel::-webkit-scrollbar { display: none; }
+  .you-page {
+    flex: 0 0 100%; scroll-snap-align: start; min-width: 0;
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1); padding: 1.25rem 1.3rem 1.1rem;
+  }
+  .you-dots { display: flex; gap: .55rem; justify-content: center; margin-top: .15rem; }
+  .you-dot {
+    width: 9px; height: 9px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--ink-3); background: transparent; cursor: pointer;
+    transition: background .2s, border-color .2s, transform .2s;
+  }
+  .you-dot:hover { transform: scale(1.25); border-color: var(--ink); }
+  .you-dot.active { background: var(--accent); border-color: var(--accent); }
+  .you-period { display: inline-flex; gap: .25rem; padding: .25rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); }
+  .you-period-btn {
+    font-family: var(--font-mono); font-size: .64rem; letter-spacing: .12em;
+    border: 0; background: transparent; color: var(--ink-3);
+    padding: .42rem .72rem; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s;
+  }
+  .you-period-btn:hover { color: var(--ink); }
+  .you-period-btn.active { background: var(--ink); color: var(--paper); }
+  .you-page-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: .9rem; }
+  .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
+  .you-chart { display: flex; align-items: flex-end; gap: 3px; height: 190px; padding: .4rem 0 0; }
+  .you-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
+  .you-bar {
+    width: 100%; min-width: 3px; border-radius: 3px 3px 1px 1px;
+    background: linear-gradient(180deg, #a9c9f8 0%, #5d8fe8 55%, #2f63c9 100%);
+    opacity: .9; transition: opacity .2s, filter .2s;
+  }
+  .you-bar:hover { opacity: 1; filter: brightness(1.06); }
+  .you-bar.zero { height: 3px !important; background: var(--line-2); opacity: .7; }
+  .you-xaxis { display: flex; gap: 3px; margin-top: 5px; }
+  .you-x {
+    flex: 1 1 0; min-width: 0; text-align: center; font-family: var(--font-mono);
+    font-size: .56rem; color: var(--ink-3); letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .you-x.dim { color: transparent; }
+  #you-modal-host:empty { display: none; }
+  #you-modal-host {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(18,15,11,.72);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: modalBack .25s ease; padding: clamp(.5rem, 2vw, 1.6rem);
+  }
+  .you-modal { height: 100%; display: grid; place-items: center; }
+  .you-modal-shell {
+    width: min(720px, 100%); height: 100%; max-height: 820px;
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    overflow: hidden; animation: modalIn .32s cubic-bezier(.22,1,.36,1);
+  }
+  .you-modal-top { flex: 0 0 auto; display: flex; align-items: center; gap: .35rem; padding: .65rem .8rem; border-bottom: 1px solid var(--line); }
+  .you-modal-top h2 { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 1.04rem; letter-spacing: .01em; color: var(--ink); }
+  .you-modal-body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: 1.2rem 1.3rem 2.2rem; display: flex; flex-direction: column; gap: 1rem;
+  }
   .ex-vis-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .ex-vis-inner { max-width: 660px; margin: 0 auto; padding: 1rem 1.1rem 4rem; display: flex; flex-direction: column; gap: .95rem; }
   .ex-vis-media {
@@ -3581,12 +3662,215 @@ function renderYou(){
 function renderYouTab(){
   const host = $("#you-content");
   if (!host) return;
-  host.innerHTML = youTab==="overview" ? youOverviewHtml() : youExercisesHtml();
+  if (youTab==="overview"){
+    host.innerHTML = youOverviewHtml();
+    bindYouOverview();
+  } else {
+    host.innerHTML = youExercisesHtml();
+  }
 }
 
+/* Comparison periods shared by the overview charts and the expanded screen. */
+const YOU_PERIODS = [
+  { id:"1m", short:"1M",  label:"last month" },
+  { id:"3m", short:"3M",  label:"last 3 months" },
+  { id:"6m", short:"6M",  label:"last 6 months" },
+  { id:"1y", short:"1Y",  label:"last year" },
+  { id:"5y", short:"5Y",  label:"last 5 years" },
+];
+const YOU_PERIOD_MONTHS = { "1m":1, "3m":3, "6m":6, "1y":12, "5y":60 };
+let youPeriod = "3m";      // workouts-per-week view (and the expanded screen)
+let youVolPeriod = "3m";   // total-volume view
+function youPeriodLabel(id){
+  const p = YOU_PERIODS.find(p=>p.id===id);
+  return p ? p.label : "last 3 months";
+}
+function youPeriodStart(id){
+  const d = new Date();
+  d.setMonth(d.getMonth() - (YOU_PERIOD_MONTHS[id] || 3));
+  d.setHours(0,0,0,0);
+  return d;
+}
+/* Sessions grouped into Monday-start weeks over the chosen period. */
+function youWeeksData(period){
+  const monday = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay()+6)%7)); x.setHours(0,0,0,0); return x; };
+  const start = monday(youPeriodStart(period));
+  const end = new Date(); end.setHours(0,0,0,0);
+  const weeks = [];
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate()+7)) weeks.push(new Date(cur));
+  const counts = weeks.map(()=>0);
+  const weekMs = 7*86400000;
+  for (const s of (state.sessions||[])){
+    const d = new Date(s.dateISO);
+    if (isNaN(d.getTime()) || d < start || d > end) continue;
+    const wi = Math.floor((monday(d).getTime() - start.getTime()) / weekMs);
+    if (wi >= 0 && wi < counts.length) counts[wi]++;
+  }
+  const total = counts.reduce((a,b)=>a+b,0);
+  return {
+    total,
+    bars: weeks.map((w,i)=>({
+      x: fmtDate(w.toISOString()),
+      label: "Week of "+fmtDate(w.toISOString()),
+      v: counts[i],
+      unit: counts[i]===1 ? "workout" : "workouts",
+    })),
+  };
+}
+/* Placeholder total-volume series (deterministic — real calculation comes later). */
+function youVolumeData(period){
+  const start = youPeriodStart(period);
+  const weeks = Math.max(4, Math.round((Date.now() - start.getTime()) / (7*86400000)));
+  const bars = [];
+  const cur = new Date(start);
+  for (let i=0;i<weeks;i++){
+    const v = Math.round(45 + 50*Math.abs(Math.sin(i*1.73 + 2.1))); // deterministic 45..95
+    bars.push({ x: fmtDate(cur.toISOString()), label: "Week of "+fmtDate(cur.toISOString()), v, unit: "units" });
+    cur.setDate(cur.getDate()+7);
+  }
+  return bars;
+}
+/* Shared bar-chart markup: one vertical rectangle per data point + sparse x labels. */
+function youBarsHtml(bars){
+  const max = Math.max(1, ...bars.map(b=>b.v));
+  const step = Math.max(1, Math.ceil(bars.length/7));
+  const cols = bars.map(b=>{
+    const h = b.v>0 ? Math.max(10, Math.round(b.v/max*100)) : 3;
+    return '<div class="you-col" title="'+esc(b.label)+' · '+b.v+' '+esc(b.unit)+'">'+
+      '<div class="you-bar'+(b.v>0?"":" zero")+'" style="height:'+h+'%"></div>'+
+    '</div>';
+  }).join("");
+  const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
+  return '<div class="you-chart" role="img" aria-label="Bar chart">'+cols+'</div><div class="you-xaxis">'+xaxis+'</div>';
+}
+function youPeriodBtns(scope, active){
+  return '<div class="you-period" role="group" aria-label="Comparison period">'+
+    YOU_PERIODS.map(p=>'<button type="button" class="you-period-btn'+(active===p.id?" active":"")+'" data-you-'+scope+'="'+p.id+'" title="'+esc(p.label)+'">'+p.short+'</button>').join("")+
+  '</div>';
+}
+function youCountHtml(){
+  const total = youWeeksData(youPeriod).total;
+  return '<button type="button" class="you-count" id="you-count" aria-label="'+total+' workouts in '+esc(youPeriodLabel(youPeriod))+' — tap to expand">'+
+    '<span class="you-count-num">'+total+'</span>'+
+    '<span class="you-count-cap">workouts · '+esc(youPeriodLabel(youPeriod))+'</span>'+
+    '<span class="you-count-hint">tap to expand · choose period</span>'+
+  '</button>';
+}
+function bindYouCount(){
+  const c = $("#you-count");
+  if (c) c.addEventListener("click", openYouModal);
+}
 function youOverviewHtml(){
-  return '<div class="card"><h3>Overview</h3>' +
-    '<div class="vis-empty">Your training overview will live here — volume, effort, recovery, and trend data from every logged session.</div></div>';
+  return '<div class="you-overview">'+
+    youCountHtml()+
+    '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
+      '<div class="you-page" id="you-page-0"></div>'+
+      '<div class="you-page" id="you-page-1"></div>'+
+    '</div>'+
+    '<div class="you-dots">'+
+      '<button type="button" class="you-dot active" data-you-page="0" aria-label="Workouts per week"></button>'+
+      '<button type="button" class="you-dot" data-you-page="1" aria-label="Total volume"></button>'+
+    '</div>'+
+  '</div>';
+}
+function bindYouOverview(){
+  bindYouCount();
+  renderYouPage(0);
+  renderYouPage(1);
+  const car = $("#you-carousel");
+  const dots = $$(".you-dot");
+  if (!car) return;
+  car.addEventListener("scroll", ()=>{
+    clearTimeout(car._t);
+    car._t = setTimeout(()=>{
+      const i = Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
+      dots.forEach((d,k)=>d.classList.toggle("active", k===i));
+    }, 80);
+  }, { passive:true });
+  dots.forEach((d,k)=>d.addEventListener("click", ()=>{
+    const target = k * (car.clientWidth || 1);
+    if (typeof car.scrollTo === "function") car.scrollTo({ left: target, behavior: "smooth" });
+    else car.scrollLeft = target;
+    dots.forEach((x,j)=>x.classList.toggle("active", j===k));
+  }));
+}
+function renderYouPage(i){
+  const page = $("#you-page-"+i);
+  if (!page) return;
+  if (i===0){
+    const data = youWeeksData(youPeriod);
+    page.innerHTML =
+      '<div class="you-page-head"><h3>Workouts per week</h3>'+youPeriodBtns("week-period", youPeriod)+'</div>'+
+      (data.total===0
+        ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
+        : youBarsHtml(data.bars))+
+      '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts?</p>';
+    $$("[data-you-week-period]", page).forEach(b=>b.addEventListener("click", ()=>{
+      youPeriod = b.dataset.youWeekPeriod;
+      renderYouPage(0);
+      const c = $("#you-count");
+      if (c){ c.outerHTML = youCountHtml(); bindYouCount(); }
+    }));
+  } else {
+    page.innerHTML =
+      '<div class="you-page-head"><h3>Total volume</h3>'+youPeriodBtns("vol-period", youVolPeriod)+'</div>'+
+      youBarsHtml(youVolumeData(youVolPeriod))+
+      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later.</p>';
+    $$("[data-you-vol-period]", page).forEach(b=>b.addEventListener("click", ()=>{
+      youVolPeriod = b.dataset.youVolPeriod;
+      renderYouPage(1);
+    }));
+  }
+}
+/* Expanded screen: period selection + the workouts-per-week chart, larger. */
+function openYouModal(){
+  if ($("#you-modal-host")) return;
+  const host = document.createElement("div");
+  host.id = "you-modal-host";
+  document.body.appendChild(host);
+  host.innerHTML =
+    '<div class="you-modal">'+
+      '<div class="you-modal-shell">'+
+        '<div class="you-modal-top">'+
+          '<button type="button" class="ex-vis-icon" data-you-back aria-label="Back">'+VIS_ICO_BACK+'</button>'+
+          '<h2>Workouts</h2>'+
+        '</div>'+
+        '<div class="you-modal-body"></div>'+
+      '</div>'+
+    '</div>';
+  const close = ()=>{
+    document.removeEventListener("keydown", onKey);
+    if (host.parentNode) host.parentNode.removeChild(host);
+    if (currentView==="you" && youTab==="overview"){
+      renderYouPage(0);
+      const c = $("#you-count");
+      if (c){ c.outerHTML = youCountHtml(); bindYouCount(); }
+    }
+  };
+  const onKey = ev=>{ if (ev.key==="Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  $("[data-you-back]", host).addEventListener("click", close);
+  host.addEventListener("click", ev=>{ if (ev.target===host) close(); });
+  renderYouModalBody(host);
+}
+function renderYouModalBody(host){
+  const body = $(".you-modal-body", host);
+  if (!body) return;
+  const data = youWeeksData(youPeriod);
+  body.innerHTML =
+    '<div class="you-count-static">'+
+      '<span class="you-count-num">'+data.total+'</span>'+
+      '<span class="you-count-cap">workouts · '+esc(youPeriodLabel(youPeriod))+'</span>'+
+    '</div>'+
+    youPeriodBtns("modal-period", youPeriod)+
+    (data.total===0
+      ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
+      : youBarsHtml(data.bars))+
+    '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
+  $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
+    youPeriod = b.dataset.youModalPeriod;
+    renderYouModalBody(host);
+  }));
 }
 
 function youExercisesHtml(){
