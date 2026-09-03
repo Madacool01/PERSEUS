@@ -61,7 +61,7 @@ state.sessions = [
 ];`);
 E("renderYouTab();");
 check($$("#you-page-0 .you-line-path").length === 1, "weekly chart renders a line after logging");
-check($$("#you-page-0 .you-dot").length === E("youWeeksData('3m').bars.length"), "every week (including empty ones) is a point on the line");
+check($$("#you-page-0 .you-pt").length === E("youWeeksData('3m').bars.length"), "every week (including empty ones) is a point on the line");
 check(!$("#you-page-0 .vis-empty"), "empty state gone once sessions exist");
 
 // Real math, straight from the engine: push-ups 3×8×(0 + 50×0.67) = 804 kg per
@@ -72,7 +72,7 @@ check(Math.abs(sessVol[0] - 804) < 0.001, "push-up session = 3 sets × 8 reps ×
 check(Math.abs(sessVol[1] - 1320) < 0.001, "weighted ring-dip session = 3 sets × 8 reps × (10 kg + 50 kg × 0.90) = 1320 kg");
 check(Math.abs(E("youVolumeData('3m').total") - 2124) < 0.001, "weekly volume sums the logged history to 2124 kg");
 check($$("#you-page-1 .you-line-path").length === 1, "volume chart renders a real line from logged history");
-check($$("#you-page-1 .you-dot").length === E("youVolumeData('3m').bars.length"), "each week has a dot on the volume line");
+check($$("#you-page-1 .you-pt").length === E("youVolumeData('3m').bars.length"), "each week has a dot on the volume line");
 check(!$("#you-page-1 .vis-empty"), "volume empty state gone once volume is countable");
 check($("#you-page-1").textContent.indexOf("Add your current body weight in Settings") === -1, "body-weight nudge gone once a weight is set");
 

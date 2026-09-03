@@ -658,8 +658,8 @@
   .you-grid-line { stroke: var(--line-2); stroke-width: 1; }
   .you-area { fill: #5d8fe8; fill-opacity: .18; }
   .you-line-path { fill: none; stroke: #2f63c9; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .you-dot { fill: var(--surface); stroke: #2f63c9; stroke-width: 2; transition: fill .15s, transform .15s; }
-  .you-dot:hover { fill: var(--accent-soft); }
+  .you-pt { fill: var(--surface); stroke: #2f63c9; stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: fill .15s, transform .15s; }
+  .you-pt:hover { fill: #dbe7fb; transform: scale(1.5); }
   .you-hit { fill: transparent; }
   .you-xaxis { display: flex; gap: 3px; margin-top: 5px; }
   .you-x {
@@ -4188,7 +4188,7 @@ function youLineHtml(bars){
   const dots = pts.map((p,i)=>{
     const b = bars[i];
     const dense = n>24;
-    return '<circle class="'+(dense?"you-hit":"you-dot")+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(dense?7:4)+'">'+
+    return '<circle class="'+(dense?"you-hit":"you-pt")+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(dense?7:4)+'">'+
       '<title>'+esc(b.label)+' · '+b.v+' '+esc(b.unit)+'</title></circle>';
   }).join("");
   const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
