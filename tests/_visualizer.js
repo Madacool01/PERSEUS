@@ -123,5 +123,25 @@ check(!$("#ex-vis-host") || $("#ex-vis-host").innerHTML.trim().length === 0, "no
 check(Boolean($("#ex-image-input")), "editor has a photo upload input");
 if (editor){ click($("#ex-cancel")); }
 
+// Records board: best single set vs real volume peak (tonnage formula)
+E("state.profile.bodyWeight = 50");
+E(`state.sessions = [
+  { id:"r1", dayId:"day-1", dateISO: new Date(Date.now() - 9*86400000).toISOString(), completedSets:[
+      { exId:"ex-1", setIndex:0, reps:10, weight:0, rating:2, hit:true } ]},
+  { id:"r2", dayId:"day-1", dateISO: new Date(Date.now() - 2*86400000).toISOString(), completedSets:[
+      { exId:"ex-1", setIndex:0, reps:8, weight:0, rating:2, hit:true },
+      { exId:"ex-1", setIndex:1, reps:8, weight:0, rating:2, hit:true },
+      { exId:"ex-1", setIndex:2, reps:8, weight:0, rating:2, hit:true } ]}
+];`);
+E("openExVisualizer('ex-1')");
+click($$("#ex-vis-host .ex-vis-tab")[3]); // Records
+const recRow = lbl => $$("#ex-vis-host .vis-rec").find(r => r.querySelector("span") && r.querySelector("span").textContent === lbl);
+const recLabels = $$("#ex-vis-host .vis-rec").map(r => r.querySelector("span").textContent);
+check(recLabels.join(",") === "Sessions,Best set,Volume peak,On target", "records grid shows Sessions / Best set / Volume peak / On target");
+check(!recLabels.includes("Top session"), "redundant Top session row removed (best set already names the strongest effort)");
+check(Boolean(recRow("Best set")) && recRow("Best set").querySelector("b").textContent === "10 reps", "best set stays the single strongest set (10 reps)");
+check(Boolean(recRow("Volume peak")) && recRow("Volume peak").querySelector("b").textContent === "804 kg", "volume peak = tonnage formula: 3 sets × 8 reps × (0 + 50 kg × 0.67) = 804 kg");
+click($("#ex-vis-host [data-vis-back]"));
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail?1:0);

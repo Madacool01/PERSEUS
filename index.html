@@ -2369,22 +2369,24 @@ function openExVisualizer(id){
     const bests = all.map(x=>{ const b=exSessionBest(e,[x.c]); return (b && b.value>0)?{ b:b, date:x.date }:null; }).filter(Boolean);
     bests.sort((a,b)=>b.b.value-a.b.value);
     const bestSet = bests[0];
-    const sessBests = rows.map(s=>{ const b=exSessionBest(e, s.completedSets.filter(c=>c.exId===e.id)); return b?{ b:b, s:s }:null; }).filter(Boolean);
-    sessBests.sort((a,b)=>b.b.value-a.b.value);
-    const topSes = sessBests[0];
     const hitPct = all.length ? Math.round(all.filter(x=>x.c.hit).length/all.length*100) : 0;
-    const volUnit = e.mode==="time" ? "s" : "reps";
+    // Volume peak uses the same tonnage formula as the You analytics: per set,
+    // reps × (added weight + body weight × load factor). Timed holds and
+    // warm-ups never count, so the peak is the session that moved the most.
     const vol = rows.map(s=>{
       const cs = s.completedSets.filter(c=>c.exId===e.id);
-      const sum = cs.reduce((a,c)=> a + (e.mode==="time" ? (c.time||0) : ((c.reps||0)*((c.weight||0)>0?(c.weight||0):1))), 0);
+      const sum = cs.reduce((a,c)=>{ const v = completedSetVolume(e,c); return a + (v||0); }, 0);
       return { sum:sum, date:s.dateISO };
     }).sort((a,b)=>b.sum-a.sum)[0];
+    const volShown = vol && vol.sum>0 ? fmtVol(vol.sum)+" "+weightUnit() : "—";
+    const volSub = vol && vol.sum>0
+      ? fmtDate(vol.date)
+      : (e.mode==="time" ? "timed holds aren't counted yet" : "");
     const rec = (lbl,val,sub)=>'<div class="vis-rec"><span>'+lbl+'</span><b>'+val+'</b><small>'+(sub||"")+'</small></div>';
     return '<div class="vis-rec-grid">'+
       rec("Sessions", rows.length, rows.length===1 ? "one session" : "all time")+
       rec("Best set", bestSet?bestSet.b.label:"—", bestSet?fmtDate(bestSet.date):"")+
-      rec("Top session", topSes?topSes.b.label:"—", topSes?fmtDate(topSes.s.dateISO):"")+
-      rec("Volume peak", vol? vol.sum+volUnit : "—", vol?fmtDate(vol.date):"")+
+      rec("Volume peak", volShown, volSub)+
       rec("On target", hitPct+"%", "sets hit")+
     '</div>';
   }
