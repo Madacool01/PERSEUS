@@ -95,6 +95,16 @@ E("openExVisualizer('ex-1')");
 const altNames = $$("#ex-vis-host .alt-card .alt-name").map(n=>n.textContent);
 check(altNames.length === 1 && altNames[0] === "Diamond Push-Up", "similar movements share primary muscles (got: " + (altNames.join(", ") || "none") + ")");
 check(!altNames.includes("Squat (Bodyweight)"), "same-equipment different-muscle exercise excluded from similar movements");
+// No uploaded photo → thumbnail is a curated nature image, never unrelated stock
+const thumbBg = el => (el.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/) || [])[1] || "";
+const thumbs = $$("#ex-vis-host .alt-card .alt-thumb");
+check(thumbs.length === 1 && /^https:\/\/images\.unsplash\.com\/photo-/.test(thumbBg(thumbs[0])), "no-photo thumbnail falls back to a nature image (got: " + (thumbBg(thumbs[0]) || "none") + ")");
+// Uploaded photo takes precedence over the nature fallback
+E("state.exercises.find(e=>e.id==='ex-2').image='data:image/jpeg;base64,AAAA'");
+E("openExVisualizer('ex-1')");
+const thumbWithPhoto = $(".alt-card .alt-thumb");
+check(Boolean(thumbWithPhoto) && thumbBg(thumbWithPhoto).indexOf("data:image/jpeg") === 0, "uploaded exercise photo shown for similar movements when present");
+E("state.exercises.find(e=>e.id==='ex-2').image=''");
 click($("#ex-vis-host [data-vis-back]"));
 
 // Pencil click opens the editor (not the visualizer)
