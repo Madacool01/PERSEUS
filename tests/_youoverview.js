@@ -22,20 +22,21 @@ const click = el => el.dispatchEvent(new W.MouseEvent("click", { bubbles: true }
 console.log("== You overview: workouts per week + total volume ==");
 clickTab("you");
 
-// No standalone count card — the chart itself opens the expanded view
+// Collapsed view: charts only, no period selectors, default last 3 months
 check(!$("#you-count"), "no standalone workout count widget");
+check(!$("#you-page-0 .you-period"), "no period selector on the collapsed workouts view");
+check(!$("#you-page-1 .you-period"), "no period selector on the collapsed volume view");
+check(E("youPeriod") === "3m" && E("youVolPeriod") === "3m", "both views default to the last 3 months");
 check($$("#you-carousel .you-page").length === 2, "carousel has two pages");
 check($$(".you-dot").length === 2, "two pager dots at the bottom");
 check($(".you-dot").classList.contains("active"), "first dot active (workouts per week)");
 
 const p0 = $("#you-page-0");
 check(p0.textContent.indexOf("Workouts per week") !== -1, "page 1 titled Workouts per week");
-check($$("[data-you-week-period]", p0).length === 5, "workouts view offers 5 period options");
 check(Boolean($("#you-page-0 .vis-empty")), "empty state when no sessions logged");
 
 const p1 = $("#you-page-1");
 check(p1.textContent.indexOf("Total volume") !== -1, "page 2 titled Total volume");
-check($$("[data-you-vol-period]", p1).length === 5, "volume view offers 5 period options");
 check($$("#you-page-1 .you-bar").length > 0, "volume shows placeholder bars (one vertical rectangle per week)");
 check(p1.textContent.indexOf("Placeholder data") !== -1, "volume labelled as placeholder data");
 
@@ -50,37 +51,38 @@ check($$("#you-page-0 .you-bar").length > 0, "weekly chart renders bars after lo
 check($$("#you-page-0 .you-bar.zero").length > 0, "weeks without workouts show as empty stubs");
 check(!$("#you-page-0 .vis-empty"), "empty state gone once sessions exist");
 
-// Period selector on the workouts page
-click($$("[data-you-week-period]", p0)[0]); // 1M
-check(E("youPeriod") === "1m", "workouts period updated to 1M");
-check($("#you-page-0 [data-you-week-period].active").textContent === "1M", "1M pill becomes active");
-
-// Period selector on the volume page
-click($$("[data-you-vol-period]", p1)[3]); // 1Y
-check(E("youVolPeriod") === "1y", "volume period updated to 1Y");
-check($("#you-page-1 [data-you-vol-period].active").textContent === "1Y", "1Y pill becomes active on the volume page");
-
 // Pager dots switch between the two views
 click($$(".you-dot")[1]);
 check($$(".you-dot")[1].classList.contains("active"), "second dot active after clicking");
 check($$(".you-dot")[0].classList.contains("active") === false, "first dot no longer active");
 
-// Clicking the workouts chart opens the expanded screen
+// Workouts chart expands with its own period selector
 click($("#you-page-0 .you-chart"));
-check(Boolean($("#you-modal-host")), "clicking the chart opens the expanded screen");
+check(Boolean($("#you-modal-host")), "clicking the workouts chart opens the expanded screen");
 check($("#you-modal-host h2").textContent === "Workouts", "expanded screen titled Workouts");
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "expanded screen offers 5 period options");
-check(!$("#you-modal-host .you-count-static"), "no count display on top of the expanded chart");
-
-// Period selection inside the expanded screen
+check($$("#you-modal-host .you-bar").length > 0, "expanded screen shows the weekly chart");
 click($$("#you-modal-host [data-you-modal-period]")[2]); // 6M
-check(E("youPeriod") === "6m", "expanded screen period updated to 6M");
+check(E("youPeriod") === "6m", "workouts period updated to 6M inside the expanded screen");
 check($("#you-modal-host [data-you-modal-period].active").textContent === "6M", "6M pill active in the expanded screen");
-
-// Close via back button; underlying overview picks up the chosen period
 click($("#you-modal-host [data-you-back]"));
-check(!$("#you-modal-host"), "expanded screen closes via back button");
-check($("#you-page-0 [data-you-week-period].active").textContent === "6M", "overview workouts view picked up the expanded-screen period");
+check(!$("#you-modal-host"), "workouts expanded screen closes via back button");
+
+// Volume chart expands with its own period selector
+click($("#you-page-1 .you-chart"));
+check(Boolean($("#you-modal-host")), "clicking the volume chart opens the expanded screen");
+check($("#you-modal-host h2").textContent === "Total volume", "expanded screen titled Total volume");
+check($$("#you-modal-host [data-you-modal-period]").length === 5, "volume expanded screen offers 5 period options");
+check($$("#you-modal-host .you-bar").length > 0, "expanded screen shows the volume bars");
+click($$("#you-modal-host [data-you-modal-period]")[3]); // 1Y
+check(E("youVolPeriod") === "1y", "volume period updated to 1Y inside the expanded screen");
+check($("#you-modal-host [data-you-modal-period].active").textContent === "1Y", "1Y pill active in the volume expanded screen");
+click($("#you-modal-host [data-you-back]"));
+check(!$("#you-modal-host"), "volume expanded screen closes via back button");
+
+// The collapsed charts still render (no selector, but they use the chosen period)
+check($$("#you-page-0 .you-bar").length > 0, "collapsed workouts chart still rendered");
+check($$("#you-page-1 .you-bar").length > 0, "collapsed volume chart still rendered");
 
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

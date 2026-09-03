@@ -595,8 +595,8 @@
   .you-page-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: .9rem; }
   .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
   .you-chart { display: flex; align-items: flex-end; gap: 3px; height: 190px; padding: .4rem 0 0; }
-  #you-page-0 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
-  #you-page-0 .you-chart:hover { background: var(--surface-2); }
+  #you-page-0 .you-chart, #you-page-1 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
+  #you-page-0 .you-chart:hover, #you-page-1 .you-chart:hover { background: var(--surface-2); }
   .you-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
   .you-bar {
     width: 100%; min-width: 3px; border-radius: 3px 3px 1px 1px;
@@ -3671,10 +3671,6 @@ const YOU_PERIODS = [
 const YOU_PERIOD_MONTHS = { "1m":1, "3m":3, "6m":6, "1y":12, "5y":60 };
 let youPeriod = "3m";      // workouts-per-week view (and the expanded screen)
 let youVolPeriod = "3m";   // total-volume view
-function youPeriodLabel(id){
-  const p = YOU_PERIODS.find(p=>p.id===id);
-  return p ? p.label : "last 3 months";
-}
 function youPeriodStart(id){
   const d = new Date();
   d.setMonth(d.getMonth() - (YOU_PERIOD_MONTHS[id] || 3));
@@ -3776,31 +3772,27 @@ function renderYouPage(i){
   if (i===0){
     const data = youWeeksData(youPeriod);
     page.innerHTML =
-      '<div class="you-page-head"><h3>Workouts per week</h3>'+youPeriodBtns("week-period", youPeriod)+'</div>'+
+      '<div class="you-page-head"><h3>Workouts per week</h3></div>'+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
         : youBarsHtml(data.bars))+
       '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
-    $$("[data-you-week-period]", page).forEach(b=>b.addEventListener("click", ()=>{
-      youPeriod = b.dataset.youWeekPeriod;
-      renderYouPage(0);
-    }));
     const chart = $(".you-chart", page);
-    if (chart) chart.addEventListener("click", openYouModal);
+    if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
   } else {
     page.innerHTML =
-      '<div class="you-page-head"><h3>Total volume</h3>'+youPeriodBtns("vol-period", youVolPeriod)+'</div>'+
+      '<div class="you-page-head"><h3>Total volume</h3></div>'+
       youBarsHtml(youVolumeData(youVolPeriod))+
-      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later.</p>';
-    $$("[data-you-vol-period]", page).forEach(b=>b.addEventListener("click", ()=>{
-      youVolPeriod = b.dataset.youVolPeriod;
-      renderYouPage(1);
-    }));
+      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later. Click the chart to expand and choose a period.</p>';
+    const chart = $(".you-chart", page);
+    if (chart) chart.addEventListener("click", ()=>openYouModal("volume"));
   }
 }
-/* Expanded screen: period selection + the workouts-per-week chart, larger. */
-function openYouModal(){
+/* Expanded screen: the period selector appears here, one per chart type. */
+let youModalMode = "weeks"; // "weeks" | "volume" — which chart the expanded screen shows
+function openYouModal(mode){
   if ($("#you-modal-host")) return;
+  youModalMode = (mode==="volume") ? "volume" : "weeks";
   const host = document.createElement("div");
   host.id = "you-modal-host";
   document.body.appendChild(host);
@@ -3809,7 +3801,7 @@ function openYouModal(){
       '<div class="you-modal-shell">'+
         '<div class="you-modal-top">'+
           '<button type="button" class="ex-vis-icon" data-you-back aria-label="Back">'+VIS_ICO_BACK+'</button>'+
-          '<h2>Workouts</h2>'+
+          '<h2>'+(youModalMode==="volume" ? "Total volume" : "Workouts")+'</h2>'+
         '</div>'+
         '<div class="you-modal-body"></div>'+
       '</div>'+
@@ -3817,7 +3809,7 @@ function openYouModal(){
   const close = ()=>{
     document.removeEventListener("keydown", onKey);
     if (host.parentNode) host.parentNode.removeChild(host);
-    if (currentView==="you" && youTab==="overview") renderYouPage(0);
+    if (currentView==="you" && youTab==="overview") renderYouPage(youModalMode==="volume" ? 1 : 0);
   };
   const onKey = ev=>{ if (ev.key==="Escape") close(); };
   document.addEventListener("keydown", onKey);
@@ -3828,17 +3820,28 @@ function openYouModal(){
 function renderYouModalBody(host){
   const body = $(".you-modal-body", host);
   if (!body) return;
-  const data = youWeeksData(youPeriod);
-  body.innerHTML =
-    youPeriodBtns("modal-period", youPeriod)+
-    (data.total===0
-      ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-      : youBarsHtml(data.bars))+
-    '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
-  $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
-    youPeriod = b.dataset.youModalPeriod;
-    renderYouModalBody(host);
-  }));
+  if (youModalMode === "volume"){
+    body.innerHTML =
+      youPeriodBtns("modal-period", youVolPeriod)+
+      youBarsHtml(youVolumeData(youVolPeriod))+
+      '<p class="micro">Placeholder data — the total-volume calculation is defined later.</p>';
+    $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
+      youVolPeriod = b.dataset.youModalPeriod;
+      renderYouModalBody(host);
+    }));
+  } else {
+    const data = youWeeksData(youPeriod);
+    body.innerHTML =
+      youPeriodBtns("modal-period", youPeriod)+
+      (data.total===0
+        ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
+        : youBarsHtml(data.bars))+
+      '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
+    $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
+      youPeriod = b.dataset.youModalPeriod;
+      renderYouModalBody(host);
+    }));
+  }
 }
 
 function youExercisesHtml(){
