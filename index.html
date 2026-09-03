@@ -656,7 +656,7 @@
   #you-page-0 .you-chart, #you-page-1 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
   #you-page-0 .you-chart:hover, #you-page-1 .you-chart:hover { background: var(--surface-2); }
   .you-grid-line { stroke: var(--line-2); stroke-width: 1; }
-  .you-area { fill: #5d8fe8; fill-opacity: .18; }
+  .you-area { pointer-events: none; }
   .you-line-path { fill: none; stroke: #2f63c9; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
   .you-pt { fill: var(--surface); stroke: #2f63c9; stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: fill .15s, transform .15s; }
   .you-pt:hover { fill: #dbe7fb; transform: scale(1.5); }
@@ -4169,12 +4169,15 @@ function youNeedWeightHtml(){
   return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings — until then, the body-weight share of every movement stays out of Total volume.</p>';
 }
 /* Shared line-chart markup for the You overview: one point per data bar, a
-   connecting line, a soft area fill under it, and sparse x labels. Dots are
-   drawn (with per-point tooltips) while there are few enough weeks to read
-   them; dense periods get the bare line. Zero values sit on the baseline. */
+   connecting line, a gradient area fill under it, and sparse x labels. Dots
+   are drawn (with per-point tooltips) while there are few enough weeks to
+   read them; dense periods get the bare line. Zero values sit on the
+   baseline. */
+let youGradSeq = 0; // each chart gets its own gradient id (two SVGs share a page)
 function youLineHtml(bars){
   const n = bars.length;
   const W = 1000, H = 200, PADX = 16, PADY = 20;
+  const gid = "youAreaGrad"+(++youGradSeq);
   const max = Math.max(1, ...bars.map(b=>b.v));
   const step = Math.max(1, Math.ceil(n/7));
   const px = i => n<=1 ? W/2 : PADX + i*((W-2*PADX)/(n-1));
@@ -4194,8 +4197,14 @@ function youLineHtml(bars){
   const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
   return '<div class="you-chart" role="img" aria-label="Line chart">'+
       '<svg class="you-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+
+        '<defs>'+
+          '<linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'+
+            '<stop offset="0" stop-color="#5d8fe8" stop-opacity="0.5"/>'+
+            '<stop offset="1" stop-color="#5d8fe8" stop-opacity="0"/>'+
+          '</linearGradient>'+
+        '</defs>'+
         '<line class="you-grid-line" x1="0" y1="'+(H-PADY)+'" x2="'+W+'" y2="'+(H-PADY)+'"/>'+
-        '<polygon class="you-area" points="'+area+'"/>'+
+        '<polygon class="you-area" fill="url(#'+gid+')" points="'+area+'"/>'+
         '<path class="you-line-path" d="'+line+'"/>'+
         dots+
       '</svg>'+
