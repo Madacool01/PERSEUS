@@ -584,6 +584,63 @@
   }
   .you-dot:hover { transform: scale(1.25); border-color: var(--ink); }
   .you-dot.active { background: var(--accent); border-color: var(--accent); }
+
+  /* ---------- Body-weight load: editor presets, library banner, AI estimator ---------- */
+  .lf-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: .35rem 0 .55rem; }
+  .lf-chip {
+    font-family: var(--font-mono); font-size: .68rem; font-weight: 600; letter-spacing: .04em;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+    padding: .42rem .8rem; border-radius: 999px; cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  .lf-chip:hover { border-color: var(--accent-line); color: var(--ink); }
+  .lf-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+  .lf-tools { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin: 0 0 .15rem; }
+  .lf-tools label { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 600; color: var(--ink-2); }
+  .lf-tools input[type=number] { width: 72px; padding: .42rem .5rem; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-family: var(--font-mono); font-size: .85rem; }
+  .lf-val { font-family: var(--font-mono); font-size: .8rem; font-weight: 600; color: var(--ink); min-width: 118px; }
+  #lib-load-banner { margin: 1rem 0 0; }
+  .load-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: .9rem; flex-wrap: wrap;
+    padding: .85rem 1.1rem; border: 1px solid var(--amber-line); border-left: 3px solid var(--amber);
+    border-radius: var(--r-lg); background: linear-gradient(180deg, var(--amber-soft), var(--surface));
+  }
+  .load-banner-txt { display: flex; flex-direction: column; gap: .2rem; min-width: 240px; }
+  .load-banner-txt b { font-family: var(--font-display); font-size: .95rem; color: var(--ink); }
+  .load-banner-txt span { font-size: .8rem; color: var(--ink-2); line-height: 1.45; }
+  .load-banner-actions { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+  #load-est-host:empty { display: none; }
+  #load-est-host {
+    position: fixed; inset: 0; z-index: 80; padding: clamp(.5rem, 2vw, 1.6rem);
+    background: rgba(18,15,11,.72);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: modalBack .25s ease;
+  }
+  .load-est-overlay { height: 100%; display: grid; place-items: center; }
+  .load-est-card {
+    width: min(620px, 100%); height: 100%; max-height: 780px;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    animation: modalIn .32s cubic-bezier(.22,1,.36,1);
+  }
+  .load-est-inner { max-width: 600px; width: 100%; margin: 0 auto; padding: 1rem 1.1rem 2.4rem; display: flex; flex-direction: column; gap: .6rem; }
+  .load-est-row {
+    display: flex; align-items: center; justify-content: space-between; gap: .9rem;
+    padding: .65rem .85rem; border: 1px solid var(--line); border-radius: var(--r-md);
+    background: var(--surface-2);
+  }
+  .load-est-info { display: flex; flex-direction: column; gap: .12rem; min-width: 0; flex: 1; }
+  .load-est-info b { font-family: var(--font-display); font-size: .92rem; color: var(--ink); }
+  .load-est-reason { font-size: .73rem; color: var(--ink-3); font-style: italic; line-height: 1.4; }
+  .load-est-pct { display: flex; align-items: center; gap: .35rem; flex: 0 0 auto; }
+  .load-est-pct input[type=number] { width: 68px; padding: .4rem .5rem; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-family: var(--font-mono); font-size: .86rem; }
+  .load-est-pct > span { font-family: var(--font-mono); font-size: .7rem; color: var(--ink-3); }
+  .load-est-conf { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--green); max-width: 96px; }
+  .load-est-foot {
+    flex: 0 0 auto; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    padding: .7rem .9rem; border-top: 1px solid var(--line); background: var(--surface);
+  }
   .you-period { display: inline-flex; gap: .25rem; padding: .25rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); }
   .you-period-btn {
     font-family: var(--font-mono); font-size: .64rem; letter-spacing: .12em;
@@ -1239,6 +1296,33 @@ function setLadderTxt(de){
 
 let state;      // assigned during bootstrap at the bottom, after persistence helpers are defined
 
+/* Body-weight load defaults for the pre-built movements: the percent of the
+   user's body weight each movement loads onto the working muscles. These are
+   editable estimates (common bodyweight-load references) and are overwritten
+   the moment the user edits the value — custom exercises start unset (null)
+   and get a factor by hand or via the AI estimator in the library. */
+const BUILTIN_LOAD_PCT = {
+  "Push-Up": 67, "Diamond Push-Up": 67, "Archer Push-Up": 67,
+  "Ring Dip": 90, "Ring Row": 70, "One-Arm Ring Row": 80, "Ring False-Grip Row": 70,
+  "Pull-Up": 100, "Chin-Up": 100, "Strict Pull-Up": 100, "Weighted Pull-Up": 100,
+  "Pull-Up Negative": 100, "Bar Muscle-Up": 100, "Ring Muscle-Up (DL)": 100,
+  "Hang (Dead Grip)": 100, "Ring Support Hold": 100, "Back Lever Hold": 90, "Front Lever Hold": 95,
+  "Squat (Bodyweight)": 75, "Hindu Squat": 75, "Bulgarian Split Squat": 70,
+  "Ring L-Sit": 50, "Plank": 45, "Hollow-Body Hold": 30, "Ring Rollout": 50,
+  "Renegade Push-Up": 70, "Dumbbell Curl": 0,
+};
+/* Backfill built-in defaults onto previously-saved seed exercises (numeric
+   "ex-N" ids — custom exercises get "ex-id-…" ids) that predate the field. */
+function ensureBuiltinLoads(list){
+  if (!Array.isArray(list)) return;
+  list.forEach(e=>{
+    if (!e || e.loadFactor != null) return;
+    if (!/^ex-\d+$/.test(e.id || "")) return;
+    const f = BUILTIN_LOAD_PCT[e.name];
+    if (typeof f === "number"){ e.loadFactor = f; e.loadSource = "builtin"; }
+  });
+}
+
 /* Seed a default program the first time; re-run if a future version upgrades the seed */
 function seedDefaultState() {
   const defaultExercises = [
@@ -1270,7 +1354,12 @@ function seedDefaultState() {
     { name:"Dumbbell Curl",           mode:"weight", equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:8 },
     { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
   ];
-  const exercises = defaultExercises.map((e,i) => { e.id = "ex-"+(i+1); return e; });
+  const exercises = defaultExercises.map((e,i) => {
+    e.id = "ex-"+(i+1);
+    e.loadFactor = (BUILTIN_LOAD_PCT[e.name] != null ? BUILTIN_LOAD_PCT[e.name] : null);
+    e.loadSource = "builtin";
+    return e;
+  });
   // auto-resolve each exercise's harder variations from its movement chain
   resolveProgressions(exercises);
   const days = [
@@ -1320,6 +1409,7 @@ function loadState() {
     // auto-resolve progression chains from the user's library so previously-saved
     // and custom exercises still get harder-variation recommendations (explicit
     // hand-edited chains are preserved)
+    ensureBuiltinLoads(s.exercises); // body-weight loads for pre-built movements saved before the field existed
     resolveProgressions(s.exercises);
     return s;
   } catch(e){ return null; }
@@ -1577,13 +1667,14 @@ function renderLibrary(){
         '<input type="text" id="lib-search" placeholder="Search exercises…" value="'+esc(libraryFilters.search)+'"/></div>' +
       '<select id="lib-eq" class="eq-select">'+equipOpts+'</select>' +
       '<button class="btn primary" id="add-exercise">+ New exercise</button>' +
-    '</div>' +
-    '<div id="lib-results"></div>' +
+    '</div>' +    '<div id="lib-load-banner"></div>'+
+    '<div id="lib-results"></div>'+
     '<div id="ex-editor-host"></div>' +
     '</div>';
   $("#lib-search").addEventListener("input", ev=>{ libraryFilters.search = ev.target.value; renderLibraryResults(); });
   $("#lib-eq").addEventListener("change", ev=>{ libraryFilters.eq = ev.target.value; renderLibraryResults(); });
   $("#add-exercise").addEventListener("click", ()=>openExEditor(null));
+  refreshLoadBanner(s);
   renderLibraryResults();
 }
 
@@ -1624,6 +1715,10 @@ function openExEditor(id){
       "<b>"+T.label+"</b><small>"+T.desc+"</small></button>";
   }).join("");
   const showWeighted = curType!=="weight";
+  // Body-weight load (% of body weight the movement works against), the basis for Total volume.
+  const loadPresets = [0, 25, 50, 67, 75, 90, 100];
+  const curLoad = (typeof e.loadFactor==="number") ? Math.max(0, Math.min(100, Math.round(e.loadFactor))) : null;
+  const lfChipsHtml = loadPresets.map(p=>'<button type="button" class="lf-chip'+(curLoad===p?" on":"")+'" data-lf="'+p+'">'+(p+"%")+'</button>').join("");
   host.innerHTML =
     '<div class="card" role="dialog" aria-modal="true" aria-label="'+(isEdit?"Edit exercise":"New exercise")+'">'+
       '<div class="day-head" style="border:none;padding:0;margin:0 0 1.1rem">'+
@@ -1654,6 +1749,15 @@ function openExEditor(id){
         '<span>Weighted: this exercise can add load later</span>'+
       '</label>'+
       '<p class="micro" id="ex-weight-note" style="margin:-.1rem 0 1rem">Weight is handled separately from the exercise type: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily.</p>'+
+
+      '<div class="field-head" style="margin-top:.6rem"><span>Body-weight load</span><span class="hint">% of your body weight the movement works against — feeds Total volume</span></div>'+
+      '<div class="lf-chips" role="group" aria-label="Body-weight load percent">'+lfChipsHtml+'</div>'+
+      '<div class="lf-tools">'+
+        '<label>% <input type="number" id="ex-load-num" min="0" max="100" step="1" value="'+(curLoad==null?"":curLoad)+'" placeholder="e.g. 67"/></label>'+
+        '<span class="lf-val" id="ex-load-val">'+(curLoad==null?"not set":curLoad+"% of body weight")+'</span>'+
+        '<button type="button" class="btn ghost small" id="ex-load-clear" title="Remove the load factor">Unset</button>'+
+      '</div>'+
+      '<p class="micro" style="margin:.45rem 0 1.1rem">Anchors: 100% ≈ pull-ups &amp; hangs · ~67% ≈ push-ups · ~75% ≈ squats · 0% ≈ pure dumbbell lifts. Leave unset if unsure — the exercise stays out of Total volume until you set it here or estimate it with AI from the Exercise Library.</p>'+
 
       '<div class="field-head"><span>Equipment</span></div>'+
       '<div class="eq-cards">'+eqTags+'</div>'+
@@ -1763,6 +1867,26 @@ function openExEditor(id){
   document.addEventListener("keydown", onKey);
   const nameEl = $("#ex-name", host);
   if (nameEl && nameEl.focus) nameEl.focus();
+  /* ---- body-weight load: chips / number input / unset (never silently assumed) ---- */
+  let lfVal = curLoad, lfTouched = false;
+  function lfSync(){
+    $$(".lf-chip", host).forEach(c=>c.classList.toggle("on", lfVal!=null && (+c.dataset.lf)===lfVal));
+    const num = $("#ex-load-num", host), val = $("#ex-load-val", host);
+    if (num) num.value = (lfVal==null ? "" : lfVal);
+    if (val) val.textContent = (lfVal==null ? "not set" : lfVal+"% of body weight");
+  }
+  $$(".lf-chip", host).forEach(c=>c.addEventListener("click", ()=>{
+    lfTouched = true; lfVal = Math.max(0, Math.min(100, Math.round(+c.dataset.lf || 0))); lfSync();
+  }));
+  const lfNum = $("#ex-load-num", host);
+  if (lfNum) lfNum.addEventListener("change", ()=>{
+    const v = parseInt(lfNum.value, 10);
+    lfTouched = true;
+    lfVal = isFinite(v) ? Math.max(0, Math.min(100, v)) : null;
+    lfSync();
+  });
+  const lfClear = $("#ex-load-clear", host);
+  if (lfClear) lfClear.addEventListener("click", ()=>{ lfTouched = true; lfVal = null; lfSync(); });
   /* ---- photo upload: downscaled JPEG data URL kept in this closure ---- */
   let pendingImage = null;
   const pThumb = $("#ex-photo-thumb", host);
@@ -1813,6 +1937,10 @@ function openExEditor(id){
       secondaryMuscles: pickSel.secondaryMuscles.slice(),
       image: pendingImage != null ? pendingImage : (ex ? (ex.image || "") : ""),
     };
+    if (lfTouched){
+      data.loadFactor = lfVal;
+      data.loadSource = (lfVal==null ? null : "manual");
+    }
     const progSel = $("#ex-progressions", host);
     const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
     if (ex){
@@ -1829,6 +1957,163 @@ function openExEditor(id){
     document.removeEventListener("keydown", onKey);
     saveState(); render(); toast(isEdit?"Exercise updated":"Exercise added");
   });
+}
+
+/* ---- Body-weight load: unknown tracking, library banner, batched AI estimator ---- */
+function unknownLoadExercises(){
+  return state.exercises.filter(e=>e && e.loadFactor==null);
+}
+function loadSourceLabel(src){
+  return src==="ai" ? "AI estimate" : src==="manual" ? "set by you" : src==="builtin" ? "built-in default" : "";
+}
+function loadRowHtml(e){
+  if (e.loadFactor==null) return '<span class="muted">unset — not counted in Total volume yet</span>';
+  const src = loadSourceLabel(e.loadSource);
+  return '~'+Math.round(e.loadFactor)+'% of body weight'+(src?' <span class="muted small">· '+esc(src)+'</span>':"");
+}
+/* Reminder under the Total-volume charts (kept text-only — the library is one tab away). */
+function youUnknownLoadsHtml(){
+  const n = unknownLoadExercises().length;
+  if (!n) return "";
+  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">'+n+" exercise"+(n===1?"":"s")+" still lack a body-weight load factor, so they can't count toward Total volume — set it when editing the exercise, or estimate load factors with AI in the Exercise Library.</p>";
+}
+/* Banner atop the library: which exercises are missing a load factor + the
+   one-tap AI estimation flow (requires the optional GroqCloud key). */
+function refreshLoadBanner(s){
+  const el = $("#lib-load-banner", s);
+  if (!el) return;
+  const unknown = unknownLoadExercises();
+  if (!unknown.length){ el.innerHTML = ""; return; }
+  const key = !!((state.profile && state.profile.apiKey || "").trim());
+  el.innerHTML =
+    '<div class="load-banner">'+
+      '<div class="load-banner-txt">'+
+        '<b>'+unknown.length+" exercise"+(unknown.length===1?"":"s")+' without a body-weight load factor</b>'+
+        '<span>Total volume needs to know how much of your body weight each movement loads. Set it per exercise when editing, or estimate them all at once:</span>'+
+      '</div>'+
+      '<div class="load-banner-actions">'+
+        '<button type="button" class="btn primary" id="load-estimate"'+(key?"":" disabled")+'>Estimate with AI</button>'+
+        (key?"":'<button type="button" class="btn ghost small" data-goto="settings">Add a GroqCloud key first</button>')+
+      '</div>'+
+    '</div>';
+  const est = $("#load-estimate", el);
+  if (est) est.addEventListener("click", ()=>openLoadEstimator());
+  $$("[data-goto]", el).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.goto)));
+}
+let loadEstOpen = false;
+/* Batched AI estimation with a review step — nothing is written without a look. */
+async function openLoadEstimator(){
+  if (loadEstOpen || $("#load-est-host")) return;
+  if (!((state.profile && state.profile.apiKey || "").trim())){
+    toast("Add a GroqCloud API key in Settings to estimate load factors");
+    return;
+  }
+  const unknown = unknownLoadExercises();
+  if (!unknown.length){ toast("Every exercise already has a load factor"); return; }
+  loadEstOpen = true;
+  const host = document.createElement("div");
+  host.id = "load-est-host";
+  document.body.appendChild(host);
+  let closed = false;
+  const close = ()=>{
+    if (closed) return; closed = true; loadEstOpen = false;
+    document.removeEventListener("keydown", onKey);
+    if (host.parentNode) host.parentNode.removeChild(host);
+  };
+  const onKey = ev=>{ if (ev.key==="Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  host.innerHTML =
+    '<div class="load-est-overlay">'+
+      '<div class="load-est-card" role="dialog" aria-modal="true" aria-label="Estimate load factors">'+
+        '<div class="you-modal-top">'+
+          '<button type="button" class="ex-vis-icon" data-lest-close aria-label="Close">'+VIS_ICO_BACK+'</button>'+
+          '<h2>Estimate load factors</h2>'+
+          '<div class="spacer"></div>'+
+          '<span class="pill">'+unknown.length+" to review</span>"+
+        '</div>'+
+        '<div class="ex-vis-scroll"><div class="load-est-inner" id="load-est-inner"></div></div>'+
+        '<div class="load-est-foot">'+
+          '<span class="micro" style="flex:1">AI suggestions — read, adjust or clear any row, then save. Unset exercises stay out of Total volume.</span>'+
+          '<button type="button" class="btn ghost" id="load-est-cancel">Cancel</button>'+
+          '<button type="button" class="btn primary" id="load-est-save" disabled>Save estimates</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  $("[data-lest-close]", host).addEventListener("click", close);
+  $("#load-est-cancel", host).addEventListener("click", close);
+  host.addEventListener("click", ev=>{
+    const t = ev.target;
+    if (!t || !t.closest || !t.isConnected) return;
+    if (!t.closest(".load-est-card")) close();
+  });
+  const inner = $("#load-est-inner", host);
+  const saveBtn = $("#load-est-save", host);
+  if (inner) inner.innerHTML = '<div class="vis-empty" style="margin:2.4rem 0">Asking the model to estimate '+unknown.length+" exercise"+(unknown.length===1?"":"s")+'…</div>';
+  let rows = [];
+  try {
+    rows = await estimateLoadFactors(unknown);
+  } catch(err){
+    if (closed) return;
+    if (inner) inner.innerHTML =
+      '<div class="vis-empty">Estimation failed'+(err && err.message ? ": "+esc(err.message) : "")+'</div>'+
+      '<div class="btn-row" style="justify-content:center"><button type="button" class="btn" id="load-est-retry">Try again</button></div>';
+    const retry = $("#load-est-retry", host);
+    if (retry) retry.addEventListener("click", ()=>{ close(); setTimeout(openLoadEstimator, 0); });
+    return;
+  }
+  if (closed) return;
+  rows.forEach(r=>{ r.orig = r.loadPercent; });
+  const kept = rows.filter(r=>r && getEx(r.exId));
+  if (!kept.length){
+    if (inner) inner.innerHTML = '<div class="vis-empty">The model couldn\'t estimate these exercises. You can still set each one\'s load factor by hand from its Edit screen.</div>';
+    return;
+  }
+  if (saveBtn) saveBtn.disabled = false;
+  const skipped = unknown.length - kept.length;
+  if (inner) inner.innerHTML =
+    '<p class="micro">Percent of body weight the movement loads onto the working muscles, suggested from its name, type, notes and muscle tags. Adjust any row — clearing a value skips that exercise.</p>'+
+    kept.map(r=>loadEstRowHtml(r)).join("")+
+    (skipped>0?'<p class="micro" style="color:var(--amber)">'+skipped+" exercise"+(skipped===1?"":"s")+" got no suggestion and will stay unset.</p>":"");
+  $$(".load-est-row input", inner).forEach(inp=>inp.addEventListener("change", ()=>{
+    const row = rows.find(r=>r.exId===inp.dataset.exId);
+    if (!row) return;
+    const v = parseInt(inp.value, 10);
+    row.loadPercent = isFinite(v) ? Math.max(0, Math.min(100, v)) : null;
+    row.adjusted = (row.loadPercent!==null && row.loadPercent!==row.orig);
+    const tag = $("[data-lest-tag='"+row.exId+"']", inner);
+    if (tag) tag.textContent = row.adjusted ? "you adjusted" : (row.loadPercent==null ? "couldn\'t judge" : (row.confidence||""));
+  }));
+  if (saveBtn) saveBtn.addEventListener("click", ()=>saveLoadEstimates(kept, close));
+}
+function loadEstRowHtml(r){
+  const ex = getEx(r.exId);
+  const ctx = ex ? (ex.equipment||[]).map(k=>EQUIP_LABELS[k]||k).join(" · ") : "";
+  return '<div class="load-est-row">'+
+    '<div class="load-est-info">'+
+      '<b>'+esc(ex?ex.name:r.exId)+'</b>'+
+      (ctx?'<span class="micro muted">'+esc(ctx)+'</span>':"")+
+      (r.reasoning?'<span class="load-est-reason">'+esc(r.reasoning)+'</span>':"")+
+    '</div>'+
+    '<div class="load-est-pct">'+
+      '<input type="number" data-ex-id="'+esc(r.exId)+'" min="0" max="100" step="1" value="'+(r.loadPercent==null?"":r.loadPercent)+'" placeholder="skip"/>'+
+      '<span>%</span>'+
+      '<span class="load-est-conf" data-lest-tag="'+esc(r.exId)+'">'+(r.loadPercent==null?"couldn\'t judge":r.confidence||"")+'</span>'+
+    '</div>'+
+  '</div>';
+}
+function saveLoadEstimates(rows, close){
+  let n = 0;
+  rows.forEach(r=>{
+    const ex = getEx(r.exId);
+    if (!ex || r.loadPercent==null) return;
+    ex.loadFactor = r.loadPercent;
+    ex.loadSource = r.adjusted ? "manual" : "ai";
+    n++;
+  });
+  saveState();
+  close();
+  render();
+  toast(n ? ("Saved "+n+" load-factor estimate"+(n===1?"":"s")) : "Nothing saved");
 }
 
 /* =========================================================================
@@ -1984,6 +2269,7 @@ function openExVisualizer(id){
         '<div class="vis-kv"><span>Movement type</span><b>'+esc(typeLbl)+'</b></div>'+
         '<div class="vis-kv"><span>Default target</span><b>'+esc(unit)+'</b></div>'+
         '<div class="vis-kv"><span>Equipment</span><b>'+eqTags+'</b></div>'+
+        '<div class="vis-kv"><span>Load on muscles</span><b>'+loadRowHtml(e)+'</b></div>'+
         (e.notes?'<div class="vis-kv"><span>Notes</span><b>'+esc(e.notes)+'</b></div>':"")+
       '</div>'+
       '<div class="vis-block"><div class="vis-h">How to perform</div>'+
@@ -3197,6 +3483,90 @@ async function callGroq(ctx){
   return parsed;
 }
 
+/* Shared low-level Groq call: the message pair is app-specific, the
+   transport/JSON-object contract is common to the whole AI layer. */
+async function groqJson(system, user, temperature){
+  const key = (state.profile && state.profile.apiKey || "").trim();
+  if (!key){ throw new Error("no api key"); }
+  const modelName = (state.profile && state.profile.aiModel && AI_MODELS[state.profile.aiModel]) ? state.profile.aiModel : GROQ_MODEL;
+  const body = {
+    model: modelName,
+    temperature: (temperature==null ? 0.2 : temperature),
+    response_format: { type: "json_object" },
+    messages: [
+      { role:"system", content: system },
+      { role:"user", content: user }
+    ]
+  };
+  const res = await fetch(GROQ_ENDPOINT, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok){ const t=await res.text(); throw new Error("Groq "+res.status+" "+t.slice(0,180)); }
+  const data = await res.json();
+  const text = data.choices && data.choices[0] && data.choices[0].message.content;
+  if (!text) throw new Error("empty response");
+  return JSON.parse(text);
+}
+
+/* Load-factor estimation: the model sees each unset exercise's mechanics and
+   suggests what % of body weight the muscles carry. Output is a suggestion
+   only — the library flow shows it for review before anything is saved. */
+const LOAD_SYSTEM_PROMPT = [
+  "You estimate exercise mechanics inside a bodyweight strength-coach app.",
+  "The user trains calisthenics / bodyweight moves, plus some dumbbell work.",
+  "For each exercise you receive its name, movement type, equipment, notes,",
+  "instructions and tagged muscles. Estimate what PERCENTAGE of the athlete's",
+  "body weight is actively loaded onto / lifted by the working muscles during",
+  "one rep or hold of that movement.",
+  "Reasoning anchors:",
+  "- full-bodyweight vertical pulls and hangs (pull-up, chin-up, dead hang): ~100%",
+  "- dips and support holds: ~85-100%",
+  "- push-ups (hands on the floor): ~65-70%; harder push-up variants stay near there",
+  "- bodyweight squats and lunges: ~70-85%",
+  "- horizontal rows: ~60-80% depending on body angle",
+  "- core holds (plank, hollow, L-sit): mostly isometric — estimate the share of",
+  "  body weight the muscles must control, often 30-60%",
+  "- pure external-load lifts (dumbbell curl, …): the body-weight share is ~0%",
+  "Rules:",
+  "- Return ONLY JSON: {\"items\":[{\"exId\":\"...\",\"loadPercent\":<0-100 integer or null>,",
+  "   \"confidence\":\"high|medium|low\",\"reasoning\":\"<short why, max ~14 words>\"}]}",
+  "- loadPercent must be an integer 0-100. Use null when the movement is too",
+  "  unusual or ambiguous to estimate — never invent a plausible number.",
+  "- Include one item per exercise id you received; reuse ids verbatim.",
+  "- Be honest: these are estimates of a real physical quantity.",
+].join("\n");
+
+async function estimateLoadFactors(exs){
+  const payload = {
+    instruction: "Estimate the % of body weight loaded for each exercise below.",
+    exercises: exs.map(e=>({
+      exId: e.id,
+      name: e.name,
+      type: e.type || "",
+      mode: e.mode || "reps",
+      equipment: e.equipment || [],
+      weightAvailable: !!e.weightAvailable,
+      notes: e.notes || "",
+      instructions: e.instructions || "",
+      muscles: [].concat(e.primaryMuscles || [], e.secondaryMuscles || [])
+    }))
+  };
+  const parsed = await groqJson(LOAD_SYSTEM_PROMPT, JSON.stringify(payload), 0.3);
+  const arr = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+  return arr
+    .filter(r=>r && typeof r==="object")
+    .map(r=>({
+      exId: String(r.exId || ""),
+      loadPercent: (typeof r.loadPercent==="number" && isFinite(r.loadPercent))
+        ? Math.max(0, Math.min(100, Math.round(r.loadPercent))) : null,
+      confidence: ["high","medium","low"].indexOf(r.confidence) !== -1 ? r.confidence : null,
+      reasoning: typeof r.reasoning==="string" ? r.reasoning.trim().slice(0,160) : ""
+    }))
+    .filter(r=>r.exId && exs.some(e=>e.id===r.exId));
+}
+
 /* =========================================================================
    COACH FEED (REVIEW & APPLY CHANGES)
    ========================================================================= */
@@ -3611,6 +3981,7 @@ function renderSettings(){
         const d = JSON.parse(rd.result);
         if(!d.exercises) throw 0;
         state = d; state.profile = Object.assign({}, DEFAULT_PROFILE, d.profile||{});
+        ensureBuiltinLoads(state.exercises);
         saveState(); render(); toast("Import complete");
       }catch(e){ toast("Invalid backup file"); }
     };
@@ -3783,7 +4154,8 @@ function renderYouPage(i){
     page.innerHTML =
       '<div class="you-page-head"><h3>Total volume</h3></div>'+
       youBarsHtml(youVolumeData(youVolPeriod))+
-      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later. Click the chart to expand and choose a period.</p>';
+      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later. Click the chart to expand and choose a period.</p>'+
+      youUnknownLoadsHtml();
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("volume"));
   }
@@ -3828,7 +4200,8 @@ function renderYouModalBody(host){
     body.innerHTML =
       youPeriodBtns("modal-period", youVolPeriod)+
       youBarsHtml(youVolumeData(youVolPeriod))+
-      '<p class="micro">Placeholder data — the total-volume calculation is defined later.</p>';
+      '<p class="micro">Placeholder data — the total-volume calculation is defined later.</p>'+
+      youUnknownLoadsHtml();
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youVolPeriod = b.dataset.youModalPeriod;
       renderYouModalBody(host);
