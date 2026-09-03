@@ -31,7 +31,7 @@ check($("#view-you").classList.contains("active"), "You view activates after cli
 check($$("#view-you .sub-tab").length === 2, "two sub-tabs (Overview / Exercises)");
 check(["Overview", "Exercises"].every((t, i) => $$("#view-you .sub-tab")[i].textContent === t), "sub-tab labels in order");
 check($("#view-you .sub-tab").classList.contains("active"), "Overview sub-tab active by default");
-check(Boolean($("#view-you #you-content .you-count")), "Overview sub-tab renders content (count widget)");
+check(Boolean($("#view-you #you-content .you-page")), "Overview sub-tab renders content (charts)");
 
 // Switch to the Exercises sub-tab through the real UI
 $$("#view-you .sub-tab")[1].dispatchEvent(new W.MouseEvent("click", { bubbles: true }));

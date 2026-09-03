@@ -565,19 +565,7 @@
 
   /* ---------- You overview: analytics, charts & expanded screen ---------- */
   .you-overview { display: flex; flex-direction: column; gap: 1.1rem; margin-top: 1.4rem; }
-  .you-count {
-    width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: .15rem;
-    text-align: left; padding: 1.25rem 1.4rem;
-    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-lg);
-    box-shadow: var(--shadow-1); cursor: pointer;
-    transition: transform .22s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .22s;
-  }
-  .you-count:hover { transform: translateY(-2px); border-color: #c9bda0; box-shadow: var(--shadow-2); }
-  .you-count-num { font-family: var(--font-display); font-weight: 700; font-size: 2.7rem; line-height: 1; letter-spacing: -.02em; color: var(--ink); }
-  .you-count-cap { font-size: .95rem; font-weight: 600; color: var(--ink-2); }
-  .you-count-hint { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-top: .45rem; }
-  .you-count-static { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
-  .you-count-static .you-count-num { font-size: 2.1rem; }
+
   .you-carousel {
     display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
     scrollbar-width: none; border-radius: var(--r-lg);
@@ -607,6 +595,8 @@
   .you-page-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: .9rem; }
   .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
   .you-chart { display: flex; align-items: flex-end; gap: 3px; height: 190px; padding: .4rem 0 0; }
+  #you-page-0 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
+  #you-page-0 .you-chart:hover { background: var(--surface-2); }
   .you-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
   .you-bar {
     width: 100%; min-width: 3px; border-radius: 3px 3px 1px 1px;
@@ -3748,21 +3738,8 @@ function youPeriodBtns(scope, active){
     YOU_PERIODS.map(p=>'<button type="button" class="you-period-btn'+(active===p.id?" active":"")+'" data-you-'+scope+'="'+p.id+'" title="'+esc(p.label)+'">'+p.short+'</button>').join("")+
   '</div>';
 }
-function youCountHtml(){
-  const total = youWeeksData(youPeriod).total;
-  return '<button type="button" class="you-count" id="you-count" aria-label="'+total+' workouts in '+esc(youPeriodLabel(youPeriod))+' — tap to expand">'+
-    '<span class="you-count-num">'+total+'</span>'+
-    '<span class="you-count-cap">workouts · '+esc(youPeriodLabel(youPeriod))+'</span>'+
-    '<span class="you-count-hint">tap to expand · choose period</span>'+
-  '</button>';
-}
-function bindYouCount(){
-  const c = $("#you-count");
-  if (c) c.addEventListener("click", openYouModal);
-}
 function youOverviewHtml(){
   return '<div class="you-overview">'+
-    youCountHtml()+
     '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
       '<div class="you-page" id="you-page-0"></div>'+
       '<div class="you-page" id="you-page-1"></div>'+
@@ -3774,7 +3751,6 @@ function youOverviewHtml(){
   '</div>';
 }
 function bindYouOverview(){
-  bindYouCount();
   renderYouPage(0);
   renderYouPage(1);
   const car = $("#you-carousel");
@@ -3804,13 +3780,13 @@ function renderYouPage(i){
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
         : youBarsHtml(data.bars))+
-      '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts?</p>';
+      '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     $$("[data-you-week-period]", page).forEach(b=>b.addEventListener("click", ()=>{
       youPeriod = b.dataset.youWeekPeriod;
       renderYouPage(0);
-      const c = $("#you-count");
-      if (c){ c.outerHTML = youCountHtml(); bindYouCount(); }
     }));
+    const chart = $(".you-chart", page);
+    if (chart) chart.addEventListener("click", openYouModal);
   } else {
     page.innerHTML =
       '<div class="you-page-head"><h3>Total volume</h3>'+youPeriodBtns("vol-period", youVolPeriod)+'</div>'+
@@ -3841,11 +3817,7 @@ function openYouModal(){
   const close = ()=>{
     document.removeEventListener("keydown", onKey);
     if (host.parentNode) host.parentNode.removeChild(host);
-    if (currentView==="you" && youTab==="overview"){
-      renderYouPage(0);
-      const c = $("#you-count");
-      if (c){ c.outerHTML = youCountHtml(); bindYouCount(); }
-    }
+    if (currentView==="you" && youTab==="overview") renderYouPage(0);
   };
   const onKey = ev=>{ if (ev.key==="Escape") close(); };
   document.addEventListener("keydown", onKey);
@@ -3858,10 +3830,6 @@ function renderYouModalBody(host){
   if (!body) return;
   const data = youWeeksData(youPeriod);
   body.innerHTML =
-    '<div class="you-count-static">'+
-      '<span class="you-count-num">'+data.total+'</span>'+
-      '<span class="you-count-cap">workouts · '+esc(youPeriodLabel(youPeriod))+'</span>'+
-    '</div>'+
     youPeriodBtns("modal-period", youPeriod)+
     (data.total===0
       ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
