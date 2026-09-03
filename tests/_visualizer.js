@@ -105,6 +105,14 @@ E("openExVisualizer('ex-1')");
 const thumbWithPhoto = $(".alt-card .alt-thumb");
 check(Boolean(thumbWithPhoto) && thumbBg(thumbWithPhoto).indexOf("data:image/jpeg") === 0, "uploaded exercise photo shown for similar movements when present");
 E("state.exercises.find(e=>e.id==='ex-2').image=''");
+// Every similar movement gets its own distinct nature image (no duplicates)
+E("state.exercises.find(e=>e.id==='ex-3').primaryMuscles=['Pectoralis major']");
+E("openExVisualizer('ex-1')");
+const multiThumbs = $$("#ex-vis-host .alt-card .alt-thumb").map(thumbBg);
+check(multiThumbs.length === 2, "two similar movements listed (got: " + multiThumbs.length + ")");
+check(multiThumbs.every(u=>/^https:\/\/images\.unsplash\.com\/photo-/.test(u)), "all similar-movement thumbnails are nature images");
+check(new Set(multiThumbs).size === multiThumbs.length, "no two similar movements share the same picture");
+E("state.exercises.find(e=>e.id==='ex-3').primaryMuscles=[]");
 click($("#ex-vis-host [data-vis-back]"));
 
 // Pencil click opens the editor (not the visualizer)

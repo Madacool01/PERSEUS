@@ -1770,12 +1770,18 @@ const NATURE_IMAGES = [
   "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=640&q=80"  // sunrise valley
 ];
 /* Stable per-exercise pick from NATURE_IMAGES so thumbnails vary across
-   movements but never flicker between renders. */
-function natureImageFor(name){
+   movements but never flicker between renders. Pass an optional Set of
+   already-used indices to guarantee no two exercises share a picture. */
+function natureImageFor(name, used){
   const s = seedOf(name);
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return NATURE_IMAGES[h % NATURE_IMAGES.length];
+  let idx = h % NATURE_IMAGES.length;
+  if (used){
+    while (used.has(idx)) idx = (idx + 1) % NATURE_IMAGES.length;
+    used.add(idx);
+  }
+  return NATURE_IMAGES[idx];
 }
 /* Human label for the About "Movement type" row. A rep-based movement that can
    optionally take load (the Weighted toggle) still reads as Bodyweight — just
@@ -1920,8 +1926,9 @@ function openExVisualizer(id){
     }
     rel = rel.slice(0,8);
     if (!rel.length) return "";
+    const used = new Set();
     const cards = rel.map(o=>{
-      const img = o.image ? o.image : natureImageFor(o.name);
+      const img = o.image ? o.image : natureImageFor(o.name, used);
       const parts = (o.bodyParts||[]).slice(0,3).join(", ") || (o.primaryMuscles||[]).slice(0,2).join(", ") || "—";
       return '<button type="button" class="alt-card" data-alt="'+o.id+'">'+
         '<span class="alt-thumb" style="background-image:url(\''+img+'\')"></span>'+
