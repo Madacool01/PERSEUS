@@ -80,6 +80,14 @@ check($("#you-modal-host [data-you-modal-period].active").textContent === "1Y", 
 click($("#you-modal-host [data-you-back]"));
 check(!$("#you-modal-host"), "volume expanded screen closes via back button");
 
+// Clicking outside the expanded box closes it; clicking inside keeps it open
+click($("#you-page-0 .you-chart"));
+check(Boolean($("#you-modal-host")), "expanded screen reopened for backdrop test");
+click($("#you-modal-host .you-modal-shell h2"));
+check(Boolean($("#you-modal-host")), "clicking inside the box keeps the expanded screen open");
+click($("#you-modal-host .you-modal")); // backdrop, outside the shell
+check(!$("#you-modal-host"), "clicking outside the box closes the expanded screen");
+
 // The collapsed charts still render (no selector, but they use the chosen period)
 check($$("#you-page-0 .you-bar").length > 0, "collapsed workouts chart still rendered");
 check($$("#you-page-1 .you-bar").length > 0, "collapsed volume chart still rendered");

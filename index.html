@@ -3814,7 +3814,11 @@ function openYouModal(mode){
   const onKey = ev=>{ if (ev.key==="Escape") close(); };
   document.addEventListener("keydown", onKey);
   $("[data-you-back]", host).addEventListener("click", close);
-  host.addEventListener("click", ev=>{ if (ev.target===host) close(); });
+  host.addEventListener("click", ev=>{
+    const t = ev.target;
+    if (!t || !t.closest || !t.isConnected) return; // target re-rendered mid-event
+    if (!t.closest(".you-modal-shell")) close();
+  });
   renderYouModalBody(host);
 }
 function renderYouModalBody(host){
