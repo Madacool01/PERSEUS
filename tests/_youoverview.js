@@ -37,19 +37,43 @@ check(Boolean($("#you-page-0 .vis-empty")), "empty state when no sessions logged
 
 const p1 = $("#you-page-1");
 check(p1.textContent.indexOf("Total volume") !== -1, "page 2 titled Total volume");
-check($$("#you-page-1 .you-bar").length > 0, "volume shows placeholder bars (one vertical rectangle per week)");
-check(p1.textContent.indexOf("Placeholder data") !== -1, "volume labelled as placeholder data");
+check(Boolean($("#you-page-1 .vis-empty")), "volume shows an empty state (no fake bars) before any sessions are logged");
+check(p1.textContent.indexOf("Placeholder data") === -1, "volume is no longer labelled as placeholder data");
+check(p1.textContent.indexOf("Add your current body weight in Settings") !== -1, "volume nudges to add a body weight while it is missing");
 
-// Inject sessions across two weeks and re-render the overview
-E(`state.sessions = [
-  { id:"s1", dayId:"day-1", dateISO: new Date(Date.now() - 3*86400000).toISOString(), completedSets:[] },
-  { id:"s2", dayId:"day-1", dateISO: new Date(Date.now() - 2*86400000).toISOString(), completedSets:[] },
-  { id:"s3", dayId:"day-1", dateISO: new Date(Date.now() - 10*86400000).toISOString(), completedSets:[] }
+// Inject real history: push-ups (67% body weight) plus a timed hold, and weighted
+// ring dips (90% body weight + 10 kg). Then set the profile body weight so the
+// tonnage math can run: reps × (added weight + body weight × load factor %).
+E(`state.profile.bodyWeight = 50;
+state.sessions = [
+  { id:"s1", dayId:"day-1", dateISO: new Date(Date.now() - 10*86400000).toISOString(), completedSets:[
+      { exId:"ex-1", setIndex:0, reps:8, weight:0, rating:1, hit:true },
+      { exId:"ex-1", setIndex:1, reps:8, weight:0, rating:1, hit:true },
+      { exId:"ex-1", setIndex:2, reps:8, weight:0, rating:1, hit:true },
+      { exId:"ex-12", setIndex:0, time:20, rating:1, hit:true }
+  ]},
+  { id:"s2", dayId:"day-1", dateISO: new Date(Date.now() - 2*86400000).toISOString(), completedSets:[
+      { exId:"ex-3", setIndex:0, reps:8, weight:10, rating:1, hit:true },
+      { exId:"ex-3", setIndex:1, reps:8, weight:10, rating:1, hit:true },
+      { exId:"ex-3", setIndex:2, reps:8, weight:10, rating:1, hit:true }
+  ]},
+  { id:"s3", dayId:"day-1", dateISO: new Date(Date.now() - 3*86400000).toISOString(), completedSets:[] }
 ];`);
 E("renderYouTab();");
 check($$("#you-page-0 .you-bar").length > 0, "weekly chart renders bars after logging");
 check($$("#you-page-0 .you-bar.zero").length > 0, "weeks without workouts show as empty stubs");
 check(!$("#you-page-0 .vis-empty"), "empty state gone once sessions exist");
+
+// Real math, straight from the engine: push-ups 3×8×(0 + 50×0.67) = 804 kg per
+// session (the 20 s ring L-sit is a timed hold and must not count); weighted
+// ring dips 3×8×(10 + 50×0.90) = 1320 kg. Both sessions sum to 2124 kg.
+const sessVol = E("[state.sessions[0], state.sessions[1]].map(s => sessionVolumeKg(s))");
+check(Math.abs(sessVol[0] - 804) < 0.001, "push-up session = 3 sets × 8 reps × (0 + 50 kg × 0.67) = 804 kg, timed hold ignored");
+check(Math.abs(sessVol[1] - 1320) < 0.001, "weighted ring-dip session = 3 sets × 8 reps × (10 kg + 50 kg × 0.90) = 1320 kg");
+check(Math.abs(E("youVolumeData('3m').total") - 2124) < 0.001, "weekly volume sums the logged history to 2124 kg");
+check($$("#you-page-1 .you-bar").length > 0, "volume chart renders real bars from logged history");
+check(!$("#you-page-1 .vis-empty"), "volume empty state gone once volume is countable");
+check($("#you-page-1").textContent.indexOf("Add your current body weight in Settings") === -1, "body-weight nudge gone once a weight is set");
 
 // Pager dots switch between the two views
 click($$(".you-dot")[1]);
@@ -74,6 +98,7 @@ check(Boolean($("#you-modal-host")), "clicking the volume chart opens the expand
 check($("#you-modal-host h2").textContent === "Total volume", "expanded screen titled Total volume");
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "volume expanded screen offers 5 period options");
 check($$("#you-modal-host .you-bar").length > 0, "expanded screen shows the volume bars");
+check($("#you-modal-host").textContent.indexOf("Placeholder data") === -1, "expanded volume screen is not labelled as placeholder");
 click($$("#you-modal-host [data-you-modal-period]")[3]); // 1Y
 check(E("youVolPeriod") === "1y", "volume period updated to 1Y inside the expanded screen");
 check($("#you-modal-host [data-you-modal-period].active").textContent === "1Y", "1Y pill active in the volume expanded screen");

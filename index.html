@@ -1191,7 +1191,9 @@
    -------------------------------------------------------------------------
    state = {
      profile: { weightUnit: 'kg', name: '', experience: 'beginner', apiKey: '',
-                autoApply: false },
+                autoApply: false, bodyWeight: null, heightCm: null },
+                // bodyWeight kg + heightCm: current measurements from Settings,
+                // used to scale bodyweight movements in Total volume
      exercises: [ { id, name, mode: 'reps'|'time'|'weight',
                     equipment: ['bodyweight','rings','pullup','dumbbell',...],
                     weightAvailable: bool,
@@ -1209,7 +1211,7 @@
 
 const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
-const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy", defaultSessionType:"hypertrophy" };
+const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy", defaultSessionType:"hypertrophy", bodyWeight:null, heightCm:null };
 
 /* Harder exercise progressions, auto-resolved from the user's own library.
    PROGRESSION_CHAINS maps each base movement to an ordered (easiest → hardest)
@@ -1470,6 +1472,14 @@ const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtWeight(w){ return state.profile.weightUnit==="lb" ? Math.round(w*2.2046) : w; }
 function weightUnit(){ return state.profile.weightUnit; }
+/* Settings body measurements are stored canonically in kg / cm and shown in
+   the profile's chosen unit (lb / in) — keep every conversion in one place. */
+function round1(x){ return Math.round(x*10)/10; }
+function toKg(v){ return state.profile.weightUnit==="lb" ? round1(v/2.2046) : round1(v); }
+function toCm(v){ return state.profile.weightUnit==="lb" ? round1(v*2.54) : round1(v); }
+function fromKg(kg){ return kg==null ? "" : (state.profile.weightUnit==="lb" ? round1(kg*2.2046) : round1(kg)); }
+function fromCm(cm){ return cm==null ? "" : (state.profile.weightUnit==="lb" ? round1(cm/2.54) : round1(cm)); }
+function bodyWeightKg(){ const w=state.profile&&state.profile.bodyWeight; return (typeof w==="number"&&isFinite(w)&&w>0)?w:null; }
 function getEx(id){ return state.exercises.find(e=>e.id===id); }
 function getDay(id){ return state.days.find(d=>d.id===id); }
 /* Downscale an uploaded image to a compact JPEG data URL so it survives
@@ -1975,7 +1985,7 @@ function loadRowHtml(e){
 function youUnknownLoadsHtml(){
   const n = unknownLoadExercises().length;
   if (!n) return "";
-  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">'+n+" exercise"+(n===1?"":"s")+" still lack a body-weight load factor, so they can't count toward Total volume — set it when editing the exercise, or estimate load factors with AI in the Exercise Library.</p>";
+  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">'+n+" exercise"+(n===1?"":"s")+" still lack a body-weight load factor, so their body-weight share can't count toward Total volume yet — set it when editing the exercise, or estimate load factors with AI in the Exercise Library.</p>";
 }
 /* Banner atop the library: which exercises are missing a load factor + the
    one-tap AI estimation flow (requires the optional GroqCloud key). */
@@ -3920,6 +3930,12 @@ function renderSettings(){
           '<option value="kg"'+(prof.weightUnit==="kg"?" selected":"")+'>kg</option>'+
           '<option value="lb"'+(prof.weightUnit==="lb"?" selected":"")+'>lb</option>'+
         '</select></label>'+
+        '<div class="field-head"><span>Body measurements</span><span class="hint">how Total volume is scaled</span></div>'+
+        '<div class="grid two">'+
+          '<label class="field"><span>Current weight</span><input id="set-bw" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 70" value="'+fromKg(prof.bodyWeight)+'"/></label>'+
+          '<label class="field"><span>Height (optional)</span><input id="set-ht" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 175" value="'+fromCm(prof.heightCm)+'"/></label>'+
+        '</div>'+
+        '<p class="micro" style="margin:-.1rem 0 .9rem">Current weight scales bodyweight movements in Total volume (a push-up ≈ 67% of it, a pull-up ≈ 100%). Height is stored for later use — both fields may stay blank.</p>'+
         '<label class="field"><span>Coaching depth</span><select id="set-exp">'+
           '<option value="beginner"'+(prof.experience==="beginner"?" selected":"")+'>Beginner, conservative and simple</option>'+
           '<option value="intermediate"'+(prof.experience==="intermediate"?" selected":"")+'>Intermediate, balanced</option>'+
@@ -3950,6 +3966,10 @@ function renderSettings(){
   $("#set-profile-save", s).addEventListener("click", ()=>{
     prof.name = $("#set-name", s).value.trim();
     prof.weightUnit = $("#set-unit", s).value;
+    const bwRaw = $("#set-bw", s).value.trim();
+    const htRaw = $("#set-ht", s).value.trim();
+    prof.bodyWeight = bwRaw==="" ? null : toKg(parseFloat(bwRaw));
+    prof.heightCm = htRaw==="" ? null : toCm(parseFloat(htRaw));
     prof.experience = $("#set-exp", s).value;
     saveState(); toast("Profile saved"); renderSettings();
   });
@@ -4074,18 +4094,80 @@ function youWeeksData(period){
     })),
   };
 }
-/* Placeholder total-volume series (deterministic — real calculation comes later). */
+/* Total-volume math — computed from the user's logged history (state.sessions),
+   never placeholders. Each working set contributes tonnage-style work in kg:
+   reps × (added weight + body weight × load factor %). Isometric holds (timed
+   exercises) are not counted yet, warm-up sets are prep and never counted, and
+   a set drops out when reps are missing, when its body-weight share needs a
+   load factor / body weight that isn't set, or when it has neither. */
+function completedSetVolume(ex, c){
+  if (!ex || ex.mode==="time") return null;  // isometric holds skipped for now
+  if (!c || c.type==="warmup") return null;  // warm-ups are prep, not volume
+  const reps = +c.reps||0;
+  if (reps<=0) return null;
+  const ext = (+c.weight)>0 ? +c.weight : 0;  // added load, e.g. a weighted vest
+  const lf  = (typeof ex.loadFactor==="number") ? ex.loadFactor : null;
+  const bw  = bodyWeightKg();
+  if (lf==null){ return ext>0 ? reps*ext : null; } // external only; unquantifiable bodyweight share
+  if (lf>0 && bw==null) return null;               // needs the user's current weight
+  return reps*(ext + (bw||0)*(lf/100));
+}
+function sessionVolumeKg(ses){
+  if (!ses || !Array.isArray(ses.completedSets)) return 0;
+  let sum = 0;
+  ses.completedSets.forEach(c=>{
+    const v = completedSetVolume(getEx(c.exId), c);
+    if (v) sum += v;
+  });
+  return sum;
+}
+/* Round a kg total to whole display units in the profile's chosen unit. */
+function fmtVol(kg){
+  const v = weightUnit()==="lb" ? kg*2.2046 : kg;
+  return Math.round(v);
+}
+/* Real weekly total-volume series over the chosen period (Monday-start weeks,
+   aligned with the workouts-per-week chart). Returns bars plus the raw kg
+   total and session count so callers can show a reason when it is empty. */
 function youVolumeData(period){
-  const start = youPeriodStart(period);
-  const weeks = Math.max(4, Math.round((Date.now() - start.getTime()) / (7*86400000)));
-  const bars = [];
-  const cur = new Date(start);
-  for (let i=0;i<weeks;i++){
-    const v = Math.round(45 + 50*Math.abs(Math.sin(i*1.73 + 2.1))); // deterministic 45..95
-    bars.push({ x: fmtDate(cur.toISOString()), label: "Week of "+fmtDate(cur.toISOString()), v, unit: "units" });
-    cur.setDate(cur.getDate()+7);
-  }
-  return bars;
+  const monday = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay()+6)%7)); x.setHours(0,0,0,0); return x; };
+  const start = monday(youPeriodStart(period));
+  const end = new Date(); end.setHours(0,0,0,0);
+  const weeks = [];
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate()+7)) weeks.push(new Date(cur));
+  const sums = weeks.map(()=>0);
+  const weekMs = 7*86400000;
+  let sessions = 0;
+  (state.sessions||[]).forEach(ses=>{
+    const d = new Date(ses.dateISO);
+    if (isNaN(d.getTime()) || d < start || d > end) return;
+    sessions++;
+    const wi = Math.floor((monday(d).getTime() - start.getTime()) / weekMs);
+    if (wi>=0 && wi<sums.length) sums[wi] += sessionVolumeKg(ses);
+  });
+  return {
+    total: sums.reduce((a,b)=>a+b,0),
+    sessions,
+    bars: weeks.map((w,i)=>({
+      x: fmtDate(w.toISOString()),
+      label: "Week of "+fmtDate(w.toISOString()),
+      v: fmtVol(sums[i]),
+      unit: weightUnit(),
+    })),
+  };
+}
+/* Bars when there is countable volume; a plain-language reason otherwise. */
+function youVolumeBody(period){
+  const d = youVolumeData(period);
+  if (d.total>0) return youBarsHtml(d.bars);
+  return '<div class="vis-empty">'+(d.sessions===0
+    ? "No sessions in this period yet — log a workout to see your weekly volume."
+    : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load — timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
+}
+/* Nudge toward Settings when bodyweight movements cannot be scaled yet. */
+function youNeedWeightHtml(){
+  if (bodyWeightKg()!=null) return "";
+  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings — until then, the body-weight share of every movement stays out of Total volume.</p>';
 }
 /* Shared bar-chart markup: one vertical rectangle per data point + sparse x labels. */
 function youBarsHtml(bars){
@@ -4153,9 +4235,9 @@ function renderYouPage(i){
   } else {
     page.innerHTML =
       '<div class="you-page-head"><h3>Total volume</h3></div>'+
-      youBarsHtml(youVolumeData(youVolPeriod))+
-      '<p class="micro" style="margin-top:.7rem">Placeholder data — the total-volume calculation is defined later. Click the chart to expand and choose a period.</p>'+
-      youUnknownLoadsHtml();
+      youVolumeBody(youVolPeriod)+
+      '<p class="micro" style="margin-top:.7rem">Total volume is computed from your logged history: every working set as reps × (added weight + body weight × load factor). Timed holds are not counted yet. Click the chart to expand and choose a period.</p>'+
+      youUnknownLoadsHtml()+youNeedWeightHtml();
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("volume"));
   }
@@ -4199,9 +4281,9 @@ function renderYouModalBody(host){
   if (youModalMode === "volume"){
     body.innerHTML =
       youPeriodBtns("modal-period", youVolPeriod)+
-      youBarsHtml(youVolumeData(youVolPeriod))+
-      '<p class="micro">Placeholder data — the total-volume calculation is defined later.</p>'+
-      youUnknownLoadsHtml();
+      youVolumeBody(youVolPeriod)+
+      '<p class="micro">Weekly totals from your logged sessions: reps × (added weight + body weight × load factor). Timed holds are not counted yet.</p>'+
+      youUnknownLoadsHtml()+youNeedWeightHtml();
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youVolPeriod = b.dataset.youModalPeriod;
       renderYouModalBody(host);

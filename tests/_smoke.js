@@ -134,6 +134,18 @@ function section(t){ console.log("\n== " + t + " =="); }
   section("Settings render");
   window.switchView("settings");
   check(Boolean($("#set-profile-save")), "settings profile section rendered");
+  check(Boolean($("#set-bw")) && Boolean($("#set-ht")), "settings offers current weight + optional height fields");
+  $("#set-bw").value = "70";
+  $("#set-ht").value = "175";
+  $("#set-profile-save").dispatchEvent(new window.MouseEvent("click", { bubbles:true }));
+  check(G("state.profile.bodyWeight") === 70 && G("state.profile.heightCm") === 175, "profile saves body weight (kg) and height (cm)");
+  // Imperial entry: values typed in lb / in are converted to canonical kg / cm
+  $("#set-unit").value = "lb";
+  $("#set-bw").value = "154.3";
+  $("#set-ht").value = "69";
+  $("#set-profile-save").dispatchEvent(new window.MouseEvent("click", { bubbles:true }));
+  const bwKg = G("state.profile.bodyWeight"), htCm = G("state.profile.heightCm");
+  check(Math.abs(bwKg - 70) < 0.1 && Math.abs(htCm - 175.3) < 0.1, "lb / in entry converts to kg / cm before saving (got " + bwKg + " kg / " + htCm + " cm)");
 
   section("Runtime errors");
   check(errors.length === 0, "no window errors during flows" + (errors.length ? " -> " + errors.join(" | ") : ""));
