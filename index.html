@@ -651,17 +651,16 @@
   .you-period-btn.active { background: var(--ink); color: var(--paper); }
   .you-page-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: .9rem; }
   .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
-  .you-chart { display: flex; align-items: flex-end; gap: 3px; height: 190px; padding: .4rem 0 0; }
+  .you-chart { position: relative; }
+  .you-line { display: block; width: 100%; height: auto; }
   #you-page-0 .you-chart, #you-page-1 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
   #you-page-0 .you-chart:hover, #you-page-1 .you-chart:hover { background: var(--surface-2); }
-  .you-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
-  .you-bar {
-    width: 100%; min-width: 3px; border-radius: 3px 3px 1px 1px;
-    background: linear-gradient(180deg, #a9c9f8 0%, #5d8fe8 55%, #2f63c9 100%);
-    opacity: .9; transition: opacity .2s, filter .2s;
-  }
-  .you-bar:hover { opacity: 1; filter: brightness(1.06); }
-  .you-bar.zero { height: 3px !important; background: var(--line-2); opacity: .7; }
+  .you-grid-line { stroke: var(--line-2); stroke-width: 1; }
+  .you-area { fill: #5d8fe8; fill-opacity: .18; }
+  .you-line-path { fill: none; stroke: #2f63c9; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .you-dot { fill: var(--surface); stroke: #2f63c9; stroke-width: 2; transition: fill .15s, transform .15s; }
+  .you-dot:hover { fill: var(--accent-soft); }
+  .you-hit { fill: transparent; }
   .you-xaxis { display: flex; gap: 3px; margin-top: 5px; }
   .you-x {
     flex: 1 1 0; min-width: 0; text-align: center; font-family: var(--font-mono);
@@ -4159,7 +4158,7 @@ function youVolumeData(period){
 /* Bars when there is countable volume; a plain-language reason otherwise. */
 function youVolumeBody(period){
   const d = youVolumeData(period);
-  if (d.total>0) return youBarsHtml(d.bars);
+  if (d.total>0) return youLineHtml(d.bars);
   return '<div class="vis-empty">'+(d.sessions===0
     ? "No sessions in this period yet — log a workout to see your weekly volume."
     : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load — timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
@@ -4169,18 +4168,38 @@ function youNeedWeightHtml(){
   if (bodyWeightKg()!=null) return "";
   return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings — until then, the body-weight share of every movement stays out of Total volume.</p>';
 }
-/* Shared bar-chart markup: one vertical rectangle per data point + sparse x labels. */
-function youBarsHtml(bars){
+/* Shared line-chart markup for the You overview: one point per data bar, a
+   connecting line, a soft area fill under it, and sparse x labels. Dots are
+   drawn (with per-point tooltips) while there are few enough weeks to read
+   them; dense periods get the bare line. Zero values sit on the baseline. */
+function youLineHtml(bars){
+  const n = bars.length;
+  const W = 1000, H = 200, PADX = 16, PADY = 20;
   const max = Math.max(1, ...bars.map(b=>b.v));
-  const step = Math.max(1, Math.ceil(bars.length/7));
-  const cols = bars.map(b=>{
-    const h = b.v>0 ? Math.max(10, Math.round(b.v/max*100)) : 3;
-    return '<div class="you-col" title="'+esc(b.label)+' · '+b.v+' '+esc(b.unit)+'">'+
-      '<div class="you-bar'+(b.v>0?"":" zero")+'" style="height:'+h+'%"></div>'+
-    '</div>';
+  const step = Math.max(1, Math.ceil(n/7));
+  const px = i => n<=1 ? W/2 : PADX + i*((W-2*PADX)/(n-1));
+  const py = v => H-PADY - (Math.max(0,v)/max)*(H-2*PADY);
+  const pts = bars.map((b,i)=>[px(i), py(b.v)]);
+  const line = pts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
+  const area = pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")+
+    " "+pts[pts.length-1][0].toFixed(1)+","+(H-PADY)+" "+pts[0][0].toFixed(1)+","+(H-PADY);
+  // Sparse series draw visible dots; dense ones get invisible hover targets so
+  // every week still shows its value in a tooltip without cluttering the line.
+  const dots = pts.map((p,i)=>{
+    const b = bars[i];
+    const dense = n>24;
+    return '<circle class="'+(dense?"you-hit":"you-dot")+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(dense?7:4)+'">'+
+      '<title>'+esc(b.label)+' · '+b.v+' '+esc(b.unit)+'</title></circle>';
   }).join("");
   const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
-  return '<div class="you-chart" role="img" aria-label="Bar chart">'+cols+'</div><div class="you-xaxis">'+xaxis+'</div>';
+  return '<div class="you-chart" role="img" aria-label="Line chart">'+
+      '<svg class="you-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+
+        '<line class="you-grid-line" x1="0" y1="'+(H-PADY)+'" x2="'+W+'" y2="'+(H-PADY)+'"/>'+
+        '<polygon class="you-area" points="'+area+'"/>'+
+        '<path class="you-line-path" d="'+line+'"/>'+
+        dots+
+      '</svg>'+
+    '</div><div class="you-xaxis">'+xaxis+'</div>';
 }
 function youPeriodBtns(scope, active){
   return '<div class="you-period" role="group" aria-label="Comparison period">'+
@@ -4228,7 +4247,7 @@ function renderYouPage(i){
       '<div class="you-page-head"><h3>Workouts per week</h3></div>'+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-        : youBarsHtml(data.bars))+
+        : youLineHtml(data.bars))+
       '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
@@ -4294,7 +4313,7 @@ function renderYouModalBody(host){
       youPeriodBtns("modal-period", youPeriod)+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-        : youBarsHtml(data.bars))+
+        : youLineHtml(data.bars))+
       '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youPeriod = b.dataset.youModalPeriod;

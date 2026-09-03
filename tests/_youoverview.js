@@ -60,8 +60,8 @@ state.sessions = [
   { id:"s3", dayId:"day-1", dateISO: new Date(Date.now() - 3*86400000).toISOString(), completedSets:[] }
 ];`);
 E("renderYouTab();");
-check($$("#you-page-0 .you-bar").length > 0, "weekly chart renders bars after logging");
-check($$("#you-page-0 .you-bar.zero").length > 0, "weeks without workouts show as empty stubs");
+check($$("#you-page-0 .you-line-path").length === 1, "weekly chart renders a line after logging");
+check($$("#you-page-0 .you-dot").length === E("youWeeksData('3m').bars.length"), "every week (including empty ones) is a point on the line");
 check(!$("#you-page-0 .vis-empty"), "empty state gone once sessions exist");
 
 // Real math, straight from the engine: push-ups 3×8×(0 + 50×0.67) = 804 kg per
@@ -71,7 +71,8 @@ const sessVol = E("[state.sessions[0], state.sessions[1]].map(s => sessionVolume
 check(Math.abs(sessVol[0] - 804) < 0.001, "push-up session = 3 sets × 8 reps × (0 + 50 kg × 0.67) = 804 kg, timed hold ignored");
 check(Math.abs(sessVol[1] - 1320) < 0.001, "weighted ring-dip session = 3 sets × 8 reps × (10 kg + 50 kg × 0.90) = 1320 kg");
 check(Math.abs(E("youVolumeData('3m').total") - 2124) < 0.001, "weekly volume sums the logged history to 2124 kg");
-check($$("#you-page-1 .you-bar").length > 0, "volume chart renders real bars from logged history");
+check($$("#you-page-1 .you-line-path").length === 1, "volume chart renders a real line from logged history");
+check($$("#you-page-1 .you-dot").length === E("youVolumeData('3m').bars.length"), "each week has a dot on the volume line");
 check(!$("#you-page-1 .vis-empty"), "volume empty state gone once volume is countable");
 check($("#you-page-1").textContent.indexOf("Add your current body weight in Settings") === -1, "body-weight nudge gone once a weight is set");
 
@@ -85,7 +86,7 @@ click($("#you-page-0 .you-chart"));
 check(Boolean($("#you-modal-host")), "clicking the workouts chart opens the expanded screen");
 check($("#you-modal-host h2").textContent === "Workouts", "expanded screen titled Workouts");
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "expanded screen offers 5 period options");
-check($$("#you-modal-host .you-bar").length > 0, "expanded screen shows the weekly chart");
+check($$("#you-modal-host .you-line").length === 1, "expanded screen shows the weekly line chart");
 click($$("#you-modal-host [data-you-modal-period]")[2]); // 6M
 check(E("youPeriod") === "6m", "workouts period updated to 6M inside the expanded screen");
 check($("#you-modal-host [data-you-modal-period].active").textContent === "6M", "6M pill active in the expanded screen");
@@ -97,7 +98,7 @@ click($("#you-page-1 .you-chart"));
 check(Boolean($("#you-modal-host")), "clicking the volume chart opens the expanded screen");
 check($("#you-modal-host h2").textContent === "Total volume", "expanded screen titled Total volume");
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "volume expanded screen offers 5 period options");
-check($$("#you-modal-host .you-bar").length > 0, "expanded screen shows the volume bars");
+check($$("#you-modal-host .you-line").length === 1, "expanded screen shows the volume line chart");
 check($("#you-modal-host").textContent.indexOf("Placeholder data") === -1, "expanded volume screen is not labelled as placeholder");
 click($$("#you-modal-host [data-you-modal-period]")[3]); // 1Y
 check(E("youVolPeriod") === "1y", "volume period updated to 1Y inside the expanded screen");
@@ -114,8 +115,8 @@ click($("#you-modal-host .you-modal")); // backdrop, outside the shell
 check(!$("#you-modal-host"), "clicking outside the box closes the expanded screen");
 
 // The collapsed charts still render (no selector, but they use the chosen period)
-check($$("#you-page-0 .you-bar").length > 0, "collapsed workouts chart still rendered");
-check($$("#you-page-1 .you-bar").length > 0, "collapsed volume chart still rendered");
+check($$("#you-page-0 .you-line").length > 0, "collapsed workouts line chart still rendered");
+check($$("#you-page-1 .you-line").length > 0, "collapsed volume line chart still rendered");
 
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
