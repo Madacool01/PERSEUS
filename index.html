@@ -90,7 +90,7 @@
   }
   .app-inner {
     max-width: 1240px; margin: 0 auto;
-    display: flex; align-items: center; gap: 1.3rem;
+    display: flex; align-items: center; gap: 1rem;
     padding: .68rem clamp(1.1rem, 3vw, 2rem);
   }
   .brand { display: flex; align-items: center; gap: .8rem; margin-right: auto; }
@@ -109,7 +109,7 @@
     color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r);
     padding: .38rem .72rem; white-space: nowrap; flex: none;
   }
-  @media (max-width: 1020px) { .status-chip { display: none; } }
+  @media (max-width: 1280px) { .status-chip { display: none; } }
   nav.tabs {
     display: flex; gap: .1rem; padding: 0;
     border: 1px solid var(--line); border-radius: var(--r);
@@ -120,7 +120,7 @@
   nav.tabs button {
     position: relative;
     font-family: var(--font-body); font-size: .82rem; font-weight: 600; color: var(--ink-2);
-    background: transparent; border: none; padding: .62rem .8rem; border-radius: 0;
+    background: transparent; border: none; padding: .62rem .66rem; border-radius: 0;
     cursor: pointer; display: inline-flex; align-items: center; gap: .42rem;
     white-space: nowrap; transition: color .18s;
   }
@@ -545,6 +545,23 @@
   }
   .ex-vis-tab:hover { color: var(--ink); background: var(--surface-2); }
   .ex-vis-tab.active { background: var(--ink); color: var(--paper); }
+
+  /* ---------- Section sub-tabs (You: Overview / Exercises) ---------- */
+  .sub-tabs {
+    display: flex; gap: .3rem; overflow-x: auto; padding: .3rem;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+    scrollbar-width: none; width: max-content; max-width: 100%;
+  }
+  .sub-tabs::-webkit-scrollbar { display: none; }
+  .sub-tab {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: .68rem; line-height: 1; white-space: nowrap;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); background: transparent; border: 0; border-radius: 999px;
+    padding: .58rem .98rem; cursor: pointer; transition: background .2s, color .2s;
+  }
+  .sub-tab:hover { color: var(--ink); background: var(--surface-2); }
+  .sub-tab.active { background: var(--ink); color: var(--paper); }
   .ex-vis-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .ex-vis-inner { max-width: 660px; margin: 0 auto; padding: 1rem 1.1rem 4rem; display: flex; flex-direction: column; gap: .95rem; }
   .ex-vis-media {
@@ -991,6 +1008,7 @@
       <button data-view="coach" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6v4"/><path d="M21 6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.675A7 7 0 1 1 9 6z"/></svg></span>Coach</button>
       <button data-view="history" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg></span>History</button>
       <button data-view="library" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></span>Exercises</button>
+      <button data-view="you" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c1.3-3.1 3.9-4.6 7.2-4.6s5.9 1.5 7.2 4.6"/></svg></span>You</button>
       <button data-view="settings" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg></span>Settings</button>
     </nav>
     <div class="status-chip mono" aria-hidden="true">local-first · data stays in-browser</div>
@@ -1019,6 +1037,9 @@
 
   <!-- ================= LIBRARY ================= -->
   <section id="view-library" class="view"></section>
+
+  <!-- ================= YOU ================= -->
+  <section id="view-you" class="view"></section>
 
   <!-- ================= SETTINGS ================= -->
   <section id="view-settings" class="view"></section>
@@ -1236,7 +1257,7 @@ var memStore = {};
 /* Which tab the user was on — remembered across refreshes via its own tiny key
    so restoring it doesn't rewrite the (possibly photo-heavy) whole state. */
 var VIEW_KEY = "perseus-view-v1";
-var VIEW_IDS = ["workouts","log","coach","history","library","settings"];
+var VIEW_IDS = ["you","workouts","log","coach","history","library","settings"];
 function rememberView(v){
   if (hasStorage()){ try{ localStorage.setItem(VIEW_KEY, v); return; }catch(e){} }
   memStore[VIEW_KEY] = v;
@@ -1358,6 +1379,7 @@ let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" 
 let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
 let libraryFilters = { eq:"", search:"" };
+let youTab = "overview";             // You tab: "overview" | "exercises"
 
 /* ==== APP CORE END ==== */
 /* =========================================================================
@@ -1378,6 +1400,7 @@ function render(){
   else if (currentView==="coach") renderCoach();
   else if (currentView==="history") renderHistory();
   else if (currentView==="library") renderLibrary();
+  else if (currentView==="you") renderYou();
   else if (currentView==="settings") renderSettings();
   FX.run($("#view-"+currentView));
 }
@@ -3527,6 +3550,57 @@ function renderSettings(){
     if(!confirm("Are you sure? Type of reset wipes everything.")) return;
     localStorage.removeItem(STORAGE_KEY); state=seedDefaultState(); saveState(); render();
   });
+}
+
+/* =========================================================================
+   YOU — TRAINING ANALYTICS (Overview / Exercises)
+   ========================================================================= */
+const YOU_TABS = ["overview","exercises"];
+const YOU_TAB_LABELS = { overview:"Overview", exercises:"Exercises" };
+
+function renderYou(){
+  const s = $("#view-you");
+  s.innerHTML =
+    '<div class="view-hero slim">' +
+      '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-you/1920/1080)"></div>' +
+      '<div class="view-hero-inner">' +
+        '<h2 class="view-title">Your training, <em class="serif-i">in numbers</em></h2>' +
+        '<p class="view-sub fx-scrub">Analytics and data drawn from every logged set, session, and recovery check-in.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wrap">' +
+      '<nav class="sub-tabs" aria-label="Training analytics sections" style="margin:1.6rem 0 1.2rem">' +
+        YOU_TABS.map(t=>'<button type="button" class="sub-tab'+(youTab===t?" active":"")+'" data-you-tab="'+t+'">'+YOU_TAB_LABELS[t]+'</button>').join("") +
+      '</nav>' +
+      '<div id="you-content"></div>' +
+    '</div>';
+  bindYouTabs();
+  renderYouTab();
+}
+
+function renderYouTab(){
+  const host = $("#you-content");
+  if (!host) return;
+  host.innerHTML = youTab==="overview" ? youOverviewHtml() : youExercisesHtml();
+}
+
+function youOverviewHtml(){
+  return '<div class="card"><h3>Overview</h3>' +
+    '<div class="vis-empty">Your training overview will live here — volume, effort, recovery, and trend data from every logged session.</div></div>';
+}
+
+function youExercisesHtml(){
+  return '<div class="card"><h3>Exercises</h3>' +
+    '<div class="vis-empty">Per-exercise analytics will live here — progression, performance, and records for each movement.</div></div>';
+}
+
+function bindYouTabs(){
+  const h = $("#view-you");
+  $$("[data-you-tab]", h).forEach(b=>b.addEventListener("click", ()=>{
+    youTab = b.dataset.youTab;
+    $$("[data-you-tab]", h).forEach(x=>x.classList.toggle("active", x===b));
+    renderYouTab();
+  }));
 }
 
 /* =========================================================================
