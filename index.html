@@ -1197,8 +1197,13 @@
                     equipment: ['bodyweight','rings','pullup','dumbbell',...],
                     weightAvailable: bool,
                     defaultSets, defaultReps, defaultTime, defaultWeight,
-                    notes, image: ''|'data:image/jpeg;base64,...', favorite: bool } ],
-     days: [ { id, name, exercises: [ { exId, targetSets, reps, time, weight } ] } ],
+                    notes, image: ''|'data:image/jpeg;base64,...', favorite: bool,
+                    plan: canonical shared prescription (set count, per-set
+                          reps/time, set types, weight) across all routines } ],
+     days: [ { id, name, exercises: [ { exId, targetSets, reps, time, weight,
+                    setReps|setTimes, setTypes, focus } ] — each exercise's
+                    prescription is SHARED across routines (see ex.plan) and
+                    kept in sync by syncExercisePlan(); focus stays per-day } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
                     weight, rating, note, appliedFromId } ],
                     feedback: { recovery, energy, sleep, soreness, note, satisfaction },
@@ -1293,6 +1298,71 @@ function setLadderTxt(de){
     const st = setTypeOf(de,j);
     return v + (st!=="regular" ? "·"+SET_TYPES[st].tag : "");
   }).join(" / ") + unit;
+}
+
+/* =========================================================================
+   SHARED EXERCISE PLANS (cross-routine sync)
+   -------------------------------------------------------------------------
+   An exercise's prescription — set count, per-set reps/time, set types, and
+   working weight — is shared across every routine that includes it. The
+   library exercise carries the canonical copy on `ex.plan`; each day entry
+   mirrors it. Any change (a manual edit, or a coach change accepted in one
+   routine) propagates to every other routine so the same movement always
+   prescribes the same work. Per-day `focus` (hybrid days) stays local.
+   ========================================================================= */
+function normalizePlan(ex, de){
+  const n = Math.max(1, de.targetSets || 1);
+  const plan = { targetSets:n, reps:de.reps, time:de.time, weight:de.weight,
+    setReps:null, setTimes:null, setTypes:null };
+  if (ex && ex.mode==="time"){
+    plan.setTimes = Array.isArray(de.setTimes) ? de.setTimes.slice()
+      : Array.from({length:n}, () => de.time || ex.defaultTime || 30);
+  } else {
+    plan.setReps = Array.isArray(de.setReps) ? de.setReps.slice()
+      : Array.from({length:n}, () => de.reps || (ex && ex.defaultReps) || 8);
+  }
+  plan.setTypes = Array.isArray(de.setTypes) ? de.setTypes.slice()
+    : Array.from({length:n}, () => "regular");
+  return plan;
+}
+/* The current shared plan for an exercise: the canonical copy if one has been
+   written, otherwise derived from the first routine that includes it (legacy
+   data saved before sync existed), otherwise null. */
+function exercisePlan(exId){
+  const ex = getEx(exId);
+  if (!ex) return null;
+  if (ex.plan) return ex.plan;
+  for (const d of state.days){
+    const de = d.exercises.find(x => x.exId === exId);
+    if (de) return normalizePlan(ex, de);
+  }
+  return null;
+}
+/* Write a shared plan onto one day's exercise entry (per-day focus untouched). */
+function applyPlanToEntry(de, ex, plan){
+  if (!de || !plan) return;
+  de.targetSets = plan.targetSets;
+  de.reps = plan.reps; de.time = plan.time; de.weight = plan.weight;
+  if (ex && ex.mode==="time"){
+    de.setTimes = (plan.setTimes||[]).slice(); delete de.setReps;
+  } else {
+    de.setReps = (plan.setReps||[]).slice(); delete de.setTimes;
+  }
+  de.setTypes = (plan.setTypes||[]).slice();
+}
+/* Re-derive the shared plan from one entry and propagate it to the canonical
+   copy on the library exercise plus every other routine's entry for the same
+   movement. */
+function syncExercisePlan(exId, sourceDe){
+  const ex = getEx(exId);
+  if (!ex || !sourceDe) return;
+  const plan = normalizePlan(ex, sourceDe);
+  ex.plan = plan;
+  state.days.forEach(d => {
+    d.exercises.forEach(de => {
+      if (de.exId === exId && de !== sourceDe) applyPlanToEntry(de, ex, plan);
+    });
+  });
 }
 
 let state;      // assigned during bootstrap at the bottom, after persistence helpers are defined
@@ -2752,6 +2822,7 @@ function openAddEx(dayId, exId){
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
       '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure).</p>'+
+      '<p class="micro" id="add-sync-note" style="margin-top:.4rem;color:var(--green)"></p>'+
       '<div class="btn-row"><button class="btn primary" id="add-ex-ok">'+(editing?'Save changes':'Add')+'</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
     '</div>';
   let prevVals = null, prevTypes = null;
@@ -2784,13 +2855,46 @@ function openAddEx(dayId, exId){
     $("#add-per-set", host).innerHTML = html;
     prevVals = null; prevTypes = null;
   }
+  /* Prefill a NEW entry from the exercise's shared plan (the prescription it
+     already carries in other routines) instead of library defaults. */
+  function prefillShared(ex){
+    const shared = exercisePlan(ex.id);
+    if (!shared) return false;
+    const setsEl = $("#add-ex-sets", host);
+    if (setsEl) setsEl.value = shared.targetSets||3;
+    prevVals = (ex.mode==="time" ? shared.setTimes : shared.setReps) || [];
+    prevTypes = shared.setTypes ? shared.setTypes.slice() : [];
+    const wEl = $("#add-ex-weight", host);
+    if (wEl && shared.weight!=null) wEl.value = shared.weight;
+    return true;
+  }
+  /* Explain the sync behaviour for the currently selected exercise. */
+  function updateSyncNote(ex){
+    const note = $("#add-sync-note", host);
+    if (!note) return;
+    if (editing){
+      note.textContent = "Plan is shared across routines — saving updates this exercise everywhere it appears.";
+      return;
+    }
+    const shared = exercisePlan(ex.id);
+    if (shared){
+      const names = state.days.filter(d => d.exercises.some(x => x.exId === ex.id)).map(d => d.name).join(", ") || "another routine";
+      note.textContent = "Already in "+names+" — prefilled from its current plan. Changes sync to every routine that uses this exercise.";
+    } else {
+      note.textContent = "This plan is shared — once saved, edits here update the exercise in every routine that uses it.";
+    }
+  }
   function updateFields(resetWeight){
     const vals = readVals(); if (vals.length) prevVals = vals;
     const tys = readTypes(); if (tys.length) prevTypes = tys;
     const ex = getEx($("#add-ex-select").value);
     if (!ex) return;
     $("#add-field-weight").style.display = (ex.weightAvailable||ex.mode==="weight") ? "block" : "none";
-    if (resetWeight) $("#add-ex-weight").value = ex.defaultWeight||0;
+    if (resetWeight){
+      if (!editing && prefillShared(ex)){ /* shared plan already set the fields */ }
+      else $("#add-ex-weight").value = ex.defaultWeight||0;
+    }
+    updateSyncNote(ex);
     buildPerSet();
   }
   $("#add-ex-select").addEventListener("change", ()=>updateFields(true));
@@ -2799,10 +2903,15 @@ function openAddEx(dayId, exId){
   if (editing){
     const ex = getEx(editing.exId);
     $("#add-ex-select").value = editing.exId;
-    $("#add-ex-sets").value = editing.targetSets||3;
-    prevVals = (ex&&ex.mode==="time" ? editing.setTimes : editing.setReps) || [];
-    prevTypes = editing.setTypes ? editing.setTypes.slice() : [];
-    $("#add-ex-weight").value = editing.weight!=null ? editing.weight : 0;
+    // Prefill from the shared plan (canonical copy or derived), which matches
+    // this entry once sync has run and unifies legacy copies saved before it.
+    // Falls back to the entry itself when the library exercise is gone.
+    const shared = exercisePlan(editing.exId);
+    const base = shared ? shared : editing;
+    $("#add-ex-sets").value = base.targetSets || 3;
+    prevVals = (ex && ex.mode==="time" ? base.setTimes : base.setReps) || [];
+    prevTypes = base.setTypes ? base.setTypes.slice() : [];
+    $("#add-ex-weight").value = base.weight!=null ? base.weight : 0;
     if (editing.focus && $("#add-ex-focus", host)) $("#add-ex-focus").value = editing.focus;
   }
   updateFields(!editing);
@@ -2832,6 +2941,9 @@ function openAddEx(dayId, exId){
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
     else delete entry.focus;
     if (!editing) day.exercises.push(entry);
+    // Write through: this routine's plan becomes the shared prescription for
+    // the exercise, propagated to every other routine that includes it.
+    syncExercisePlan(ex.id, entry);
     saveState(); render(); toast(editing?"Exercise updated":"Added to day");
   });
 }
@@ -3717,10 +3829,14 @@ function recAct(ds, actVal){
       const de = day.exercises.find(x=>x.exId===exId);
       if (de){
         if (sug.field==="progression"){
-          // Swap to the harder variation and adopt its default plan.
+          // Swap to the harder variation and adopt its plan — the shared
+          // prescription if the variation is used elsewhere, else its defaults.
           const nextEx = getEx(sug.to);
           de.exId = sug.to;
-          if (nextEx){
+          const shared = exercisePlan(sug.to);
+          if (shared){
+            applyPlanToEntry(de, nextEx, shared);
+          } else if (nextEx){
             const reps = nextEx.defaultReps!=null ? nextEx.defaultReps : (nextEx.mode==="time" ? 0 : de.reps||nextEx.defaultReps||0);
             const time = nextEx.defaultTime!=null ? nextEx.defaultTime : de.time||0;
             const weight = nextEx.defaultWeight||de.weight||0;
@@ -3738,7 +3854,11 @@ function recAct(ds, actVal){
           } else {
             de[sug.field] = sug.to;
           }
-          toast("Applied. "+exId+" updated for next session.");
+          // Accepted coach change applies to the shared prescription, so the
+          // same movement updates in every routine that uses it.
+          syncExercisePlan(exId, de);
+          const nm = getEx(exId) ? getEx(exId).name : "Exercise";
+          toast("Applied. "+nm+" updated in every routine.");
         }
         confettiSmall();
       }
