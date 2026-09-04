@@ -1201,9 +1201,11 @@
                     plan: canonical shared prescription (set count, per-set
                           reps/time, set types, weight) across all routines } ],
      days: [ { id, name, exercises: [ { exId, targetSets, reps, time, weight,
-                    setReps|setTimes, setTypes, focus } ] — each exercise's
-                    prescription is SHARED across routines (see ex.plan) and
-                    kept in sync by syncExercisePlan(); focus stays per-day } ],
+                    setReps|setTimes, setTypes, focus, modifiedAt } ] — each
+                    exercise's prescription is SHARED across routines (see
+                    ex.plan) and kept in sync by syncExercisePlan(); the copy
+                    modified last (falling back to the routine trained most
+                    recently) is canonical on load; focus stays per-day } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
                     weight, rating, note, appliedFromId } ],
                     feedback: { recovery, energy, sleep, soreness, note, satisfaction },
@@ -1313,7 +1315,8 @@ function setLadderTxt(de){
 function normalizePlan(ex, de){
   const n = Math.max(1, de.targetSets || 1);
   const plan = { targetSets:n, reps:de.reps, time:de.time, weight:de.weight,
-    setReps:null, setTimes:null, setTypes:null };
+    setReps:null, setTimes:null, setTypes:null,
+    modifiedAt: (typeof de.modifiedAt === "number") ? de.modifiedAt : null };
   if (ex && ex.mode==="time"){
     plan.setTimes = Array.isArray(de.setTimes) ? de.setTimes.slice()
       : Array.from({length:n}, () => de.time || ex.defaultTime || 30);
@@ -1349,6 +1352,8 @@ function applyPlanToEntry(de, ex, plan){
     de.setReps = (plan.setReps||[]).slice(); delete de.setTimes;
   }
   de.setTypes = (plan.setTypes||[]).slice();
+  // Copies share the source's modification stamp so the group stays coherent.
+  if (typeof plan.modifiedAt === "number") de.modifiedAt = plan.modifiedAt;
 }
 /* Re-derive the shared plan from one entry and propagate it to the canonical
    copy on the library exercise plus every other routine's entry for the same
@@ -1366,27 +1371,49 @@ function syncExercisePlan(exId, sourceDe){
 }
 /* Unify each exercise's prescription across routines after loading saved data
    (migration for state written before cross-routine sync existed, where every
-   routine kept its own copy and they could diverge). The first routine that
-   includes a movement sets the canonical plan; every other routine's entry
-   mirrors it. Safe to re-run: already-unified plans are a no-op. Takes the
-   state object explicitly so it can run during loadState before the global
-   `state` is assigned. */
+   routine kept its own copy and they could diverge). The copy modified last
+   becomes the canonical plan; every other routine's entry mirrors it. Safe to
+   re-run: already-unified plans are a no-op. Takes the state object explicitly
+   so it can run during loadState before the global `state` is assigned. */
 function unifyExercisePlans(s){
   if (!s || !Array.isArray(s.exercises) || !Array.isArray(s.days)) return;
   s.exercises.forEach(ex => {
     if (!ex) return;
-    let first = null;
-    for (const d of s.days){
-      const de = (d.exercises || []).find(x => x.exId === ex.id);
-      if (de){ first = de; break; }
-    }
-    if (!first) return;
-    const plan = normalizePlan(ex, first);
-    ex.plan = plan;
-    s.days.forEach(d => (d.exercises || []).forEach(de => {
-      if (de.exId === ex.id && de !== first) applyPlanToEntry(de, ex, plan);
+    const copies = [];
+    s.days.forEach((d, di) => (d.exercises || []).forEach(de => {
+      if (de.exId === ex.id) copies.push({ de, di, day: d });
     }));
+    if (!copies.length) return;
+    const win = pickPlanWinner(s, copies);
+    const plan = normalizePlan(ex, win.de);
+    ex.plan = plan;
+    copies.forEach(c => { if (c.de !== win.de) applyPlanToEntry(c.de, ex, plan); });
   });
+}
+/* Which copy of an exercise's plan is the "current" one to sync everywhere:
+   1) the copy modified last (an explicit modifiedAt stamp written on every
+      plan edit — manual or an accepted coach change),
+   2) legacy copies with no stamp: the routine trained most recently (latest
+      logged session) — the session where the user most recently progressed,
+      e.g. hit a new PR — wins,
+   3) otherwise the first routine containing the exercise (stable tiebreak). */
+function pickPlanWinner(s, copies){
+  const stamped = copies.filter(c => typeof c.de.modifiedAt === "number");
+  if (stamped.length){
+    stamped.sort((a,b) => (b.de.modifiedAt - a.de.modifiedAt) || (a.di - b.di));
+    return stamped[0];
+  }
+  let best = copies[0], bestDate = -Infinity;
+  copies.forEach(c => {
+    let d = -Infinity;
+    (s.sessions || []).forEach(ses => {
+      if (ses.dayId !== c.day.id) return;
+      const t = new Date(ses.dateISO).getTime();
+      if (isFinite(t) && t > d) d = t;
+    });
+    if (d > bestDate || (d === bestDate && c.di < best.di)){ bestDate = d; best = c; }
+  });
+  return best;
 }
 
 let state;      // assigned during bootstrap at the bottom, after persistence helpers are defined
@@ -1507,8 +1534,9 @@ function loadState() {
     ensureBuiltinLoads(s.exercises); // body-weight loads for pre-built movements saved before the field existed
     resolveProgressions(s.exercises);
     // cross-routine sync: converge per-routine copies saved before the feature
-    // existed onto one shared prescription (first routine containing a
-    // movement wins), so Friday's 8/7 and Tuesday's 7/6 become one plan.
+    // existed onto one shared prescription — the copy modified last wins
+    // (falling back to the routine trained most recently), so Friday's 8/7
+    // and Tuesday's 7/6 become one plan based on the latest training.
     unifyExercisePlans(s);
     return s;
   } catch(e){ return null; }
@@ -2969,8 +2997,10 @@ function openAddEx(dayId, exId){
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
     else delete entry.focus;
     if (!editing) day.exercises.push(entry);
-    // Write through: this routine's plan becomes the shared prescription for
-    // the exercise, propagated to every other routine that includes it.
+    // Stamp this as the latest modification, then write through: this routine's
+    // plan becomes the shared prescription for the exercise, propagated to
+    // every other routine that includes it.
+    entry.modifiedAt = Date.now();
     syncExercisePlan(ex.id, entry);
     saveState(); render(); toast(editing?"Exercise updated":"Added to day");
   });
@@ -3864,11 +3894,13 @@ function recAct(ds, actVal){
           const shared = exercisePlan(sug.to);
           if (shared){
             applyPlanToEntry(de, nextEx, shared);
+            de.modifiedAt = (typeof shared.modifiedAt === "number") ? shared.modifiedAt : Date.now();
           } else if (nextEx){
             const reps = nextEx.defaultReps!=null ? nextEx.defaultReps : (nextEx.mode==="time" ? 0 : de.reps||nextEx.defaultReps||0);
             const time = nextEx.defaultTime!=null ? nextEx.defaultTime : de.time||0;
             const weight = nextEx.defaultWeight||de.weight||0;
             de.reps = reps; de.time = time; de.weight = weight;
+            de.modifiedAt = Date.now();
           }
           toast("Applied. Swapped to "+(nextEx?nextEx.name:"harder progression")+".");
         } else {
@@ -3883,7 +3915,9 @@ function recAct(ds, actVal){
             de[sug.field] = sug.to;
           }
           // Accepted coach change applies to the shared prescription, so the
-          // same movement updates in every routine that uses it.
+          // same movement updates in every routine that uses it — stamped as
+          // the latest modification so it wins the next load's unification.
+          de.modifiedAt = Date.now();
           syncExercisePlan(exId, de);
           const nm = getEx(exId) ? getEx(exId).name : "Exercise";
           toast("Applied. "+nm+" updated in every routine.");
