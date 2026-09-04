@@ -859,6 +859,37 @@
     padding: .15rem .52rem; color: var(--ink-2);
   }
   .add-new-btn { margin-top: .9rem; }
+  /* ---------- Superset bands (routine editor) ---------- */
+  .super-band { display: block; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: .85rem .9rem .95rem; box-shadow: var(--shadow-1); }
+  .super-band:hover { border-color: var(--accent-line); }
+  .super-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding-bottom: .7rem; border-bottom: 1px dashed var(--line); }
+  .super-glyph { display: inline-flex; color: var(--accent); opacity: .95; }
+  .super-glyph svg { width: 15px; height: 15px; }
+  .super-name { font-family: var(--font-display); font-weight: 700; font-size: .98rem; letter-spacing: -.01em; color: var(--ink); }
+  .super-hint { color: var(--ink-3); }
+  .super-count { display: inline-flex; align-items: center; gap: .45rem; margin: 0; }
+  .super-count-lbl { font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .super-count input { width: 56px; text-align: center; padding: .32rem .25rem; font-family: var(--font-mono); font-weight: 600; }
+  .super-body { display: grid; gap: .45rem; margin-top: .7rem; }
+  .ex-sub { display: grid; grid-template-columns: 1fr 150px 150px auto; gap: .7rem; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); padding: .55rem .8rem; transition: border-color .18s, transform .18s; }
+  .ex-sub:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  @media (max-width: 720px) { .ex-sub { grid-template-columns: 1fr; } }
+  .super-then { display: flex; align-items: center; gap: .5rem; padding: .15rem .5rem 0; }
+  .super-then .mono { font-size: .56rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  .super-then-line { height: 1px; flex: 1; background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 8px); }
+  /* ---------- Add-superset wizard ---------- */
+  .ss-picks { display: grid; gap: .6rem; }
+  .ss-pick { display: grid; grid-template-columns: 1fr auto; gap: .6rem; align-items: end; }
+  .ss-pick .ss-rm { align-self: end; }
+  .ss-rounds input { width: 74px; text-align: center; }
+  .ss-targets { display: grid; gap: .9rem; margin-top: 1rem; }
+  .ss-member { border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: .9rem 1rem; }
+  .ss-member-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .55rem; }
+  .ss-member-head b { font-family: var(--font-display); font-weight: 700; }
+  .ss-member-body { display: grid; gap: .5rem; }
+  .ss-weight { margin: 0; max-width: 240px; }
+  .set-unit { display: block; margin-top: .25rem; font-size: .56rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-style: normal; }
+  .pill.ss { color: var(--accent); border-color: var(--accent-line); }
   .routine-card {
     position: relative; overflow: visible;
     border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 1.5rem 1.7rem;
@@ -921,6 +952,13 @@
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
   .set-cell label.field { margin: .5rem 0; }
+  /* Superset round screen: one wide panel per movement, one set each */
+  .round-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.2rem 0; }
+  .round-cell { min-width: 0; }
+  .round-cell .round-ex-name { font-family: var(--font-display); font-weight: 700; font-size: 1.04rem; letter-spacing: -.01em; color: var(--ink); }
+  .round-tags { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: .55rem; }
+  .round-tags .pill { margin: 0; }
+  .title-plus { color: var(--accent); font-weight: 700; margin: 0 .2em; opacity: .92; }
   /* ---------- Effort slider (0.5 steps) ---------- */
   .effort { margin: .65rem 0 .2rem; }
   .effort-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
@@ -1230,7 +1268,10 @@
                     exercise's prescription is SHARED across routines (see
                     ex.plan) and kept in sync by syncExercisePlan(); the copy
                     modified last (falling back to the routine trained most
-                    recently) is canonical on load; focus stays per-day } ],
+                    recently) is canonical on load; focus stays per-day },
+                    supersets: [ { id, exIds: [exId,...] } ] — optional linked
+                    groups of 2+ exercises in a routine that are logged as
+                    paired rounds (one set of every member per screen) } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
                     weight, rating, note, appliedFromId } ],
                     feedback: { recovery, energy, sleep, soreness, note, satisfaction },
@@ -2751,6 +2792,7 @@ function renderRoutineList(){
   const cards = state.days.map((d,i) => {
     const exCount = d.exercises.length;
     const setCount = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
+    const ssCount = supersetGroups(d).length;
     const last = lastSessionForDay(d.id);    return '<div class="routine-card stack-card" data-edit-day="'+d.id+'">' +
       '<div class="routine-top">'+
         '<span class="day-num mono">'+String(i+1).padStart(2,"0")+'</span>'+
@@ -2761,6 +2803,7 @@ function renderRoutineList(){
       '<div class="routine-meta">'+
         '<span class="pill">'+sessionTypeLabel(d.type||"hypertrophy")+'</span>'+
         '<span class="pill">'+exCount+' exercise'+(exCount!==1?"s":"")+'</span>'+
+        (ssCount?'<span class="pill ss">'+ssCount+' superset'+(ssCount!==1?"s":"")+'</span>':"")+
         '<span class="pill">'+setCount+' total sets</span>'+
         (last?'<span class="pill time">last logged · '+fmtDate(last.dateISO)+'</span>':"")+
       '</div>'+
@@ -2802,31 +2845,108 @@ function renderRoutineList(){
   });
 }
 
+/* ---------- Routine editor row builders (standalone exercises + supersets) ----
+   The editor renders the day as draggable units: a plain exercise is one row;
+   a superset is one band containing its member rows. The band is the drag
+   unit, so a group can never be split apart by reordering. ---------- */
+function gripSvgHtml(){
+  return '<svg viewBox="0 0 12 16" width="9" height="12" fill="currentColor" focusable="false"><circle cx="3.6" cy="2.6" r="1.2"/><circle cx="8.4" cy="2.6" r="1.2"/><circle cx="3.6" cy="8" r="1.2"/><circle cx="8.4" cy="8" r="1.2"/><circle cx="3.6" cy="13.4" r="1.2"/><circle cx="8.4" cy="13.4" r="1.2"/></svg>';
+}
+/* Shared internals for a single exercise's rendered row. */
+function exRowInnerHtml(de){
+  const ex = getEx(de.exId);
+  const nm = ex ? ex.name : "(deleted exercise)";
+  const setChips = Array.from({length:de.targetSets||0},(_,j)=>{
+    const st = setTypeOf(de,j);
+    return '<span class="set-chip'+(st!=="regular"?' type':'')+'">'+(j+1)+(st!=="regular"?'·'+SET_TYPES[st].tag:'')+'</span>';
+  }).join("");
+  const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
+    ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
+  return {
+    name: nm,
+    pills: (ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':""),
+    target: '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>',
+    chips: '<div class="set-chips">'+setChips+'</div>',
+    actions: '<div class="ex-actions">'+
+      '<button class="btn ghost small" data-edit-ex="'+de.exId+'" title="Edit set targets & types">edit</button>'+
+      '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
+    '</div>'
+  };
+}
+function rowHtml(de){
+  const it = exRowInnerHtml(de);
+  return '<div class="ex-row" data-exid="'+de.exId+'" title="Drag to reorder">'+
+    '<div class="ex-name2"><span class="grip" aria-hidden="true">'+gripSvgHtml()+'</span><b>'+esc(it.name)+'</b> '+it.pills+'</div>'+
+    it.target+it.chips+it.actions+
+  '</div>';
+}
+function supersetBandHtml(day, grp, members){
+  const n = supersetRoundCount(day, grp);
+  const subs = members.map((de,i)=>{
+    const it = exRowInnerHtml(de);
+    return (i>0?'<div class="super-then" aria-hidden="true"><span class="mono">then</span><span class="super-then-line"></span></div>':"")+
+      '<div class="ex-sub" data-exid="'+de.exId+'">'+
+        '<div class="ex-name2"><b>'+esc(it.name)+'</b> '+it.pills+'</div>'+
+        it.target+it.chips+it.actions+
+      '</div>';
+  }).join("");
+  return '<div class="ex-row super-band" data-band="'+grp.id+'" title="Drag to reorder the whole superset">'+
+    '<div class="super-head">'+
+      '<span class="grip" aria-hidden="true">'+gripSvgHtml()+'</span>'+
+      '<span class="super-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 13.9a2.3 2.3 0 0 0 3.8-3.8l-2-2a2.3 2.3 0 0 0-3.8 3.8"/><path d="M13.9 10.1a2.3 2.3 0 0 0-3.8 3.8l2 2a2.3 2.3 0 0 0 3.8-3.8"/></svg></span>'+
+      '<b class="super-name">Superset</b>'+
+      '<span class="micro super-hint">each round runs every move once, back to back, then a single rest</span>'+
+      '<div class="spacer"></div>'+
+      '<label class="super-count" title="Rounds = sets per exercise; every member shares the count"><span class="super-count-lbl mono">Rounds</span>'+
+        '<input type="number" min="1" max="12" class="super-sets-in" data-band="'+grp.id+'" value="'+n+'" aria-label="Rounds (sets per exercise) in this superset"/></label>'+
+      '<button class="btn ghost small" data-unlink="'+grp.id+'" title="Split back into separate exercises">Unlink</button>'+
+    '</div>'+
+    '<div class="super-body">'+subs+'</div>'+
+  '</div>';
+}
+function editorUnitsHtml(day){
+  return dayUnits(day).map(unit => unit.group ? supersetBandHtml(day, unit.group, unit.entries) : rowHtml(unit.entries[0])).join("");
+}
+/* Equalize a superset's round count across every member: lengthen or trim the
+   per-set target/type arrays, stamp the change, and propagate through the
+   normal cross-routine plan sync. */
+function setSupersetRounds(dayId, bandId, n){
+  const day = getDay(dayId);
+  const grp = day ? (day.supersets||[]).find(g=>g.id===bandId) : null;
+  if (!grp) return;
+  n = Math.max(1, Math.min(12, Math.round(+n)||1));
+  supersetMembers(day, grp).forEach(de => {
+    const ex = getEx(de.exId);
+    const old = Math.max(1, de.targetSets||1);
+    const isTime = ex && ex.mode==="time";
+    const arr = isTime ? (de.setTimes||[]) : (de.setReps||[]);
+    if (old === n && arr.length >= n) return;
+    const fallback = isTime ? (de.time||(ex?ex.defaultTime:0)||30) : (de.reps||(ex?ex.defaultReps:0)||8);
+    const out = [];
+    for (let i=0;i<n;i++) out[i] = (arr[i]!=null && arr[i]!=="") ? arr[i] : fallback;
+    const tys = de.setTypes||[];
+    const tyOut = [];
+    for (let i=0;i<n;i++) tyOut[i] = tys[i] || "regular";
+    if (isTime){ de.setTimes = out; delete de.setReps; de.time = out[0]; }
+    else { de.setReps = out; delete de.setTimes; de.reps = out[0]; }
+    de.setTypes = tyOut;
+    de.targetSets = n;
+    de.modifiedAt = Date.now();
+    syncExercisePlan(de.exId, de);
+  });
+  saveState(); render();
+  toast("Superset is now "+n+" round"+(n!==1?"s":"")+" — every member logs "+n+" sets.");
+}
+
 /* ---------- Routine editor (single routine, full controls) ---------- */
 function renderWorkoutEditor(){
   const s = $("#view-workouts");
   const d = getDay(planEditId);
   if (!d){ planMode="list"; planEditId=null; renderRoutineList(); return; }
   const dayType = d.type || "hypertrophy";
-  const exRows = d.exercises.map(de => {
-    const ex = getEx(de.exId);
-    const nm = ex ? ex.name : "(deleted exercise)";
-    const setChips = Array.from({length:de.targetSets||0},(_,j)=>{
-      const st = setTypeOf(de,j);
-      return '<span class="set-chip'+(st!=="regular"?' type':'')+'">'+(j+1)+(st!=="regular"?'·'+SET_TYPES[st].tag:'')+'</span>';
-    }).join("");
-    const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
-      ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
-    return '<div class="ex-row" data-exid="'+de.exId+'" title="Drag to reorder">'+
-      '<div class="ex-name2"><span class="grip" aria-hidden="true"><svg viewBox="0 0 12 16" width="9" height="12" fill="currentColor" focusable="false"><circle cx="3.6" cy="2.6" r="1.2"/><circle cx="8.4" cy="2.6" r="1.2"/><circle cx="3.6" cy="8" r="1.2"/><circle cx="8.4" cy="8" r="1.2"/><circle cx="3.6" cy="13.4" r="1.2"/><circle cx="8.4" cy="13.4" r="1.2"/></svg></span><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':"")+"</div>"+
-      '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>'+
-      '<div class="set-chips">'+setChips+'</div>'+
-      '<div class="ex-actions">'+
-        '<button class="btn ghost small" data-edit-ex="'+de.exId+'" title="Edit set targets & types">edit</button>'+
-        '<button class="btn ghost small" data-rm-ex="'+de.exId+'" title="Remove exercise">✕</button>'+
-      '</div>'+
-    '</div>';
-  }).join("");  s.innerHTML =
+  const ssCount = supersetGroups(d).length;
+  const exRows = editorUnitsHtml(d);
+  s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-inner">' +
         '<div class="editor-top">' +
@@ -2841,9 +2961,11 @@ function renderWorkoutEditor(){
     '<div class="wrap"><div class="card day-card editor-day">' +
       '<div class="day-head">'+
         '<span class="pill">'+d.exercises.length+' exercise'+(d.exercises.length!==1?"s":"")+'</span>'+
+        (ssCount?'<span class="pill ss">'+ssCount+' superset'+(ssCount!==1?"s":"")+'</span>':"")+
         '<span class="pill">'+d.exercises.reduce((a,x)=>a+(x.targetSets||0),0)+' total sets</span>'+
         '<div class="spacer"></div>'+
         '<button class="btn primary" data-add-ex="'+d.id+'">+ Add exercise</button>'+
+        '<button class="btn" data-add-ss="'+d.id+'">+ Add superset</button>'+
       '</div>'+
       '<div class="day-head" style="border:none;margin:.2rem 0 1rem;padding:0">'+
         '<label class="field" style="margin:0"><span>Session type: sets the rep range every exercise is judged against</span>'+
@@ -2870,7 +2992,10 @@ function renderWorkoutEditor(){
   }));
   $$("[data-add-ex]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddEx(b.dataset.addEx)));
-  /* Drag-to-reorder: grab a row (grip or anywhere but its buttons) to reorder. */
+  $$("[data-add-ss]", s).forEach(b=>b.addEventListener("click", ev=>
+    openAddSuperset(b.dataset.addSs)));
+  /* Drag-to-reorder: grab a row, or a superset band (its grip/body), to move a
+     unit — a band always moves as a whole group. */
   $$(".ex-row", s).forEach(row => bindRowDrag(row, d.id, s));
   $$("[data-edit-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
@@ -2879,8 +3004,25 @@ function renderWorkoutEditor(){
   $$("[data-rm-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     if(!d) return;
-    d.exercises = d.exercises.filter(x=>x.exId!==b.dataset.rmEx);
+    const exId = b.dataset.rmEx;
+    const grp = supersetFor(d, exId);
+    d.exercises = d.exercises.filter(x=>x.exId!==exId);
+    if (grp){
+      grp.exIds = grp.exIds.filter(x=>x!==exId);
+      if ((grp.exIds||[]).length < 2) d.supersets = (d.supersets||[]).filter(g=>g!==grp);
+    }
     saveState(); render();
+  }));
+  $$("[data-unlink]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    if(!d) return;
+    d.supersets = (d.supersets||[]).filter(g=>g.id!==b.dataset.unlink);
+    saveState(); render();
+    toast("Superset unlinked — those exercises now log separately");
+  }));
+  $$(".super-sets-in", s).forEach(inp=>inp.addEventListener("change", ev=>{
+    if(!d) return;
+    setSupersetRounds(d.id, inp.dataset.band, +inp.value);
   }));
 }
 
@@ -2894,17 +3036,73 @@ function renderWorkoutEditor(){
    ========================================================================= */
 let rowDrag = null;
 
-/* Pure reorder + persist: move exercises[from] to index `to`. Also the test
+/* =========================================================================
+   SUPERSETS
+   -------------------------------------------------------------------------
+   A superset links 2+ exercises in one routine so they are logged as paired
+   rounds: one round is one set of every member, done back to back before a
+   single rest. The group lives on the day (day.supersets: [ { id, exIds } ])
+   while each member stays a normal day.exercises entry, so shared exercise
+   plans keep syncing across routines exactly as before. Members of a group
+   share one set count (equalized from the editor) and stay a contiguous run
+   of day.exercises; reordering always moves a whole group as one unit.
+   ========================================================================= */
+function supersetGroups(day){
+  return Array.isArray(day && day.supersets) ? day.supersets : [];
+}
+function supersetFor(day, exId){
+  if (!day) return null;
+  return supersetGroups(day).find(g => (g.exIds||[]).indexOf(exId) !== -1) || null;
+}
+/* Entries of a superset group in the group's own order (deleted exercises drop
+   out). The group dissolves when fewer than two members remain. */
+function supersetMembers(day, grp){
+  if (!day || !grp) return [];
+  return (grp.exIds||[]).map(id => day.exercises.find(de => de.exId === id)).filter(Boolean);
+}
+/* Rounds a superset logs: the (equalized) set count of its members. If stored
+   data ever diverges, the longest member wins and shorter members simply drop
+   out of later rounds. */
+function supersetRoundCount(day, grp){
+  const members = supersetMembers(day, grp);
+  if (!members.length) return 0;
+  return Math.max.apply(null, members.map(m => Math.max(1, m.targetSets||1)));
+}
+/* The day's display/log order as units: a standalone exercise is one unit, a
+   superset group is one unit holding its members' entries in group order. The
+   editor only ever moves whole groups, so members stay contiguous. */
+function dayUnits(day){
+  const units = [];
+  const placed = {};
+  (day.exercises||[]).forEach(de => {
+    if (placed[de.exId]) return;
+    const grp = supersetFor(day, de.exId);
+    if (grp){
+      const members = supersetMembers(day, grp);
+      members.forEach(m => { placed[m.exId] = true; });
+      units.push({ group: grp, entries: members });
+    } else {
+      placed[de.exId] = true;
+      units.push({ group: null, entries: [de] });
+    }
+  });
+  return units;
+}
+/* Pure reorder + persist: move one unit (a single exercise, or a whole
+   superset group) from unit index `from` to unit index `to`. Also the test
    hook for the drag layer. Returns true when something actually moved. */
 function reorderDayExercises(dayId, from, to){
   const d = getDay(dayId);
   if (!d || !Array.isArray(d.exercises) || d.exercises.length < 2) return false;
-  const a = d.exercises;
-  from = Math.max(0, Math.min(a.length - 1, from | 0));
-  to   = Math.max(0, Math.min(a.length - 1, to | 0));
+  const units = dayUnits(d);
+  if (units.length < 2) return false;
+  from = Math.max(0, Math.min(units.length - 1, from | 0));
+  to   = Math.max(0, Math.min(units.length - 1, to | 0));
   if (from === to) return false;
-  const [moved] = a.splice(from, 1);
-  a.splice(to, 0, moved);
+  const [moved] = units.splice(from, 1);
+  units.splice(to, 0, moved);
+  d.exercises = [];
+  units.forEach(u => u.entries.forEach(de => d.exercises.push(de)));
   saveState();
   return true;
 }
@@ -3061,13 +3259,17 @@ function openAddEx(dayId, exId){
   const host = document.querySelector('.addhost[data-day="'+dayId+'"]');
   const day = getDay(dayId);
   const editing = exId ? (day.exercises.find(x=>x.exId===exId)||null) : null;
+  const ssGroup = editing ? supersetFor(day, editing.exId) : null;
+  const ssRounds = ssGroup ? supersetRoundCount(day, ssGroup) : 0;
   const opts = state.exercises.map(e=>'<option value="'+e.id+'">'+esc(e.name)+"</option>").join("");
   host.innerHTML =
     '<div class="card" style="margin-top:12px">'+
       '<h3>'+(editing?'Edit exercise':'Add exercise to day')+'</h3>'+
       '<div class="grid two">'+
         '<label class="field"><span>Exercise</span><select id="add-ex-select">'+opts+'</select></label>'+
-        '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>'+
+        (ssGroup
+          ? '<div class="field"><span>Rounds in the superset</span><div class="micro">'+ssRounds+' shared with every member — change it from the superset’s Rounds field.</div></div>'
+          : '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>')+
       '</div>'+
       (day.type==="hybrid"
         ? '<label class="field"><span>Focus: hypertrophy or strength</span><select id="add-ex-focus">'+
@@ -3095,7 +3297,8 @@ function openAddEx(dayId, exId){
   function buildPerSet(){
     const ex = getEx($("#add-ex-select").value);
     if (!ex) return;
-    const n = Math.max(1, +$("#add-ex-sets").value || 1);
+    const setsEl = $("#add-ex-sets", host);
+    const n = ssGroup ? Math.max(1, ssRounds) : Math.max(1, +(setsEl?setsEl.value:3) || 1);
     const isTime = ex.mode==="time";
     const fallback = isTime ? (ex.defaultTime||30) : (ex.defaultReps||8);
     const typeOpts = Object.keys(SET_TYPES).map(t=>'<option value="'+t+'">'+SET_TYPES[t].label+'</option>').join("");
@@ -3154,8 +3357,11 @@ function openAddEx(dayId, exId){
     buildPerSet();
   }
   $("#add-ex-select").addEventListener("change", ()=>updateFields(true));
-  $("#add-ex-sets").addEventListener("input", ()=>updateFields(false));
-  $("#add-ex-sets").addEventListener("change", ()=>updateFields(false));
+  const addSetsEl = $("#add-ex-sets", host);
+  if (addSetsEl){
+    addSetsEl.addEventListener("input", ()=>updateFields(false));
+    addSetsEl.addEventListener("change", ()=>updateFields(false));
+  }
   if (editing){
     const ex = getEx(editing.exId);
     $("#add-ex-select").value = editing.exId;
@@ -3164,7 +3370,8 @@ function openAddEx(dayId, exId){
     // Falls back to the entry itself when the library exercise is gone.
     const shared = exercisePlan(editing.exId);
     const base = shared ? shared : editing;
-    $("#add-ex-sets").value = base.targetSets || 3;
+    const baseSetsEl = $("#add-ex-sets", host);
+    if (baseSetsEl) baseSetsEl.value = base.targetSets || 3;
     prevVals = (ex && ex.mode==="time" ? base.setTimes : base.setReps) || [];
     prevTypes = base.setTypes ? base.setTypes.slice() : [];
     $("#add-ex-weight").value = base.weight!=null ? base.weight : 0;
@@ -3176,7 +3383,8 @@ function openAddEx(dayId, exId){
     const ex = getEx($("#add-ex-select").value); if(!ex){ toast("Pick an exercise"); return; }
     if (!editing && day.exercises.find(x=>x.exId===ex.id)){ toast("Already in this day"); return; }
     const m = ex.mode;
-    const n = Math.max(1, +$("#add-ex-sets").value||3);
+    const setsIn = $("#add-ex-sets", host);
+    const n = ssGroup ? Math.max(1, ssRounds) : Math.max(1, +(setsIn?setsIn.value:3)||3);
     const vals = readVals();
     const tys = readTypes();
     const types = []; for (let i=0;i<n;i++) types[i] = tys[i] || "regular";
@@ -3204,6 +3412,198 @@ function openAddEx(dayId, exId){
     syncExercisePlan(ex.id, entry);
     saveState(); render(); toast(editing?"Exercise updated":"Added to day");
   });
+}
+
+/* =========================================================================
+   ADD SUPERSET (guided wizard)
+   -------------------------------------------------------------------------
+   Builds a superset from scratch: pick 2+ exercises (each only once per day),
+   one shared round count, then per-move targets. Members are appended to the
+   routine as a contiguous run of normal day.exercises entries, wrapped in one
+   day.supersets group, and each plan goes through the usual shared sync.
+   ========================================================================= */
+function openAddSuperset(dayId){
+  const host = document.querySelector('.addhost[data-day="'+dayId+'"]');
+  const day = getDay(dayId);
+  if (!host || !day) return;
+  const inDay = {};
+  (day.exercises||[]).forEach(de => { inDay[de.exId] = true; });
+  // picks: [{ exId, vals: { setIndex: typedValue }, w }] in round order
+  const picks = [];
+  const MAX_MEMBERS = 6;
+  let ssRounds = 3;      // the shared round count, kept across card re-renders
+  function nextFree(){
+    const a = state.exercises.filter(e => !inDay[e.id] && !picks.some(p => p.exId === e.id));
+    return a.length ? a[0].id : "";
+  }
+  /* Dropdown options for slot k: every library exercise not already in the day
+     and not chosen in another slot — plus the slot's own current pick. */
+  function exOptions(k){
+    return state.exercises
+      .filter(e => !inDay[e.id] && !picks.some((p,j) => j !== k && p.exId === e.id))
+      .map(e => '<option value="'+e.id+'"'+(picks[k].exId === e.id ? ' selected' : '')+'>'+esc(e.name)+'</option>').join("");
+  }
+  /* Values an exercise already carries (its shared plan, else library defaults). */
+  function planBase(ex){
+    const shared = exercisePlan(ex.id);
+    if (shared) return { repVals: (ex.mode==="time" ? shared.setTimes : shared.setReps) || [], weight: shared.weight != null ? shared.weight : ex.defaultWeight || 0, typeVals: shared.setTypes || [] };
+    return { repVals: [], weight: ex.defaultWeight || 0, typeVals: [] };
+  }
+  function roundsEl(){ return $("#ss-sets", host); }
+  function roundsVal(){ return Math.max(1, ssRounds); }
+  /* Pull whatever the user typed into per-pick caches before a re-render. */
+  function stashDom(){
+    $$(".ss-target-in", host).forEach(inp => {
+      const k = +inp.dataset.k, i = +inp.dataset.i;
+      if (!picks[k]) return;
+      if (!picks[k].vals) picks[k].vals = {};
+      picks[k].vals[i] = inp.value;
+    });
+    $$(".ss-weight-in", host).forEach(inp => {
+      const k = +inp.dataset.k;
+      if (picks[k]) picks[k].w = inp.value;
+    });
+  }
+  /* One target card per member: a weight field when the movement takes load,
+     then a per-set reps / hold ladder sized to the shared round count. */
+  function memberTargetsHtml(k){
+    const pick = picks[k];
+    const ex = pick ? getEx(pick.exId) : null;
+    if (!ex) return "";
+    const n = roundsVal();
+    const base = planBase(ex);
+    const isTime = ex.mode==="time";
+    const fallback = isTime ? (ex.defaultTime || 30) : (ex.defaultReps || 8);
+    const unit = isTime ? "s" : "reps";
+    const cells = [];
+    for (let i=0;i<n;i++){
+      const cached = pick.vals && pick.vals[i] != null;
+      const v = cached ? pick.vals[i]
+        : ((base.repVals[i] != null && base.repVals[i] !== "") ? base.repVals[i] : fallback);
+      cells.push('<label class="set-target"><span>Set '+(i+1)+'</span>'+
+        '<input type="number" min="0" class="ss-target-in" data-k="'+k+'" data-i="'+i+'" value="'+v+'"/>'+
+        '<em class="set-unit mono">'+unit+'</em></label>');
+    }
+    const showW = ex.weightAvailable || ex.mode==="weight";
+    const wVal = (pick.w != null && pick.w !== "") ? pick.w : base.weight;
+    const w = showW
+      ? '<label class="field ss-weight"><span>Working weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="ss-weight-in" data-k="'+k+'" value="'+wVal+'"/></label>'
+      : "";
+    return '<div class="ss-member" data-k="'+k+'">'+
+      '<div class="ss-member-head"><b>'+esc(ex.name)+'</b>'+modePill(ex)+(ex.weightAvailable ? ' <span class="pill weight">wgt</span>' : '')+'</div>'+
+      '<div class="ss-member-body">'+w+'<div class="set-targets">'+cells.join("")+'</div></div>'+
+    '</div>';
+  }
+  function pickerRow(k){
+    return '<div class="ss-pick" data-k="'+k+'">'+
+      '<label class="field" style="margin:0"><span>'+(k===0 ? 'First exercise' : 'Next exercise in the round')+'</span>'+
+        '<select class="ss-ex-sel" data-k="'+k+'">'+exOptions(k)+'</select></label>'+
+      (k>0 ? '<button type="button" class="ss-rm btn ghost small" data-k="'+k+'" title="Remove from superset">✕</button>' : '')+
+    '</div>';
+  }
+  function rebuildTargets(){
+    stashDom();
+    const tgt = $("#ss-targets", host);
+    if (tgt) tgt.innerHTML = picks.map((p,k) => memberTargetsHtml(k)).join("");
+  }
+  function renderCard(){
+    const rowsHtml = picks.map((p,k) => pickerRow(k)).join("");
+    const canMore = picks.length < MAX_MEMBERS && Boolean(nextFree());
+    host.innerHTML =
+      '<div class="card" style="margin-top:12px">'+
+        '<h3>Add a superset</h3>'+
+        '<p class="micro" style="margin-bottom:.9rem">Two or more exercises done back to back — one set each — before a single rest. They are logged round by round and share one set count.</p>'+
+        '<div class="ss-picks">'+rowsHtml+'</div>'+
+        '<div class="btn-row" style="margin-top:.6rem">'+
+          (canMore ? '<button class="btn ghost small" id="ss-more">+ Another exercise</button>' : '')+
+          '<div class="spacer"></div>'+          '<label class="field ss-rounds" style="margin:0"><span>Rounds (sets per exercise)</span>' +
+            '<input id="ss-sets" type="number" min="1" max="12" value="'+ssRounds+'"/></label>' +
+        '</div>'+
+        '<div class="ss-targets" id="ss-targets"></div>'+
+        '<p class="micro" style="margin-top:.4rem;color:var(--green)">Targets follow each exercise’s shared plan, so they stay in sync across every routine that uses the movement.</p>'+
+        '<div class="btn-row"><button class="btn primary" id="ss-ok">Add superset</button><button class="btn" id="ss-cancel">Cancel</button></div>'+
+      '</div>';
+    const more = $("#ss-more", host);
+    if (more) more.addEventListener("click", ()=>{
+      const id = nextFree();
+      if (!id) return;
+      picks.push({ exId: id });
+      renderCard();
+    });
+    $$(".ss-ex-sel", host).forEach(sel => sel.addEventListener("change", ()=>{
+      const k = +sel.dataset.k;
+      picks[k].exId = sel.value;
+      picks[k].vals = null; picks[k].w = null;   // fresh exercise → fresh defaults
+      renderCard();
+    }));
+    $$(".ss-rm", host).forEach(b => b.addEventListener("click", ()=>{
+      picks.splice(+b.dataset.k, 1);
+      renderCard();
+    }));
+    const setsEl = roundsEl();
+    if (setsEl) setsEl.addEventListener("change", ()=>{
+      const v = Math.max(1, Math.min(12, Math.round(+(setsEl.value) || 3) || 1));
+      ssRounds = v; setsEl.value = v;
+      rebuildTargets();
+    });
+    rebuildTargets();
+    const ok = $("#ss-ok", host);
+    if (ok) ok.disabled = picks.length < 2;
+    $("#ss-cancel", host).addEventListener("click", ()=>render());
+    $("#ss-ok", host).addEventListener("click", commit);
+  }
+  function commit(){
+    if (picks.length < 2){ toast("A superset needs at least two exercises"); return; }
+    if (picks.some(p => !getEx(p.exId))){ toast("Pick an exercise for every slot"); return; }
+    const n = roundsVal();
+    const exIds = [];
+    picks.forEach(p => {
+      if (!getEx(p.exId)) return;
+      if (inDay[p.exId] || exIds.indexOf(p.exId) !== -1){ toast((getEx(p.exId)||{name:"That exercise"}).name+" is already in this routine"); return; }
+      exIds.push(p.exId);
+    });
+    if (exIds.length < 2) return;
+    exIds.forEach((exId, k) => {
+      const ex = getEx(exId);
+      const base = planBase(ex);
+      const isTime = ex.mode==="time";
+      const fallback = isTime ? (ex.defaultTime || 30) : (ex.defaultReps || 8);
+      // typed values live in the mounted inputs (stashDom keeps them across
+      // rebuilds); fall back to the shared plan / library defaults when blank
+      const vals = {};
+      $$('.ss-target-in[data-k="'+k+'"]', host).forEach(inp => { vals[+inp.dataset.i] = inp.value; });
+      const cache = picks[k].vals || {};
+      const entry = { exId: ex.id, targetSets: n, reps: 0, time: 0, weight: 0 };
+      const arr = [];
+      for (let i=0;i<n;i++){
+        const raw = (vals[i] != null) ? vals[i] : cache[i];
+        const typed = raw != null && raw !== "" ? +raw : NaN;
+        const baseV = base.repVals[i] != null ? +base.repVals[i] : NaN;
+        const v = (typed > 0) ? typed : ((baseV > 0) ? baseV : fallback);
+        arr.push(v);
+      }
+      if (isTime){ entry.time = arr[0]; entry.setTimes = arr; delete entry.setReps; }
+      else { entry.reps = arr[0]; entry.setReps = arr; delete entry.setTimes; }
+      entry.setTypes = Array.from({length:n}, (_,i) => base.typeVals[i] || "regular");
+      const wEl = $('.ss-weight-in[data-k="'+k+'"]', host);
+      const wRaw = (wEl && wEl.value != null && wEl.value !== "") ? wEl.value : picks[k].w;
+      if (ex.weightAvailable || ex.mode==="weight") entry.weight = (wRaw != null && wRaw !== "") ? +wRaw : (base.weight || 0);
+      entry.modifiedAt = Date.now();
+      day.exercises.push(entry);
+      syncExercisePlan(ex.id, entry);
+    });
+    const grp = { id: "ss-"+uid(), exIds: exIds.slice() };
+    if (!Array.isArray(day.supersets)) day.supersets = [];
+    day.supersets.push(grp);
+    saveState(); render();
+    toast("Superset added — log it as paired rounds");
+  }
+  const first = nextFree();
+  picks.push({ exId: first });
+  const second = nextFree();
+  picks.push({ exId: second });
+  if (!first || !second){ toast("Add at least two exercises to your library first"); return; }
+  renderCard();
 }
 
 /* =========================================================================
@@ -3254,6 +3654,7 @@ function startLog(dayId){
     type: day.type || "hypertrophy",
     startedAt: nowISO(),
     idx: 0,
+    stepTotal: logStepsForDay(day).length,  // superset groups expand into one step per round
     entries: {},           // exId -> { plan, sets:[...] }
     recoveryScreen:false,
     finished:false,
@@ -3272,33 +3673,67 @@ function startLog(dayId){
   saveState(); render();
 }
 
+/* The effort slider block shown with every set — a cell of a standalone
+   exercise screen or one panel of a superset round. */
+function effortSliderHtml(set, i){
+  const rated = set.rating>0;
+  const v = rated ? set.rating : 1;
+  const pct = ((v-1)/4)*100;
+  const txt = rated ? set.rating.toFixed(1) : "-";
+  return '<div class="effort'+(rated?' rated':'')+'" data-effort="'+i+'">'+
+    '<div class="effort-head"><span class="effort-label">Effort</span>'+
+      '<span class="effort-val'+(rated?' rated':'')+'">'+txt+'</span></div>'+
+    '<div class="effort-wrap">'+
+      '<input type="range" class="effort-range" min="1" max="5" step="0.5" value="'+v+'" data-i="'+i+'" style="background:linear-gradient(90deg,var(--accent) 0%,var(--accent) '+pct+'%,var(--line) '+pct+'%,var(--line) 100%)" aria-label="Effort level for set '+(i+1)+'"/>'+
+      '<span class="effort-bubble" style="left:'+Math.max(4,Math.min(96,pct))+'%">'+txt+'</span>'+
+    '</div>'+
+    '<div class="effort-scale"><span>Very easy</span><span>Near failure</span></div>'+
+    '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort in half-point steps")+'</div>'+
+    '<button type="button" class="effort-clear" data-i="'+i+'">clear</button>'+
+  '</div>';
+}
+/* A day renders as a flat list of logging steps: one step per standalone
+   exercise, and one step per round inside every superset (each round = one
+   set of every member). */
+function logStepsForDay(day){
+  const steps = [];
+  const done = {};
+  (day.exercises||[]).forEach(de => {
+    if (done[de.exId]) return;
+    const grp = supersetFor(day, de.exId);
+    if (grp){
+      const members = supersetMembers(day, grp);
+      members.forEach(m => { done[m.exId] = true; });
+      const n = supersetRoundCount(day, grp);
+      for (let r=0; r<n; r++) steps.push({ kind:"round", group: grp, r: r, members: members });
+    } else {
+      done[de.exId] = true;
+      steps.push({ kind:"ex", de: de });
+    }
+  });
+  return steps;
+}
+function logCurrentStep(day){
+  const steps = logStepsForDay(day);
+  return steps[Math.min(logCtx.idx, steps.length-1)] || steps[steps.length-1] || null;
+}
 function renderLogStep(s){
   const day = getDay(logCtx.dayId);
-  const de = day.exercises[logCtx.idx];
+  const total = logCtx.stepTotal || logStepsForDay(day).length;
+  const step = logCurrentStep(day);
+  if (!step) return;
+  if (step.kind === "round"){ renderLogRoundStep(s, day, step, total); return; }
+  renderLogExerciseStep(s, day, step, total);
+}
+/* One screen per standalone exercise: every one of its sets as a cell. */
+function renderLogExerciseStep(s, day, step, total){
+  const de = step.de;
   const ex = getEx(de.exId);
   const entry = logCtx.entries[de.exId];
-  const total = day.exercises.length;
   const pct = Math.round((logCtx.idx)/total*100);
   const showTime = ex.mode==="time";
   const showWeight = ex.weightAvailable || ex.mode==="weight";
   const showReps = ex.mode!=="time";
-  const effortHTML = (set,i)=>{
-    const rated = set.rating>0;
-    const v = rated ? set.rating : 1;
-    const pct = ((v-1)/4)*100;
-    const txt = rated ? set.rating.toFixed(1) : "-";
-    return '<div class="effort'+(rated?' rated':'')+'" data-effort="'+i+'">'+
-      '<div class="effort-head"><span class="effort-label">Effort</span>'+
-        '<span class="effort-val'+(rated?' rated':'')+'">'+txt+'</span></div>'+
-      '<div class="effort-wrap">'+
-        '<input type="range" class="effort-range" min="1" max="5" step="0.5" value="'+v+'" data-i="'+i+'" style="background:linear-gradient(90deg,var(--accent) 0%,var(--accent) '+pct+'%,var(--line) '+pct+'%,var(--line) 100%)" aria-label="Effort level for set '+(i+1)+'"/>'+
-        '<span class="effort-bubble" style="left:'+Math.max(4,Math.min(96,pct))+'%">'+txt+'</span>'+
-      '</div>'+
-      '<div class="effort-scale"><span>Very easy</span><span>Near failure</span></div>'+
-      '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort in half-point steps")+'</div>'+
-      '<button type="button" class="effort-clear" data-i="'+i+'">clear</button>'+
-    '</div>';
-  };
   const setCells = entry.sets.map((set,i)=>{
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
@@ -3311,7 +3746,7 @@ function renderLogStep(s){
       (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
       (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" data-i="'+i+'" value="'+set.time+'"/></label>' : "") +
       (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" data-i="'+i+'" value="'+set.weight+'"/></label>' : "") +
-      effortHTML(set, i)+
+      effortSliderHtml(set, i)+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
   }).join("");  s.innerHTML =
@@ -3368,6 +3803,109 @@ function renderLogStep(s){
   const prev = ()=>{ readFromDom(); if(logCtx.idx>0){ logCtx.idx--; render(); } };
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-recovery")) $("#log-recovery").addEventListener("click", next);
+  if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
+  if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
+    if (!confirm("Discard this session? Nothing will be saved.")) return;
+    logCtx = null; saveState(); render();
+  });
+}
+
+/* One screen per superset round: one panel per member, each holding that
+   member's single set for this round. Completing a round (both movements
+   done back to back) is one step; the next screen is the same pairing one
+   set further on, exactly as the routine prescribes. */
+function renderLogRoundStep(s, day, step, total){
+  const r = step.r;
+  const members = step.members;
+  const rounds = supersetRoundCount(day, step.group);
+  const pct = Math.round((logCtx.idx)/total*100);
+  const panelOf = (de) => {
+    const ex = getEx(de.exId);
+    if (!ex) return "";
+    const entry = logCtx.entries[de.exId];
+    if (!entry || !entry.sets[r]) return "";
+    const set = entry.sets[r];
+    const st = setTypeOf(de, r);
+    const showTime = ex.mode==="time";
+    const showWeight = ex.weightAvailable || ex.mode==="weight";
+    const showReps = ex.mode!=="time";
+    const planTxt = setPlanTxt(de, ex, r);
+    const done = set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
+    return '<div class="set-cell round-cell fx-rise'+(done?' done':'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
+      '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
+        (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
+        '<span class="set-plan mono">'+planTxt+'</span></div>'+
+      (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" value="'+set.reps+'"/></label>' : "") +
+      (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" value="'+set.time+'"/></label>' : "") +
+      (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" value="'+set.weight+'"/></label>' : "") +
+      effortSliderHtml(set, r)+
+      '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
+    '</div>';
+  };
+  const names = members.map(de => { const ex = getEx(de.exId); return ex ? ex.name : "(deleted exercise)"; });
+  const titleParts = names.map((n,i) => (i ? '<span class="title-plus" aria-hidden="true">+</span>' : '') + '<span class="round-title-name">'+esc(n)+'</span>').join("");
+  const lastRound = r+1 >= rounds;
+  const nextLabel = !lastRound ? "Next set →" : (logCtx.idx < total-1 ? "Next exercise →" : "Log recovery →");
+  s.innerHTML =
+    '<div class="wrap"><div class="phase active">' +
+      '<div class="log-head">' +
+        '<div class="round-tags"><span class="pill">Superset</span><span class="pill">Round '+(r+1)+' of '+rounds+'</span></div>' +
+        '<div class="big-title">'+titleParts+'</div>' +
+        '<div class="log-context mono">'+esc(day.name)+' · superset · do every move once, then rest · repeat for each round</div>' +
+      '</div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+      '<div class="log-step">' +
+        '<p class="small muted">One round = both movements, back to back. Enter what you actually did for each, then rate how hard each set felt.</p>' +
+        '<div class="round-grid">'+members.map(panelOf).join("")+'</div>' +
+        '<div class="btn-row">' +
+          (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Back</button>':"") +
+          '<button class="btn danger" id="log-discard">Discard session</button>' +
+          '<div class="spacer" style="flex:1"></div>' +
+          '<button class="btn primary" id="log-next">'+nextLabel+'</button>' +
+        '</div>' +
+      '</div>' +
+    '</div></div>';
+  const readPanels = ()=>{
+    $$(".round-cell", s).forEach(cell=>{
+      const entry = logCtx.entries[cell.dataset.exid];
+      if (!entry || !entry.sets[r]) return;
+      const set = entry.sets[r];
+      const g = sel => { const el = cell.querySelector(sel); return el ? el.value : null; };
+      const rv = g(".s-reps");  if (rv!=null) set.reps = rv==="" ? "" : +rv;
+      const tv = g(".s-time");  if (tv!=null) set.time = tv==="" ? "" : +tv;
+      const wv = g(".s-weight"); if (wv!=null) set.weight = wv==="" ? "" : +wv;
+      const nv = g(".s-note");  if (nv!=null) set.note = nv;
+      const done = set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
+      cell.classList.toggle("done", done);
+    });
+  };
+  $$(".s-reps,.s-time,.s-weight,.s-note", s).forEach(inp=>inp.addEventListener("input", readPanels));
+  $$(".effort-range", s).forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const cell = inp.closest(".round-cell");
+      const entry = logCtx.entries[cell.dataset.exid];
+      if (!entry || !entry.sets[r]) return;
+      entry.sets[r].rating = +inp.value;
+      syncEffort(inp, entry.sets[r]);
+    });
+  });
+  $$(".effort-clear", s).forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const cell = btn.closest(".round-cell");
+      const entry = logCtx.entries[cell.dataset.exid];
+      if (!entry || !entry.sets[r]) return;
+      entry.sets[r].rating = 0;
+      const inp = cell.querySelector(".effort-range");
+      if (inp) syncEffort(inp, entry.sets[r]);
+    });
+  });
+  const next = ()=>{
+    readPanels();
+    if (logCtx.idx < total-1){ logCtx.idx++; render(); }
+    else { logCtx.recoveryScreen = true; render(); }
+  };
+  const prev = ()=>{ readPanels(); if (logCtx.idx>0){ logCtx.idx--; render(); } };
+  if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
   if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
