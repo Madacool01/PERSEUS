@@ -825,6 +825,31 @@
   .ex-row { display: grid; grid-template-columns: 1fr 150px 150px auto; gap: .7rem; align-items: center; margin-top: .7rem; }
   @media (max-width: 720px) { .ex-row { grid-template-columns: 1fr; } }
   .ex-name2 b { font-weight: 700; }
+  .ex-row { position: relative; cursor: grab; }
+  .ex-row:active { cursor: grabbing; }
+  .ex-name2 { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; min-width: 0; }
+  .grip {
+    flex: none; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--ink-3); opacity: .45; cursor: grab; touch-action: none;
+    padding: .35rem .25rem; margin: -.35rem .1rem -.35rem -.3rem;
+    border-radius: var(--r-md); user-select: none; -webkit-user-select: none;
+    transition: opacity .18s, color .18s, background-color .18s;
+  }
+  .ex-row:hover .grip, .ex-row:focus-within .grip { opacity: .95; color: var(--ink-2); }
+  .grip:hover { color: var(--accent); background: var(--accent-soft); opacity: 1; }
+  /* while a reorder is live: neighbours glide, the grabbed row lifts */
+  .editor-day.sorting .ex-row { cursor: default; }
+  .editor-day.sorting .ex-row.is-dragging {
+    cursor: grabbing; z-index: 6;
+    background: var(--surface); box-shadow: 0 24px 46px -20px rgba(40,28,10,.38);
+    outline: 1px solid var(--accent-line); outline-offset: 3px;
+  }
+  .editor-day.sorting .ex-row:not(.is-dragging) { transition: transform .2s cubic-bezier(.2,.85,.25,1); }
+  .editor-day.sorting .ex-row.is-dragging { transition: none; }
+  @media (prefers-reduced-motion: reduce){
+    .editor-day.sorting .ex-row { transition: none !important; }
+    .editor-day.sorting .ex-row.is-dragging { outline: none; }
+  }
   .ex-actions { display: flex; gap: .35rem; justify-content: flex-end; }
   .ex-target { color: var(--ink-3); }
   .set-chips { display: flex; flex-wrap: wrap; gap: .25rem; }
@@ -2792,8 +2817,8 @@ function renderWorkoutEditor(){
     }).join("");
     const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
       ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
-    return '<div class="ex-row">'+
-      '<div class="ex-name2"><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':"")+"</div>"+
+    return '<div class="ex-row" data-exid="'+de.exId+'" title="Drag to reorder">'+
+      '<div class="ex-name2"><span class="grip" aria-hidden="true"><svg viewBox="0 0 12 16" width="9" height="12" fill="currentColor" focusable="false"><circle cx="3.6" cy="2.6" r="1.2"/><circle cx="8.4" cy="2.6" r="1.2"/><circle cx="3.6" cy="8" r="1.2"/><circle cx="8.4" cy="8" r="1.2"/><circle cx="3.6" cy="13.4" r="1.2"/><circle cx="8.4" cy="13.4" r="1.2"/></svg></span><b>'+esc(nm)+"</b> "+(ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':"")+"</div>"+
       '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>'+
       '<div class="set-chips">'+setChips+'</div>'+
       '<div class="ex-actions">'+
@@ -2845,6 +2870,8 @@ function renderWorkoutEditor(){
   }));
   $$("[data-add-ex]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddEx(b.dataset.addEx)));
+  /* Drag-to-reorder: grab a row (grip or anywhere but its buttons) to reorder. */
+  $$(".ex-row", s).forEach(row => bindRowDrag(row, d.id, s));
   $$("[data-edit-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     openAddEx(d.id, b.dataset.editEx);
@@ -2855,6 +2882,179 @@ function renderWorkoutEditor(){
     d.exercises = d.exercises.filter(x=>x.exId!==b.dataset.rmEx);
     saveState(); render();
   }));
+}
+
+/* =========================================================================
+   DRAG-TO-REORDER (routine editor)
+   Pointer-driven reorder of a routine's exercise rows. The grabbed row tracks
+   the pointer (translate with a subtle tilt/scale); neighbouring rows FLIP to
+   their new slots through a CSS transform transition; on drop the row springs
+   back into place. Degrades to instant, still-correct reorders when motion is
+   reduced or geometry is unavailable (jsdom), and never hijacks plain clicks.
+   ========================================================================= */
+let rowDrag = null;
+
+/* Pure reorder + persist: move exercises[from] to index `to`. Also the test
+   hook for the drag layer. Returns true when something actually moved. */
+function reorderDayExercises(dayId, from, to){
+  const d = getDay(dayId);
+  if (!d || !Array.isArray(d.exercises) || d.exercises.length < 2) return false;
+  const a = d.exercises;
+  from = Math.max(0, Math.min(a.length - 1, from | 0));
+  to   = Math.max(0, Math.min(a.length - 1, to | 0));
+  if (from === to) return false;
+  const [moved] = a.splice(from, 1);
+  a.splice(to, 0, moved);
+  saveState();
+  return true;
+}
+
+function motionOK(){
+  try{ return !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+  catch(e){ return true; }
+}
+
+/* Commit one move: reorder the array + DOM, FLIP the neighbours that changed
+   slots, and fold the grabbed row's layout jump into its compensation so it
+   stays glued to the pointer instead of double-moving. */
+function commitRowMove(d){
+  const rows = Array.from(d.scope.querySelectorAll(".ex-row"));
+  const from = rows.indexOf(d.row);
+  if (from < 0 || rows.length < 2) return;
+  const to = Math.max(0, Math.min(rows.length - 1, d.target));
+  if (to === from) return;
+  const oldTops = rows.map(r => r.offsetTop);
+  const beforeTop = oldTops[from];
+  reorderDayExercises(d.dayId, from, to);
+  const anchor = rows[rows.length - 1].nextSibling; // whatever follows the last row
+  if (from < to) d.row.parentNode.insertBefore(d.row, rows[to].nextSibling || anchor);
+  else d.row.parentNode.insertBefore(d.row, rows[to]);
+  d.comp += (d.row.offsetTop - beforeTop);
+  const lo = Math.min(from, to), hi = Math.max(from, to);
+  const anim = [];
+  for (const el of Array.from(d.scope.querySelectorAll(".ex-row"))){
+    if (el === d.row) continue;
+    const i = rows.indexOf(el);            // pre-move index -> pre-move slot top
+    if (i < lo || i > hi) continue;
+    const dy = oldTops[i] - el.offsetTop;  // FLIP offset: where it was -> where it is
+    if (dy > .5 || dy < -.5) anim.push([el, dy]);
+  }
+  if (anim.length && motionOK()){
+    for (const [el, dy] of anim) el.style.transform = "translateY(" + dy + "px)";
+    void d.editor.offsetWidth;             // force a reflow so the clear below animates
+    for (const [el] of anim) el.style.transform = "";
+  }
+}
+
+/* One frame of dragging: arm the session after a small threshold, keep the row
+   under the pointer, and move it whenever it crosses another row's midpoint. */
+function rowDragStep(){
+  const d = rowDrag; if (!d) return;
+  if (!d.active){
+    if (Math.abs(d.lastX - d.startX) < 5 && Math.abs(d.lastY - d.startY) < 5) return;
+    d.active = true;
+    d.editor = d.row.closest(".editor-day") || d.scope;
+    d.editor.classList.add("sorting");
+    d.row.classList.add("is-dragging");
+    document.body.style.userSelect = "none";
+    d.row.style.transformOrigin = "50% 12px";
+    d.timer = setInterval(rowDragAutoScroll, 90);
+  }
+  if (!d.row.isConnected || !d.scope.isConnected){ rowDragEnd(); return; }
+  const dy = (d.lastY - d.startY) - d.comp;
+  d.row.style.transform = "translate3d(0," + dy + "px,0)" +
+    (motionOK() ? " rotate(.4deg) scale(1.02)" : "");
+  const rows = Array.from(d.scope.querySelectorAll(".ex-row"));
+  if (rows.length < 2) return;
+  const rb = d.row.getBoundingClientRect();
+  const mid = rb.top + rb.height / 2;
+  let target = 0;
+  for (const r of rows){
+    if (r === d.row) continue;
+    const b = r.getBoundingClientRect();
+    if (b.top + b.height / 2 < mid) target++;
+  }
+  if (target !== rows.indexOf(d.row)){ d.target = target; commitRowMove(d); }
+}
+
+/* Hold near the viewport edge and the list keeps scrolling under the cursor. */
+function rowDragAutoScroll(){
+  const d = rowDrag; if (!d) return;
+  const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  let step = 0;
+  if (d.lastY < 96) step = -13;
+  else if (d.lastY > vh - 96) step = 13;
+  if (!step) return;
+  const before = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
+  window.scrollBy(0, step);
+  const moved = (window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0) - before;
+  if (moved){
+    d.startY -= moved;   // cancel the scroll so the grabbed row stays glued
+    rowDragStep();
+  }
+}
+
+function onRowDragMove(ev){
+  const d = rowDrag; if (!d) return;
+  d.lastX = ev.clientX; d.lastY = ev.clientY;
+  rowDragStep();
+}
+function onRowDragSelect(ev){ if (rowDrag && rowDrag.active) ev.preventDefault(); }
+
+function rowDragEnd(){
+  const d = rowDrag; if (!d) return;
+  rowDrag = null;
+  window.removeEventListener("pointermove", onRowDragMove);
+  window.removeEventListener("pointerup", rowDragEnd);
+  window.removeEventListener("pointercancel", rowDragEnd);
+  window.removeEventListener("blur", rowDragEnd);
+  document.removeEventListener("selectstart", onRowDragSelect);
+  if (d.timer){ clearInterval(d.timer); d.timer = 0; }
+  document.body.style.userSelect = "";
+  if (!d.active) return;
+  const row = d.row, editor = d.editor, scope = d.scope;
+  row.classList.remove("is-dragging");
+  row.style.removeProperty("transform-origin");
+  const visTop = row.getBoundingClientRect().top;
+  row.style.removeProperty("transform");
+  const natTop = row.getBoundingClientRect().top;
+  const jump = visTop - natTop;
+  if (motionOK() && (jump > 1 || jump < -1)){
+    // spring the row from wherever the pointer left it into its slot
+    row.style.transition = "transform .3s cubic-bezier(.2,1.35,.3,1)";
+    row.style.transform = "translateY(" + jump + "px)";
+    void row.offsetWidth;
+    row.style.transform = "";
+  }
+  for (const el of Array.from(scope.querySelectorAll(".ex-row"))){
+    if (el !== row) el.style.removeProperty("transform");
+  }
+  if (!motionOK()){ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }
+  else setTimeout(()=>{ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }, 340);
+  saveState(); // final order persisted (each commit already saved too)
+}
+
+/* Wire drag gestures to one row: the grip or the row body start a drag, its
+   buttons never do. A ~5px threshold keeps plain clicks untouched. */
+function bindRowDrag(row, dayId, scope){
+  row.addEventListener("pointerdown", ev => {
+    if (rowDrag) return;                                // one drag at a time
+    if (ev.button !== undefined && ev.button !== 0) return; // left button / touch only
+    if (ev.target && ev.target.closest && ev.target.closest("button,input,select,textarea,a,label")) return;
+    if (!row.getBoundingClientRect().height) return;    // no layout (jsdom) — nothing to drag
+    const rows = Array.from(scope.querySelectorAll(".ex-row"));
+    rowDrag = {
+      row: row, dayId: dayId, scope: scope, editor: null, active: false,
+      startX: ev.clientX, startY: ev.clientY,
+      lastX: ev.clientX, lastY: ev.clientY,
+      comp: 0, target: rows.indexOf(row), timer: 0,
+    };
+    window.addEventListener("pointermove", onRowDragMove);
+    window.addEventListener("pointerup", rowDragEnd);
+    window.addEventListener("pointercancel", rowDragEnd);
+    window.addEventListener("blur", rowDragEnd);
+    document.addEventListener("selectstart", onRowDragSelect);
+  });
 }
 
 function openAddEx(dayId, exId){
