@@ -4,7 +4,7 @@ const { JSDOM } = require("jsdom");
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 
 // Simulate a user with existing data under the OLD key only.
-const store = { "adaptive-coach-v1": JSON.stringify({
+const legacy = {
   profile: { name:"Alex", weightUnit:"kg", experience:"beginner", apiKey:"", autoApply:false },
   exercises: [ { id:"ex-1", name:"Custom Press", mode:"reps", equipment:["dumbbell"], weightAvailable:true,
     defaultSets:4, defaultReps:6, defaultTime:30, defaultWeight:10, notes:"" } ],
@@ -14,12 +14,14 @@ const store = { "adaptive-coach-v1": JSON.stringify({
     recovery:{}, finalized:true } ],
   pending: [],
   counts:{ nextId:10 }
-})};
+};
 
 const dom = new JSDOM(html, {
   runScripts:"dangerously", pretendToBeVisual:true, url:"http://localhost/",
   beforeParse(w){
-    w.localStorage = { getItem:k=>k in store?store[k]:null, setItem:(k,v)=>{store[k]=String(v);}, removeItem:k=>{delete store[k];} };
+    // jsdom's real localStorage is what the page sees (window.localStorage is
+    // an accessor we can't replace) — seed it before the bootstrap script runs.
+    w.localStorage.setItem("adaptive-coach-v1", JSON.stringify(legacy));
     w.scrollTo=()=>{};
   },
 });
@@ -32,8 +34,8 @@ check(E("state.exercises.length")===1 && E("state.exercises[0].name")==="Custom 
 check(E("state.days[0].name")==="MyDay", "migrated day loads");
 check(E("state.sessions.length")===1, "migrated session loads");
 check(E("state.counts.nextId")===10, "migrated id counter preserved");
-check(!("adaptive-coach-v1" in store), "legacy key removed after migration");
-check("perseus-v1" in store, "data now stored under perseus-v1");
+check(E("localStorage.getItem('adaptive-coach-v1')")===null, "legacy key removed after migration");
+check(E("localStorage.getItem('perseus-v1')")!==null, "data now stored under perseus-v1");
 
 console.log("\nRESULT: "+pass+" passed, "+fail+" failed");
 process.exit(fail?1:0);

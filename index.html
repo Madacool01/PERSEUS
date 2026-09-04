@@ -1364,6 +1364,30 @@ function syncExercisePlan(exId, sourceDe){
     });
   });
 }
+/* Unify each exercise's prescription across routines after loading saved data
+   (migration for state written before cross-routine sync existed, where every
+   routine kept its own copy and they could diverge). The first routine that
+   includes a movement sets the canonical plan; every other routine's entry
+   mirrors it. Safe to re-run: already-unified plans are a no-op. Takes the
+   state object explicitly so it can run during loadState before the global
+   `state` is assigned. */
+function unifyExercisePlans(s){
+  if (!s || !Array.isArray(s.exercises) || !Array.isArray(s.days)) return;
+  s.exercises.forEach(ex => {
+    if (!ex) return;
+    let first = null;
+    for (const d of s.days){
+      const de = (d.exercises || []).find(x => x.exId === ex.id);
+      if (de){ first = de; break; }
+    }
+    if (!first) return;
+    const plan = normalizePlan(ex, first);
+    ex.plan = plan;
+    s.days.forEach(d => (d.exercises || []).forEach(de => {
+      if (de.exId === ex.id && de !== first) applyPlanToEntry(de, ex, plan);
+    }));
+  });
+}
 
 let state;      // assigned during bootstrap at the bottom, after persistence helpers are defined
 
@@ -1482,6 +1506,10 @@ function loadState() {
     // hand-edited chains are preserved)
     ensureBuiltinLoads(s.exercises); // body-weight loads for pre-built movements saved before the field existed
     resolveProgressions(s.exercises);
+    // cross-routine sync: converge per-routine copies saved before the feature
+    // existed onto one shared prescription (first routine containing a
+    // movement wins), so Friday's 8/7 and Tuesday's 7/6 become one plan.
+    unifyExercisePlans(s);
     return s;
   } catch(e){ return null; }
 }
@@ -4123,6 +4151,7 @@ function renderSettings(){
         if(!d.exercises) throw 0;
         state = d; state.profile = Object.assign({}, DEFAULT_PROFILE, d.profile||{});
         ensureBuiltinLoads(state.exercises);
+        unifyExercisePlans(state); // imported backups may predate cross-routine sync
         saveState(); render(); toast("Import complete");
       }catch(e){ toast("Invalid backup file"); }
     };
@@ -4554,8 +4583,11 @@ if (typeof window.addEventListener === "function"){
 state = loadState();
 if (!state) {
   state = seedDefaultState();
-  saveState();
 }
+// Persist immediately after load: a legacy-key migration (or the load-time
+// plan unification) must survive a refresh that happens before the user's
+// next interaction, instead of waiting for the first save.
+saveState();
 
 /* Return to whichever section the user was on before a refresh (workouts on a fresh visit). */
 function restoreView(){
