@@ -190,5 +190,52 @@ if (hasLiveRefresh){
   check(false, "live refresh reports visibility (skipped: hook missing)");
 }
 
+// Muscle split distribution: weekly volume + sets per primary muscle
+check(E("typeof weeklySplitData") === "function", "weeklySplitData exists");
+const splitGroups = E("typeof SPLIT_GROUPS !== 'undefined' ? SPLIT_GROUPS : null");
+check(Array.isArray(splitGroups) && splitGroups.length === 11, "11 split muscles defined");
+check(splitGroups && splitGroups.indexOf("chest") !== -1 && splitGroups.indexOf("calves") !== -1 && splitGroups.indexOf("neck") === -1, "split covers chest..calves, no neck");
+E(`state.profile.bodyWeight = 50;
+getEx('ex-1').primaryMuscles = ['Pectoralis major'];
+getEx('ex-1').secondaryMuscles = ['Triceps brachii'];
+getEx('ex-12').primaryMuscles = ['Rectus abdominis'];
+getEx('ex-12').secondaryMuscles = [];
+(function(){
+  var monday = new Date(); monday.setDate(monday.getDate() - ((monday.getDay()+6)%7)); monday.setHours(12,0,0,0);
+  var old = new Date(monday.getTime() - 3*86400000);
+  state.sessions = [
+    { id:'s-sp1', dayId:'day-1', dateISO: monday.toISOString(), completedSets: [
+      { exId:'ex-1', setIndex:0, reps:8, weight:0, rating:2, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:1, reps:8, weight:0, rating:2, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:2, reps:8, weight:0, rating:2, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:3, reps:8, weight:0, rating:2, hit:true, type:'warmup' },
+      { exId:'ex-12', setIndex:0, time:20, rating:2, hit:true, type:'regular' }
+    ]},
+    { id:'s-sp-old', dayId:'day-1', dateISO: old.toISOString(), completedSets: [
+      { exId:'ex-1', setIndex:0, reps:8, weight:0, rating:2, hit:true, type:'regular' }
+    ]}
+  ];
+})();`);
+const split = E("weeklySplitData(Date.now())");
+check(split && Math.abs(split.groups.chest.volumeKg - 804) < 0.001 && split.groups.chest.sets === 3, "chest gets 804 kg over 3 working sets (warmup + last-week excluded)");
+check(split.groups.triceps.sets === 0 && split.groups.triceps.volumeKg === 0, "secondary-only triceps gets no split credit");
+check(split.groups.abs.sets === 1 && split.groups.abs.volumeKg === 0, "timed ab hold counts a set with no tonnage volume");
+check(split.groups.back.sets === 0, "untrained back stays at zero");
+E("state.sessions = []; renderYouTab();");
+clickTab("you");
+check(Boolean($("#you-muscle-split")), "split section rendered under the muscle map");
+check($$("#you-muscle-split [data-split-muscle]").length === 11, "11 per-muscle split rows rendered");
+check(!!(E("document.querySelector('.you-overview').innerHTML.indexOf('you-weekly-muscles')") < E("document.querySelector('.you-overview').innerHTML.indexOf('you-muscle-split')")), "split sits directly under the muscle map");
+E(`getEx('ex-1').primaryMuscles = ['Pectoralis major'];
+getEx('ex-1').secondaryMuscles = ['Triceps brachii'];
+state.sessions = [{ id:'s-sp2', dayId:'day-1', dateISO: new Date().toISOString(), completedSets: [
+  { exId:'ex-1', setIndex:0, reps:8, weight:0, rating:2, hit:true, type:'regular' },
+  { exId:'ex-1', setIndex:1, reps:8, weight:0, rating:2, hit:true, type:'regular' },
+  { exId:'ex-1', setIndex:2, reps:8, weight:0, rating:2, hit:true, type:'regular' }
+]}]; renderYouTab();`);
+clickTab("you");
+const splitTxt = $("#you-muscle-split").textContent;
+check(splitTxt.indexOf("804") !== -1 && splitTxt.indexOf("3") !== -1, "split row shows 804 volume and 3 sets for chest");
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

@@ -5315,6 +5315,72 @@ function youWeeklyMusclesHtml(nowMs){
 }
 
 /* =========================================================================
+   WEEKLY MUSCLE SPLIT (Monday-start week → volume + sets per muscle)
+   -------------------------------------------------------------------------
+   For each major muscle: tonnage volume (same math as Total volume) plus the
+   working-set count it received this week, counting PRIMARY muscles only.
+   Warm-ups and empty sets excluded; timed holds count sets but carry no
+   tonnage (same convention as Total volume). Pure + testable.
+   ========================================================================= */
+const SPLIT_GROUPS = ["chest","shoulders","triceps","back","biceps","forearms","abs","quads","hamstrings","hips","calves"];
+function weeklySplitData(nowMs){
+  const now = +nowMs || Date.now();
+  const start = youWeekStart(now);
+  const groups = {};
+  SPLIT_GROUPS.forEach(g=>{ groups[g] = { volumeKg: 0, sets: 0 }; });
+  let sessionCount = 0;
+  const sessions = (typeof state !== "undefined" && state && state.sessions) || [];
+  sessions.forEach(ses=>{
+    const t = new Date(ses.dateISO).getTime();
+    if (!isFinite(t) || t < start || t > now) return;
+    let hit = false;
+    (ses.completedSets || []).forEach(c=>{
+      if (!c || c.type === "warmup") return;
+      const ex = (typeof getEx === "function") ? getEx(c.exId) : null;
+      if (!(+c.reps > 0 || +c.time > 0)) return;
+      let gs = [];
+      const prim = (ex && ex.primaryMuscles) || [];
+      if (prim.length){
+        prim.forEach(m=>{ const g = RECOVERY_DETAIL_MAP[m]; if (g && SPLIT_GROUPS.indexOf(g) !== -1 && gs.indexOf(g) === -1) gs.push(g); });
+      } else {
+        ((ex && ex.bodyParts) || []).forEach(b=>{
+          (RECOVERY_BODYPART_MAP[b] || []).forEach(g=>{ if (SPLIT_GROUPS.indexOf(g) !== -1 && gs.indexOf(g) === -1) gs.push(g); });
+        });
+      }
+      if (!gs.length) return;
+      hit = true;
+      const v = (typeof completedSetVolume === "function") ? completedSetVolume(ex, c) : null;
+      gs.forEach(g=>{ groups[g].sets++; if (v) groups[g].volumeKg += v; });
+    });
+    if (hit) sessionCount++;
+  });
+  return { groups, sessionCount };
+}
+function youSplitHtml(nowMs){
+  const d = weeklySplitData(nowMs);
+  const vols = SPLIT_GROUPS.map(g=>d.groups[g].volumeKg);
+  const maxVol = Math.max(0, ...vols);
+  const maxSets = Math.max(1, ...SPLIT_GROUPS.map(g=>d.groups[g].sets));
+  const rows = SPLIT_GROUPS.map(g=>{
+    const s = d.groups[g];
+    const w = maxVol > 0 ? Math.round(100 * s.volumeKg / maxVol) : Math.round(100 * s.sets / maxSets);
+    const sub = s.sets === 0 ? "no volume this week" : s.sets + (s.sets === 1 ? " set" : " sets");
+    return '<div class="rec-row" data-split-muscle="' + g + '">'+
+      '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + fmtVol(s.volumeKg) + ' ' + esc(weightUnit()) + '</span></div>'+
+      '<div class="rec-bar"><div class="rec-fill" style="width:' + w + '%;background:var(--accent)"></div></div>'+
+      '<div class="rec-sub">' + sub + '</div></div>';
+  }).join("");
+  const cap = d.sessionCount === 0
+    ? "No sessions logged this week yet — log a workout to see your split."
+    : d.sessionCount + (d.sessionCount === 1 ? " session" : " sessions") + " this week";
+  return '<div class="week-muscles" id="you-muscle-split">' +
+    '<div class="you-page-head"><h3>Muscle split</h3><span class="pill time">Mon–Sun</span></div>' +
+    '<div class="wm-legend"><span>Volume + working sets per muscle · primary muscles only</span><span>' + cap + '</span></div>' +
+    '<div class="rec-grid">' + rows + '</div>' +
+    '<p class="micro" style="margin-top:.7rem">Same tonnage math as Total volume — timed holds count sets, not volume.</p></div>';
+}
+
+/* =========================================================================
    YOU — TRAINING ANALYTICS (Overview / Exercises)
    ========================================================================= */
 const YOU_TABS = ["overview","exercises"];
@@ -5584,7 +5650,8 @@ function renderYouRecoverySection(){
     '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
     youRecoveryHtml(Date.now())+
     '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>'+
-    youWeeklyMusclesHtml(Date.now());
+    youWeeklyMusclesHtml(Date.now())+
+    youSplitHtml(Date.now());
   /* Upgrade the fallback map to the anatomical body-muscles charts when the
      CDN module has loaded (no-op offline / in jsdom — the fallback stays). */
   try{ if (typeof window.renderWeeklyBodyCharts === "function") window.renderWeeklyBodyCharts(); }catch(e){}
