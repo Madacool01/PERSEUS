@@ -690,6 +690,16 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .you-x.dim { color: transparent; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; }
+  .rec-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: .6rem .7rem; background: var(--surface-2); }
+  .rec-top { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; }
+  .rec-name { font-family: var(--font-display); font-weight: 700; font-size: .9rem; text-transform: capitalize; color: var(--ink); }
+  .rec-pct { font-family: var(--font-mono); font-size: .8rem; font-weight: 600; color: var(--ink-2); }
+  .rec-bar { height: 6px; border-radius: 999px; background: var(--line-2); margin-top: .5rem; overflow: hidden; }
+  .rec-fill { height: 100%; border-radius: 999px; background: var(--green); transition: width .3s; }
+  .rec-sub { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: .4rem; }
+  .rec-total { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; padding: .7rem .9rem; border: 1px solid var(--accent-line); border-radius: var(--r-md); background: linear-gradient(120deg, var(--accent-soft), transparent 70%); margin-bottom: .7rem; }
+  .rec-total b { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); }
   #you-modal-host:empty { display: none; }
   #you-modal-host {
     position: fixed; inset: 0; z-index: 70;
@@ -4959,6 +4969,125 @@ function renderSettings(){
 }
 
 /* =========================================================================
+   MUSCLE RECOVERY (dose-weighted exponential decay)
+   -------------------------------------------------------------------------
+   Pure function of now - training history. Each working set creates fatigue
+   per RECOVERY_GROUPS entry (primary 1.0 / secondary 0.4, warmups excluded),
+   scaled by reps/time volume and RPE (rating). Remaining fatigue decays
+   exponentially with a per-group tau, so scores increment automatically on
+   every render: recovery = 100 * exp(-remaining / 3), rounded 0-100.
+   Total = mean of the 12 groups. Untouched/untagged muscles stay 100%.
+   ========================================================================= */
+const RECOVERY_GROUPS = ["chest","shoulders","triceps","back","biceps","forearms","quads","hamstrings","hips","calves","abs","neck"];
+const RECOVERY_TAU_H = { chest:40, shoulders:40, triceps:30, back:40, biceps:30, forearms:30, quads:48, hamstrings:48, hips:40, calves:30, abs:30, neck:30 };
+const RECOVERY_SCALE = 3;
+const RECOVERY_DETAIL_MAP = {
+  "Pectoralis major":"chest",
+  "Anterior deltoid":"shoulders", "Lateral deltoid":"shoulders", "Posterior deltoid":"shoulders",
+  "Triceps brachii":"triceps",
+  "Upper trapezius":"neck", "Middle trapezius":"back", "Lower trapezius":"back",
+  "Teres major":"back", "Teres minor":"back", "Latissimus dorsi":"back", "Erector spinae":"back",
+  "Rectus abdominis":"abs", "Obliques":"abs",
+  "Hip flexors":"hips", "Glutes":"hips", "Abductors":"hips",
+  "Hamstrings":"hamstrings", "Quadriceps":"quads",
+  "Biceps brachii":"biceps", "Brachialis":"biceps",
+  "Brachioradialis":"forearms", "Wrist flexors":"forearms", "Wrist extensors":"forearms",
+  "Gastrocnemius (calf)":"calves", "Soleus (calf)":"calves"
+};
+const RECOVERY_BODYPART_MAP = {
+  "Chest":["chest"], "Shoulders":["shoulders"], "Arms":["biceps","triceps"],
+  "Forearms":["forearms"], "Back":["back"], "Traps":["back"], "Core":["abs"],
+  "Hips":["hips"], "Glutes":["hips"], "Thighs":["quads","hamstrings"],
+  "Legs":["quads","hamstrings"], "Calves":["calves"], "Neck":["neck"]
+};
+/* Which recovery groups an exercise trains: [{g, w}]. Prefers explicit
+   primary/secondary muscle tags; falls back to bodyParts; else []. */
+function recoveryGroupsForExercise(ex){
+  if (!ex) return [];
+  const out = [];
+  const prim = ex.primaryMuscles || [], sec = ex.secondaryMuscles || [];
+  if (prim.length || sec.length){
+    prim.forEach(m=>{ const g = RECOVERY_DETAIL_MAP[m]; if (g && !out.some(o=>o.g===g && o.w===1)) out.push({ g, w:1 }); });
+    sec.forEach(m=>{ const g = RECOVERY_DETAIL_MAP[m]; if (g && !out.some(o=>o.g===g)) out.push({ g, w:0.4 }); });
+    return out;
+  }
+  (ex.bodyParts || []).forEach(b=>{
+    (RECOVERY_BODYPART_MAP[b] || []).forEach(g=>{
+      if (!out.some(o=>o.g===g)) out.push({ g, w:0.8 });
+    });
+  });
+  return out;
+}
+/* Fatigue dose of one logged set. Null = not counted (warmup / empty). */
+function recoveryDoseForSet(ex, c){
+  if (!c || c.type === "warmup") return null;
+  let volF = 1;
+  if (ex && ex.mode === "time"){
+    const t = +c.time || 0;
+    if (t <= 0) return null;
+    volF = Math.max(0.4, Math.min(1.6, t / 30));
+  } else {
+    const r = +c.reps || 0;
+    if (!(r > 0)) return null;
+    volF = 0.6 + 0.4 * Math.max(0.3, Math.min(1.8, r / 10));
+  }
+  const rating = +c.rating || 0;
+  const effort = rating > 0 ? 1 + (Math.min(5, rating) - 1) * 0.12 : 1;
+  let mult = effort;
+  if (c.type === "failure") mult *= 1.35;
+  else if (c.type === "drop") mult *= 1.2;
+  if (c.hit === false) mult *= 1.25;
+  return 0.45 * volF * mult;
+}
+function muscleRecoveryAt(nowMs){
+  const res = {};
+  RECOVERY_GROUPS.forEach(g=>{ res[g] = 100; });
+  const sessions = (typeof state !== "undefined" && state && state.sessions) || [];
+  if (!sessions.length) return res;
+  const now = +nowMs || Date.now();
+  const remaining = {};
+  RECOVERY_GROUPS.forEach(g=>{ remaining[g] = 0; });
+  const lastHit = {};
+  sessions.forEach(ses=>{
+    const t = new Date(ses.dateISO).getTime();
+    if (!isFinite(t) || t > now) return;
+    const perGroup = {};
+    (ses.completedSets || []).forEach(c=>{
+      const ex = (typeof getEx === "function") ? getEx(c.exId) : null;
+      const d = recoveryDoseForSet(ex, c);
+      if (d == null) return;
+      recoveryGroupsForExercise(ex).forEach(({ g, w })=>{
+        perGroup[g] = (perGroup[g] || 0) + d * w;
+      });
+    });
+    const elapsedH = (now - t) / 3600000;
+    Object.keys(perGroup).forEach(g=>{
+      const capped = Math.min(2.5, perGroup[g]);
+      remaining[g] += capped * Math.exp(-elapsedH / (RECOVERY_TAU_H[g] || 40));
+      lastHit[g] = Math.max(lastHit[g] || 0, t);
+    });
+  });
+  RECOVERY_GROUPS.forEach(g=>{
+    res[g] = Math.max(0, Math.min(100, Math.round(100 * Math.exp(-remaining[g] / RECOVERY_SCALE))));
+  });
+  res._lastHit = lastHit;
+  return res;
+}
+function totalRecoveryAt(nowMs){
+  const m = muscleRecoveryAt(nowMs);
+  const sum = RECOVERY_GROUPS.reduce((a,g)=>a + (m[g] || 0), 0);
+  return Math.round(sum / RECOVERY_GROUPS.length);
+}
+function recoveryEtaHours(g, nowMs){
+  const m = muscleRecoveryAt(nowMs);
+  if ((m[g] || 0) >= 99.5) return 0;
+  for (let h = 1; h <= 168; h++){
+    if (muscleRecoveryAt((+nowMs || Date.now()) + h * 3600000)[g] >= 99.5) return h;
+  }
+  return 168;
+}
+
+/* =========================================================================
    YOU — TRAINING ANALYTICS (Overview / Exercises)
    ========================================================================= */
 const YOU_TABS = ["overview","exercises"];
@@ -5170,9 +5299,10 @@ function youPeriodBtns(scope, active){
 function youOverviewHtml(){
   return '<div class="you-overview">'+
     '<div class="you-carousel-wrap">'+
-      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
+      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume and recovery">'+
         '<div class="you-page" id="you-page-0"></div>'+
         '<div class="you-page" id="you-page-1"></div>'+
+        '<div class="you-page" id="you-page-2"></div>'+
       '</div>'+
       '<button type="button" class="you-nav you-nav-prev" data-you-nav="prev" aria-label="Previous chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>'+
       '<button type="button" class="you-nav you-nav-next" data-you-nav="next" aria-label="Next chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>'+
@@ -5180,16 +5310,42 @@ function youOverviewHtml(){
     '<div class="you-dots">'+
       '<button type="button" class="you-dot active" data-you-page="0" aria-label="Workouts per week"></button>'+
       '<button type="button" class="you-dot" data-you-page="1" aria-label="Total volume"></button>'+
+      '<button type="button" class="you-dot" data-you-page="2" aria-label="Recovery"></button>'+
     '</div>'+
   '</div>';
+}
+function youRecoveryHtml(nowMs){
+  const now = +nowMs || Date.now();
+  const m = muscleRecoveryAt(now);
+  const total = totalRecoveryAt(now);
+  const lastHit = (m && m._lastHit) || {};
+  const rows = RECOVERY_GROUPS.map(g=>{
+    const pct = m[g];
+    const color = pct >= 85 ? "var(--green)" : pct >= 60 ? "var(--amber)" : "var(--red)";
+    let sub;
+    if (!lastHit[g]) sub = "no logged work — fresh";
+    else {
+      const h = Math.max(0, Math.round((now - lastHit[g]) / 3600000));
+      sub = pct >= 99.5 ? "ready — trained " + h + "h ago" : "trained " + h + "h ago · ~" + recoveryEtaHours(g, now) + "h to full";
+    }
+    return '<div class="rec-row" data-rec-muscle="' + g + '">'+
+      '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + pct + '%</span></div>'+
+      '<div class="rec-bar"><div class="rec-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'+
+      '<div class="rec-sub">' + sub + '</div></div>';
+  }).join("");
+  return '<div class="rec-total"><div><h3 style="margin:0">Recovery</h3>'+
+    '<div class="micro">Total is the mean of all muscles · updates automatically as time passes</div></div>'+
+    '<b>' + total + '%</b></div>'+
+    '<div class="rec-grid">' + rows + '</div>';
 }
 function bindYouOverview(){
   renderYouPage(0);
   renderYouPage(1);
+  renderYouPage(2);
   const car = $("#you-carousel");
   const dots = $$(".you-dot");
   if (!car) return;
-  const pageCount = () => $$("#you-carousel .you-page").length || 2;
+  const pageCount = () => $$("#you-carousel .you-page").length || 3;
   const currentIndex = () => Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
   const prevBtn = $("[data-you-nav='prev']");
   const nextBtn = $("[data-you-nav='next']");
@@ -5223,6 +5379,18 @@ function bindYouOverview(){
     });
   });
   syncNav(currentIndex());
+  try{
+    if (window._youRecTimer) clearInterval(window._youRecTimer);
+    window._youRecTimer = setInterval(()=>{
+      try{
+        if (currentView !== "you" || youTab !== "overview") return;
+        const p2 = $("#you-page-2");
+        if (!p2 || !p2.isConnected) return;
+        renderYouPage(2);
+      }catch(e){}
+    }, 60000);
+    if (window._youRecTimer.unref) window._youRecTimer.unref();
+  }catch(e){}
 }
 function renderYouPage(i){
   const page = $("#you-page-"+i);
@@ -5237,6 +5405,11 @@ function renderYouPage(i){
       '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
+  } else if (i===2){
+    page.innerHTML =
+      '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
+      youRecoveryHtml(Date.now())+
+      '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>';
   } else {
     page.innerHTML =
       '<div class="you-page-head"><h3>Total volume</h3></div>'+
