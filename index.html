@@ -584,6 +584,26 @@
   }
   .you-dot:hover { transform: scale(1.25); border-color: var(--ink); }
   .you-dot.active { background: var(--accent); border-color: var(--accent); }
+  .you-carousel-wrap { position: relative; }
+  .you-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--shadow-1); color: var(--ink);
+    cursor: pointer; z-index: 2;
+    transition: background .2s, transform .2s, border-color .2s;
+  }
+  .you-nav:hover { background: var(--surface-2); border-color: var(--line-2); transform: translateY(-50%) scale(1.06); }
+  .you-nav:active { transform: translateY(-50%) scale(0.96); }
+  .you-nav-prev { left: 8px; }
+  .you-nav-next { right: 8px; }
+  .you-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  @media (max-width: 480px) {
+    .you-nav { width: 32px; height: 32px; }
+    .you-nav-prev { left: 6px; }
+    .you-nav-next { right: 6px; }
+  }
 
   /* ---------- Body-weight load: editor presets, library banner, AI estimator ---------- */
   .lf-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: .35rem 0 .55rem; }
@@ -5148,9 +5168,13 @@ function youPeriodBtns(scope, active){
 }
 function youOverviewHtml(){
   return '<div class="you-overview">'+
-    '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
-      '<div class="you-page" id="you-page-0"></div>'+
-      '<div class="you-page" id="you-page-1"></div>'+
+    '<div class="you-carousel-wrap">'+
+      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
+        '<div class="you-page" id="you-page-0"></div>'+
+        '<div class="you-page" id="you-page-1"></div>'+
+      '</div>'+
+      '<button type="button" class="you-nav you-nav-prev" data-you-nav="prev" aria-label="Previous chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>'+
+      '<button type="button" class="you-nav you-nav-next" data-you-nav="next" aria-label="Next chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>'+
     '</div>'+
     '<div class="you-dots">'+
       '<button type="button" class="you-dot active" data-you-page="0" aria-label="Workouts per week"></button>'+
@@ -5164,19 +5188,30 @@ function bindYouOverview(){
   const car = $("#you-carousel");
   const dots = $$(".you-dot");
   if (!car) return;
+  const pageCount = () => $$("#you-carousel .you-page").length || 2;
+  const currentIndex = () => Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
+  const goTo = (idx)=>{
+    const n = pageCount();
+    idx = ((idx % n) + n) % n;
+    const target = idx * (car.clientWidth || 1);
+    if (typeof car.scrollTo === "function") car.scrollTo({ left: target, behavior: "smooth" });
+    else car.scrollLeft = target;
+    dots.forEach((x,j)=>x.classList.toggle("active", j===idx));
+  };
   car.addEventListener("scroll", ()=>{
     clearTimeout(car._t);
     car._t = setTimeout(()=>{
-      const i = Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
+      const i = currentIndex();
       dots.forEach((d,k)=>d.classList.toggle("active", k===i));
     }, 80);
   }, { passive:true });
-  dots.forEach((d,k)=>d.addEventListener("click", ()=>{
-    const target = k * (car.clientWidth || 1);
-    if (typeof car.scrollTo === "function") car.scrollTo({ left: target, behavior: "smooth" });
-    else car.scrollLeft = target;
-    dots.forEach((x,j)=>x.classList.toggle("active", j===k));
-  }));
+  dots.forEach((d,k)=>d.addEventListener("click", ()=> goTo(k)));
+  $$("[data-you-nav]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const dir = btn.dataset.youNav === "prev" ? -1 : 1;
+      goTo(currentIndex() + dir);
+    });
+  });
 }
 function renderYouPage(i){
   const page = $("#you-page-"+i);
