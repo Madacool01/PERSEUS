@@ -5233,7 +5233,7 @@ function renderYouPage(i){
       '<div class="you-page-head"><h3>Workouts per week</h3></div>'+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-        : youLineHtml(data.bars))+
+        : youLineHtml(data.bars, { values: true }))+
       '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
@@ -5299,7 +5299,7 @@ function renderYouModalBody(host){
       youPeriodBtns("modal-period", youPeriod)+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-        : youLineHtml(data.bars))+
+        : youLineHtml(data.bars, { values: true }))+
       '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youPeriod = b.dataset.youModalPeriod;
