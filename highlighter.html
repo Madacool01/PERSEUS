@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Muscle Highlighter with Smart View Detection</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #f4f4f6;
+    padding: 24px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.hint { color: #666; font-size: 14px; margin: 0 0 16px; max-width: 720px; }
+  code { background: #eee; padding: 1px 5px; border-radius: 4px; }
+
+  .app {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Sidebar with muscle checkboxes */
+  .panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    padding: 14px 16px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  .panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .panel-header strong { font-size: 15px; }
+  #selected-count { font-size: 12px; color: #666; }
+  .panel-actions { display: flex; gap: 8px; margin: 8px 0 10px; }
+  .btn-mini {
+    flex: 1;
+    background: #f0f0f3;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 5px 0;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .btn-mini:hover { background: #e5e5ea; }
+  #checkbox-list { overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; }
+
+  .group { margin-bottom: 14px; }
+  .group-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+  }
+  .group-title a {
+    color: #2563eb;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .group-title a:hover { text-decoration: underline; }
+  label.muscle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 2.5px 0;
+    cursor: pointer;
+  }
+  label.muscle:hover { color: #2563eb; }
+  label.muscle input { accent-color: #2563eb; margin: 0; cursor: pointer; }
+  .muscle-name { flex: 0 0 auto; }
+  .muscle-id { margin-left: auto; font-size: 11px; color: #aaa; }
+
+  /* Right column: chart + controls */
+  .main { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .controls { margin-bottom: 8px; }
+  .btn-screenshot {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  }
+  .btn-screenshot:hover { background: #1d4ed8; }
+
+  /* Capture container shrinks tightly around visible content */
+  .capture-wrapper {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    margin-top: 12px;
+    width: fit-content;
+    box-sizing: border-box;
+  }
+  .views {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    width: fit-content;
+  }
+  .view-box {
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Centers SVG elements within view boundaries */
+  #front-container, #back-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #front-container svg, #back-container svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .label { text-align: center; font-size: 13px; color: #444; margin-top: 8px; }
+  #status { margin-top: 12px; font-size: 13px; min-height: 18px; text-align: center; }
+
+  @media (max-width: 900px) {
+    .app { flex-direction: column; align-items: center; }
+    .panel { position: static; max-height: 320px; width: min(320px, 100%); }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<h1>Muscle Highlighter</h1>
+<p class="hint">
+  Built with open-source <code>body-muscles</code> &amp; <code>html2canvas</code> library.<br>
+  Check a muscle to highlight it on the body chart — uncheck it to remove the highlight.<br>
+  Launch with <code>start.bat</code> and screenshots are saved automatically into this folder.
+  (Opening the file directly still works, but saves go to the Downloads folder.)
+</p>
+
+<div class="app">
+  <aside class="panel">
+    <div class="panel-header">
+      <strong>Muscles</strong>
+      <span id="selected-count">0 selected</span>
+    </div>
+    <div class="panel-actions">
+      <button id="btn-all" class="btn-mini">Select all</button>
+      <button id="btn-none" class="btn-mini">Clear all</button>
+    </div>
+    <div id="checkbox-list">Loading…</div>
+  </aside>
+
+  <main class="main">
+    <div class="controls">
+      <button id="btn-capture" class="btn-screenshot">📷 Take Screenshot</button>
+    </div>
+
+    <div id="capture-area" class="capture-wrapper">
+      <div class="views">
+        <div class="view-box" id="front-view-box">
+          <div id="front-container"></div>
+          <div class="label">Front</div>
+        </div>
+        <div class="view-box" id="back-view-box">
+          <div id="back-container"></div>
+          <div class="label">Back</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="status"></div>
+  </main>
+</div>
+
+<script type="module">
+  import * as BodyMuscles from "https://esm.sh/body-muscles";
+
+  const { BodyChart, ViewSide, MUSCLE_MAP } = BodyMuscles;
+  // Optional: group checkboxes by body region. Falls back to one flat list if unavailable.
+  const MUSCLE_GROUPS = BodyMuscles.MUSCLE_GROUPS || {};
+
+  /* Default selection (mirrors the old hardcoded list) */
+  const DEFAULT_SELECTED = new Set(["biceps-left", "biceps-right"]);
+  const INTENSITY = 10;
+
+  /* Region Classifiers */
+  const UPPER_PATTERNS = [
+    "head", "face", "neck", "shoulder", "biceps", "triceps",
+    "forearm", "chest", "abs", "obliques", "serratus", "traps",
+    "lats", "spine", "lower-back", "nape", "hand", "elbow"
+  ];
+
+  /* Side Classifiers */
+  const FRONT_ONLY_PATTERNS = ["chest", "abs", "obliques", "biceps", "quadriceps", "shin", "tibialis", "serratus", "face"];
+  const BACK_ONLY_PATTERNS = ["lats", "triceps", "gluteus", "hamstring", "calves", "gastrocnemius", "soleus", "lower-back", "nape", "rhomboid", "spine"];
+
+  const frontViewBox = document.getElementById("front-view-box");
+  const backViewBox = document.getElementById("back-view-box");
+
+  /* State map: every muscle gets an entry. Unselected muscles get intensity 0
+     (slate gray); selected ones get the full highlight intensity (red). */
+  const bodyState = {};
+  MUSCLE_MAP.forEach(m => {
+    const selected = DEFAULT_SELECTED.has(m.id);
+    bodyState[m.id] = { intensity: selected ? INTENSITY : 0, selected };
+  });
+
+  /* Render charts (transitions off so highlights update instantly & screenshots are crisp) */
+  const frontChart = new BodyChart(document.getElementById("front-container"), {
+    view: ViewSide.FRONT,
+    bodyState,
+    showViewLabel: false,
+    enableTransitions: false,
+  });
+
+  const backChart = new BodyChart(document.getElementById("back-container"), {
+    view: ViewSide.BACK,
+    bodyState,
+    showViewLabel: false,
+    enableTransitions: false,
+  });
+
+  /* Recompute which views are needed and how the screenshot should be framed */
+  function computeViewFlags() {
+    let hasUpper = false;
+    let hasLower = false;
+    let hasFront = false;
+    let hasBack = false;
+
+    MUSCLE_MAP.forEach(m => {
+      if (!bodyState[m.id].selected) return;
+      const id = m.id;
+
+      const isUpper = UPPER_PATTERNS.some(p => id.includes(p));
+      if (isUpper) hasUpper = true;
+      else hasLower = true;
+
+      const isFrontOnly = FRONT_ONLY_PATTERNS.some(p => id.includes(p));
+      const isBackOnly = BACK_ONLY_PATTERNS.some(p => id.includes(p));
+
+      if (isFrontOnly) {
+        hasFront = true;
+      } else if (isBackOnly) {
+        hasBack = true;
+      } else {
+        hasFront = true;
+        hasBack = true;
+      }
+    });
+
+    if (!hasFront && !hasBack) {
+      hasFront = true;
+      hasBack = true;
+    }
+    return { hasUpper, hasLower, hasFront, hasBack };
+  }
+
+  let viewFlags = computeViewFlags();
+
+  function applyView() {
+    viewFlags = computeViewFlags();
+    frontViewBox.style.display = viewFlags.hasFront ? "" : "none";
+    backViewBox.style.display = viewFlags.hasBack ? "" : "none";
+  }
+
+  function updateCount() {
+    const count = MUSCLE_MAP.filter(m => bodyState[m.id].selected).length;
+    document.getElementById("selected-count").textContent = `${count} selected`;
+  }
+
+  /* Apply a selection change to the charts, checkboxes, count and view */
+  function setSelection(ids, selected) {
+    ids.forEach(id => {
+      if (bodyState[id]) {
+        bodyState[id].selected = selected;
+        bodyState[id].intensity = selected ? INTENSITY : 0;
+      }
+      const cb = document.querySelector(`input[data-id="${CSS.escape(id)}"]`);
+      if (cb) cb.checked = selected;
+    });
+    frontChart.update({ bodyState });
+    backChart.update({ bodyState });
+    updateCount();
+    applyView();
+  }
+
+  /* Build checkbox list, grouped by body region */
+  const idToGroup = {};
+  Object.entries(MUSCLE_GROUPS).forEach(([group, ids]) => {
+    ids.forEach(id => { idToGroup[id] = group; });
+  });
+
+  const grouped = new Map();
+  [...MUSCLE_MAP]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .forEach(m => {
+      const group = idToGroup[m.id] || "Other";
+      if (!grouped.has(group)) grouped.set(group, []);
+      grouped.get(group).push(m);
+    });
+
+  const listEl = document.getElementById("checkbox-list");
+  listEl.innerHTML = "";
+
+  grouped.forEach((muscles, group) => {
+    const div = document.createElement("div");
+    div.className = "group";
+
+    const title = document.createElement("div");
+    title.className = "group-title";
+    const name = document.createElement("span");
+    name.textContent = group;
+    const links = document.createElement("span");
+    const allLink = document.createElement("a");
+    allLink.textContent = "all";
+    const noneLink = document.createElement("a");
+    noneLink.textContent = "none";
+    links.append(allLink, " / ", noneLink);
+    title.append(name, links);
+    div.appendChild(title);
+
+    const groupIds = muscles.map(m => m.id);
+    allLink.addEventListener("click", () => setSelection(groupIds, true));
+    noneLink.addEventListener("click", () => setSelection(groupIds, false));
+
+    muscles.forEach(m => {
+      const label = document.createElement("label");
+      label.className = "muscle";
+
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.id = m.id;
+      input.checked = bodyState[m.id].selected;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "muscle-name";
+      nameSpan.textContent = m.name;
+
+      const idSpan = document.createElement("span");
+      idSpan.className = "muscle-id";
+      idSpan.textContent = m.id;
+
+      input.addEventListener("change", () => setSelection([m.id], input.checked));
+
+      label.append(input, nameSpan, idSpan);
+      div.appendChild(label);
+    });
+
+    listEl.appendChild(div);
+  });
+
+  /* Global select all / clear all */
+  document.getElementById("btn-all").addEventListener("click", () =>
+    setSelection(MUSCLE_MAP.map(m => m.id), true));
+  document.getElementById("btn-none").addEventListener("click", () =>
+    setSelection(MUSCLE_MAP.map(m => m.id), false));
+
+  updateCount();
+  applyView();
+
+  function setStatus(message, isError) {
+    const el = document.getElementById("status");
+    el.textContent = message;
+    el.style.color = isError ? "#a3221a" : "#16a34a";
+  }
+
+  /* Screenshot Capture Handling */
+  document.getElementById("btn-capture").addEventListener("click", async () => {
+    setStatus("Capturing…", false);
+    const captureArea = document.getElementById("capture-area");
+
+    // Render high-res canvas with HTML2Canvas
+    const fullCanvas = await html2canvas(captureArea, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+
+    const targetWidth = fullCanvas.width;
+    const targetHeight = fullCanvas.height;
+
+    let cropY = 0;
+    let cropHeight = targetHeight;
+
+    // Handle Vertical Framing (Upper / Lower / Full) based on current selection
+    if (viewFlags.hasUpper && !viewFlags.hasLower) {
+      cropY = 0;
+      cropHeight = Math.round(targetHeight * 0.58);
+    } else if (viewFlags.hasLower && !viewFlags.hasUpper) {
+      cropY = Math.round(targetHeight * 0.42);
+      cropHeight = targetHeight - cropY;
+    }
+
+    // Create perfectly centered output canvas
+    const croppedCanvas = document.createElement("canvas");
+    croppedCanvas.width = targetWidth;
+    croppedCanvas.height = cropHeight;
+
+    const ctx = croppedCanvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, targetWidth, cropHeight);
+
+    ctx.drawImage(
+      fullCanvas,
+      0, cropY, targetWidth, cropHeight,
+      0, 0, targetWidth, cropHeight
+    );
+
+    const dataUrl = croppedCanvas.toDataURL("image/png");
+
+    // Served by the local server: save straight into this folder
+    if (location.protocol.startsWith("http")) {
+      try {
+        const resp = await fetch("/save-screenshot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl })
+        });
+        if (!resp.ok) throw new Error("Server rejected the save");
+        const { filename } = await resp.json();
+        setStatus(`Saved ${filename} to this folder ✔`, false);
+      } catch (err) {
+        setStatus("Save failed — is the server running? Launch with start.bat.", true);
+      }
+      return;
+    }
+
+    // Opened directly as a file: fall back to a normal browser download
+    const link = document.createElement("a");
+    link.download = `muscle-highlight-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
+    setStatus("Downloaded to your browser's download folder (use start.bat to save here).", false);
+  });
+</script>
+
+</body>
+</html>

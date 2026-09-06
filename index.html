@@ -700,6 +700,12 @@
   .rec-sub { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: .4rem; }
   .rec-total { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; padding: .7rem .9rem; border: 1px solid var(--accent-line); border-radius: var(--r-md); background: linear-gradient(120deg, var(--accent-soft), transparent 70%); margin-bottom: .7rem; }
   .rec-total b { font-family: var(--font-display); font-size: 1.4rem; color: var(--ink); }
+  .week-muscles { margin-top: 1rem; border-top: 1px dashed var(--line); padding-top: 1rem; }
+  .wm-legend { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; font-family: var(--font-mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: .4rem 0 .7rem; }
+  .wm-views { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .wm-view { flex: 1 1 220px; max-width: 300px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: .6rem; text-align: center; }
+  .wm-view svg { width: 100%; height: auto; display: block; }
+  .wm-view .label { font-size: 12px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .1em; }
   #you-modal-host:empty { display: none; }
   #you-modal-host {
     position: fixed; inset: 0; z-index: 70;
@@ -5088,6 +5094,227 @@ function recoveryEtaHours(g, nowMs){
 }
 
 /* =========================================================================
+   WEEKLY TRAINED MUSCLES (Monday-start week → front/back body map)
+   -------------------------------------------------------------------------
+   Set-based, not dose-based: a muscle counts as trained if any working set
+   (warmups + empty reps/time excluded) hit it this week. Primary wins over
+   secondary. Renders with the `body-muscles` CDN (same library as
+   highlighter.html) when online; the inline SVG below is the offline/jsdom
+   fallback. Primary red #E5533D, secondary blue #5C9CE6.
+   ========================================================================= */
+function youWeekStart(nowMs){
+  const d = new Date(+nowMs || Date.now());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+const DETAIL_TO_WMUSCLE = {
+  "Pectoralis major":["chest-l","chest-r"],
+  "Anterior deltoid":["shoulder-l","shoulder-r"], "Lateral deltoid":["shoulder-l","shoulder-r"],
+  "Posterior deltoid":["shoulder-b-l","shoulder-b-r"],
+  "Triceps brachii":["triceps-l","triceps-r"],
+  "Biceps brachii":["biceps-l","biceps-r"], "Brachialis":["biceps-l","biceps-r"],
+  "Brachioradialis":["forearm-l","forearm-r"], "Wrist flexors":["forearm-l","forearm-r"], "Wrist extensors":["forearm-l","forearm-r"],
+  "Rectus abdominis":["abs"], "Obliques":["oblique-l","oblique-r"],
+  "Upper trapezius":["trap-t"], "Middle trapezius":["trap-m"], "Lower trapezius":["trap-m"],
+  "Teres major":["lat-l","lat-r"], "Teres minor":["lat-l","lat-r"],
+  "Latissimus dorsi":["lat-l","lat-r"], "Erector spinae":["erector"],
+  "Glutes":["glute-l","glute-r"], "Abductors":["glute-l","glute-r"], "Hip flexors":["hip-f-l","hip-f-r"],
+  "Quadriceps":["quad-l","quad-r"], "Hamstrings":["ham-l","ham-r"],
+  "Gastrocnemius (calf)":["calf-l","calf-r"], "Soleus (calf)":["calf-l","calf-r"]
+};
+const BODYPART_TO_WMUSCLE = {
+  "Chest":["chest-l","chest-r"], "Shoulders":["shoulder-l","shoulder-r"],
+  "Arms":["biceps-l","biceps-r","triceps-l","triceps-r"], "Forearms":["forearm-l","forearm-r"],
+  "Back":["lat-l","lat-r"], "Traps":["trap-m"], "Core":["abs"],
+  "Hips":["glute-l","glute-r"], "Glutes":["glute-l","glute-r"],
+  "Thighs":["quad-l","quad-r","ham-l","ham-r"], "Legs":["quad-l","quad-r","ham-l","ham-r"],
+  "Calves":["calf-l","calf-r"], "Neck":["trap-t"]
+};
+/* Token/phrase matchers from our detailed muscle names to live `body-muscles`
+   CDN ids (e.g. "biceps-left"). Ids are tokenized on non-alphanumerics and
+   matched on whole tokens — never substrings — because anatomy reuses names:
+   biceps FEMORIS is a hamstring, triceps SURAE is calf, "lat" sits inside
+   "lateral", and rectus FEMORIS is quad. `any` accepts single tokens or
+   "a+b" phrases (all parts present); `none` vetoes. Pure + testable. */
+function bodyIdTokens(id){ return String(id).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); }
+function bodySpecMatches(tokens, spec){
+  if (!spec) return false;
+  if ((spec.none || []).some(t=>tokens.indexOf(t) !== -1)) return false;
+  return (spec.any || []).some(entry=>{
+    if (entry.indexOf("+") !== -1) return entry.split("+").every(p=>tokens.indexOf(p) !== -1);
+    return tokens.indexOf(entry) !== -1;
+  });
+}
+const DETAIL_TO_BODY_MATCH = {
+  "Pectoralis major":{any:["chest","pec","pectoralis"],none:[]},
+  "Anterior deltoid":{any:["shoulder","deltoid","delt"],none:[]},
+  "Lateral deltoid":{any:["shoulder","deltoid","delt"],none:[]},
+  "Posterior deltoid":{any:["shoulder","deltoid","delt","rear+delt"],none:[]},
+  "Triceps brachii":{any:["triceps"],none:["surae","sural","gastrocnemius","soleus","calf","calves"]},
+  "Biceps brachii":{any:["biceps","brachialis"],none:["femoris","femoral"]},
+  "Brachialis":{any:["biceps","brachialis"],none:["femoris","femoral"]},
+  "Brachioradialis":{any:["forearm","brachioradialis"],none:[]},
+  "Wrist flexors":{any:["forearm"],none:[]},
+  "Wrist extensors":{any:["forearm"],none:[]},
+  "Rectus abdominis":{any:["abs","rectus"],none:["femoris","femoral"]},
+  "Obliques":{any:["oblique","obliques"],none:[]},
+  "Upper trapezius":{any:["traps","trapezius","nape","neck"],none:[]},
+  "Middle trapezius":{any:["traps","trapezius","rhomboid"],none:[]},
+  "Lower trapezius":{any:["traps","trapezius","rhomboid"],none:[]},
+  "Teres major":{any:["teres","shoulder"],none:[]},
+  "Teres minor":{any:["teres","shoulder"],none:[]},
+  "Latissimus dorsi":{any:["lat","lats","latissimus"],none:["lateral"]},
+  "Erector spinae":{any:["erector","spine","lower+back"],none:[]},
+  "Glutes":{any:["glute","glutes","gluteus"],none:[]},
+  "Abductors":{any:["glute","glutes","gluteus","abductor"],none:[]},
+  "Hip flexors":{any:["hip","psoas","iliacus"],none:[]},
+  "Quadriceps":{any:["quadriceps","quad","vastus","rectus+femoris"],none:["hamstring","hamstrings","semitendinosus","semimembranosus"]},
+  "Hamstrings":{any:["hamstring","hamstrings","semitendinosus","semimembranosus","biceps+femoris"],none:["rectus","vastus","quad","quadriceps"]},
+  "Gastrocnemius (calf)":{any:["gastrocnemius","calf","calves","triceps+surae"],none:[]},
+  "Soleus (calf)":{any:["soleus","calf","calves","triceps+surae"],none:[]}
+};
+const BODYPART_TO_BODY_MATCH = {
+  "Chest":{any:["chest"],none:[]},
+  "Shoulders":{any:["shoulder"],none:[]},
+  "Arms":{any:["biceps","triceps"],none:["femoris","femoral","surae","sural","gastrocnemius","soleus","calf","calves"]},
+  "Forearms":{any:["forearm"],none:[]},
+  "Back":{any:["lat","lats","latissimus","back"],none:["lateral"]},
+  "Traps":{any:["traps","trapezius"],none:[]},
+  "Core":{any:["abs","oblique","obliques","rectus"],none:["femoris","femoral"]},
+  "Hips":{any:["glute","glutes","gluteus","hip"],none:[]},
+  "Glutes":{any:["glute","glutes","gluteus"],none:[]},
+  "Thighs":{any:["quad","quadriceps","hamstring","hamstrings","vastus","biceps+femoris"],none:[]},
+  "Legs":{any:["quad","quadriceps","hamstring","hamstrings","vastus","biceps+femoris"],none:[]},
+  "Calves":{any:["calf","calves","gastrocnemius","soleus","triceps+surae"],none:[]},
+  "Neck":{any:["neck","nape"],none:[]}
+};
+function bodyMuscleIdsForDetail(detail, muscleMap){
+  const spec = DETAIL_TO_BODY_MATCH[detail];
+  if (!spec || !muscleMap) return [];
+  const out = [];
+  muscleMap.forEach(m=>{
+    const id = typeof m === "string" ? m : (m && m.id);
+    if (id && bodySpecMatches(bodyIdTokens(id), spec)) out.push(id);
+  });
+  return out;
+}
+/* Same weekly sets as weeklyMusclesTrained, but resolved to live
+   `body-muscles` CDN ids. Primary wins over secondary. */
+function weeklyBodyMuscleIds(nowMs, muscleMap){
+  const wk = weeklyMusclesTrained(nowMs);
+  const p = new Set(), s = new Set();
+  const specOf = m=> m.indexOf("__bp:") === 0 ? BODYPART_TO_BODY_MATCH[m.slice(5)] : DETAIL_TO_BODY_MATCH[m];
+  const idsOf = spec=>{
+    if (!spec || !muscleMap) return [];
+    const out = [];
+    muscleMap.forEach(mm=>{
+      const id = typeof mm === "string" ? mm : (mm && mm.id);
+      if (id && bodySpecMatches(bodyIdTokens(id), spec)) out.push(id);
+    });
+    return out;
+  };
+  wk.primary.forEach(m=>idsOf(specOf(m)).forEach(id=>p.add(id)));
+  wk.secondary.forEach(m=>idsOf(specOf(m)).forEach(id=>{ if (!p.has(id)) s.add(id); }));
+  return { primary:[...p], secondary:[...s], sessionCount:wk.sessionCount, exerciseCount:wk.exerciseCount };
+}
+function weeklyMusclesTrained(nowMs){
+  const now = +nowMs || Date.now();
+  const start = youWeekStart(now);
+  const prim = new Set(), sec = new Set();
+  let sessionCount = 0;
+  const exIds = new Set();
+  const sessions = (typeof state !== "undefined" && state && state.sessions) || [];
+  sessions.forEach(ses=>{
+    const t = new Date(ses.dateISO).getTime();
+    if (!isFinite(t) || t < start || t > now) return;
+    let hit = false;
+    (ses.completedSets || []).forEach(c=>{
+      if (!c || c.type === "warmup") return;
+      const ex = (typeof getEx === "function") ? getEx(c.exId) : null;
+      const reps = +c.reps || 0, time = +c.time || 0;
+      if (!(reps > 0 || time > 0)) return;
+      hit = true;
+      exIds.add(c.exId);
+      const p = (ex && ex.primaryMuscles) || [], s = (ex && ex.secondaryMuscles) || [];
+      if (p.length || s.length){
+        p.forEach(m=>prim.add(m));
+        s.forEach(m=>{ if (!prim.has(m)) sec.add(m); });
+      } else {
+        ((ex && ex.bodyParts) || []).forEach(b=>{
+          (RECOVERY_BODYPART_MAP[b] || [b]).forEach(g=>prim.add("__bp:" + g));
+        });
+      }
+    });
+    if (hit) sessionCount++;
+  });
+  sec.forEach(m=>{ if (prim.has(m)) sec.delete(m); });
+  return { primary:[...prim], secondary:[...sec], sessionCount, exerciseCount:exIds.size };
+}
+function weeklyChartIds(nowMs){
+  const wk = weeklyMusclesTrained(nowMs);
+  const pIds = new Set(), sIds = new Set();
+  wk.primary.forEach(m=>{
+    if (m.indexOf("__bp:") === 0){
+      (BODYPART_TO_WMUSCLE[m.slice(5)] || []).forEach(id=>pIds.add(id));
+    } else {
+      (DETAIL_TO_WMUSCLE[m] || []).forEach(id=>pIds.add(id));
+    }
+  });
+  wk.secondary.forEach(m=>{
+    if (m.indexOf("__bp:") === 0){
+      (BODYPART_TO_WMUSCLE[m.slice(5)] || []).forEach(id=>{ if (!pIds.has(id)) sIds.add(id); });
+    } else {
+      (DETAIL_TO_WMUSCLE[m] || []).forEach(id=>{ if (!pIds.has(id)) sIds.add(id); });
+    }
+  });
+  return { primary:[...pIds], secondary:[...sIds], sessionCount:wk.sessionCount, exerciseCount:wk.exerciseCount };
+}
+function wmShape(id, x, y, w, h, rx, pSet, sSet, label){
+  const fill = pSet.has(id) ? "#E5533D" : sSet.has(id) ? "#5C9CE6" : "#ddd6c4";
+  return '<rect data-wmuscle="' + id + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + rx + '" fill="' + fill + '" stroke="#8a7f66" stroke-width="1"><title>' + (label || id) + '</title></rect>';
+}
+function youWeeklyMusclesHtml(nowMs){
+  const ch = weeklyChartIds(nowMs);
+  const pSet = new Set(ch.primary), sSet = new Set(ch.secondary);
+  const front = '<svg viewBox="0 0 120 240" role="img" aria-label="Front body map">' +
+    '<ellipse cx="60" cy="18" rx="14" ry="16" fill="#efe9d8" stroke="#8a7f66"/>' +
+    wmShape("trap-t", 46, 36, 28, 8, 3, pSet, sSet, "Neck / upper traps") +
+    wmShape("shoulder-l", 30, 44, 16, 12, 5, pSet, sSet, "Shoulder") + wmShape("shoulder-r", 74, 44, 16, 12, 5, pSet, sSet, "Shoulder") +
+    wmShape("chest-l", 42, 58, 17, 22, 4, pSet, sSet, "Chest") + wmShape("chest-r", 61, 58, 17, 22, 4, pSet, sSet, "Chest") +
+    wmShape("biceps-l", 26, 60, 12, 26, 6, pSet, sSet, "Biceps") + wmShape("biceps-r", 82, 60, 12, 26, 6, pSet, sSet, "Biceps") +
+    wmShape("forearm-l", 26, 90, 11, 24, 5, pSet, sSet, "Forearms") + wmShape("forearm-r", 83, 90, 11, 24, 5, pSet, sSet, "Forearms") +
+    wmShape("abs", 48, 84, 24, 30, 4, pSet, sSet, "Abs") +
+    wmShape("oblique-l", 38, 86, 8, 26, 4, pSet, sSet, "Obliques") + wmShape("oblique-r", 74, 86, 8, 26, 4, pSet, sSet, "Obliques") +
+    wmShape("hip-f-l", 44, 118, 15, 14, 4, pSet, sSet, "Hips") + wmShape("hip-f-r", 61, 118, 15, 14, 4, pSet, sSet, "Hips") +
+    wmShape("quad-l", 42, 136, 17, 44, 8, pSet, sSet, "Quads") + wmShape("quad-r", 61, 136, 17, 44, 8, pSet, sSet, "Quads") +
+    wmShape("shin-l", 44, 184, 14, 36, 7, pSet, sSet, "Shins") + wmShape("shin-r", 62, 184, 14, 36, 7, pSet, sSet, "Shins") +
+    '</svg>';
+  const back = '<svg viewBox="0 0 120 240" role="img" aria-label="Back body map">' +
+    '<ellipse cx="60" cy="18" rx="14" ry="16" fill="#efe9d8" stroke="#8a7f66"/>' +
+    wmShape("trap-t", 46, 36, 28, 8, 3, pSet, sSet, "Neck / upper traps") +
+    wmShape("shoulder-b-l", 30, 44, 16, 12, 5, pSet, sSet, "Rear shoulders") + wmShape("shoulder-b-r", 74, 44, 16, 12, 5, pSet, sSet, "Rear shoulders") +
+    wmShape("triceps-l", 26, 60, 12, 26, 6, pSet, sSet, "Triceps") + wmShape("triceps-r", 82, 60, 12, 26, 6, pSet, sSet, "Triceps") +
+    wmShape("trap-m", 44, 58, 32, 14, 4, pSet, sSet, "Mid traps") +
+    wmShape("lat-l", 40, 74, 18, 34, 5, pSet, sSet, "Back / lats") + wmShape("lat-r", 62, 74, 18, 34, 5, pSet, sSet, "Back / lats") +
+    wmShape("erector", 54, 76, 12, 32, 4, pSet, sSet, "Lower back") +
+    wmShape("glute-l", 42, 112, 17, 22, 7, pSet, sSet, "Hips / glutes") + wmShape("glute-r", 61, 112, 17, 22, 7, pSet, sSet, "Hips / glutes") +
+    wmShape("ham-l", 42, 138, 17, 42, 8, pSet, sSet, "Hamstrings") + wmShape("ham-r", 61, 138, 17, 42, 8, pSet, sSet, "Hamstrings") +
+    wmShape("calf-l", 44, 184, 14, 34, 7, pSet, sSet, "Calves") + wmShape("calf-r", 62, 184, 14, 34, 7, pSet, sSet, "Calves") +
+    '</svg>';
+  const cap = ch.sessionCount === 0
+    ? "No sessions logged this week yet — log a workout to light up the map."
+    : ch.sessionCount + (ch.sessionCount === 1 ? " session" : " sessions") + " · " + ch.exerciseCount + (ch.exerciseCount === 1 ? " exercise" : " exercises") + " this week";
+  return '<div class="week-muscles" id="you-weekly-muscles">' +
+    '<div class="you-page-head"><h3>Trained this week</h3><span class="pill time">Mon–Sun</span></div>' +
+    '<div class="wm-legend"><span><span class="dot" style="background:#E5533D"></span> Primary</span>' +
+    '<span><span class="dot" style="background:#5C9CE6"></span> Secondary</span>' +
+    '<span>' + cap + '</span></div>' +
+    '<div class="wm-views"><div class="wm-view"><div id="wm-front-container">' + front + '</div><div class="label">Front</div></div>' +
+    '<div class="wm-view"><div id="wm-back-container">' + back + '</div><div class="label">Back</div></div></div></div>';
+}
+
+/* =========================================================================
    YOU — TRAINING ANALYTICS (Overview / Exercises)
    ========================================================================= */
 const YOU_TABS = ["overview","exercises"];
@@ -5343,7 +5570,11 @@ function renderYouRecoverySection(){
   sec.innerHTML =
     '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
     youRecoveryHtml(Date.now())+
-    '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>';
+    '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>'+
+    youWeeklyMusclesHtml(Date.now());
+  /* Upgrade the fallback map to the anatomical body-muscles charts when the
+     CDN module has loaded (no-op offline / in jsdom — the fallback stays). */
+  try{ if (typeof window.renderWeeklyBodyCharts === "function") window.renderWeeklyBodyCharts(); }catch(e){}
 }
 function bindYouOverview(){
   renderYouPage(0);
@@ -5602,6 +5833,86 @@ function init(){
   render();
 }
 init();
+</script>
+<script type="module">
+/* Weekly muscle map: anatomical charts via the body-muscles CDN (same library
+   as highlighter.html). The You section first renders an offline fallback map;
+   when this module loads, it upgrades #wm-front/back-container to BodyCharts.
+   The library highlights with a single-hue intensity, so secondary muscles are
+   repainted blue afterwards. Every failure path is silent: offline, blocked
+   CDN, or unexpected chart DOM all leave the fallback map in place. */
+import * as BodyMuscles from "https://esm.sh/body-muscles";
+const WM_PRIM = "#E5533D", WM_SEC = "#5C9CE6";
+let wmCharts = null, wmLastKey = "";
+function wmCurrentIds(){
+  try{
+    if (typeof window.weeklyBodyMuscleIds !== "function") return null;
+    return window.weeklyBodyMuscleIds(Date.now(), BodyMuscles.MUSCLE_MAP);
+  }catch(e){ return null; }
+}
+function wmElsForId(root, id){
+  const out = [];
+  const esc = (typeof CSS !== "undefined" && CSS.escape) ? s=>CSS.escape(s) : s=>s;
+  ["data-id","data-muscle","data-name"].forEach(attr=>{
+    try{ root.querySelectorAll("[" + attr + '="' + esc(id) + '"]').forEach(el=>out.push(el)); }catch(e){}
+  });
+  try{ const byId = root.querySelector("#" + esc(id)); if (byId) out.push(byId); }catch(e){}
+  if (!out.length){
+    const low = String(id).toLowerCase();
+    root.querySelectorAll("path,polygon,ellipse,rect,circle,g").forEach(el=>{
+      if (el.hasAttribute && el.hasAttribute("data-wmuscle")) return; // fallback shapes, not library art
+      const hay = ((el.id || "") + " " + (el.getAttribute("data-id") || "") + " " + (el.getAttribute("data-muscle") || "") + " " + (el.getAttribute("class") || "")).toLowerCase();
+      if (hay.split(/[^a-z0-9-]+/).includes(low)) out.push(el);
+    });
+  }
+  return out;
+}
+function wmPaint(root, ids, color){
+  (ids || []).forEach(id=>{
+    wmElsForId(root, id).forEach(el=>{
+      try{ el.setAttribute("fill", color); el.style.fill = color; }catch(e){}
+    });
+  });
+}
+function wmEnsure(){
+  const front = document.getElementById("wm-front-container");
+  const back = document.getElementById("wm-back-container");
+  if (!front || !back || !front.isConnected) return false;
+  const ids = wmCurrentIds();
+  if (!ids) return false;
+  const key = ids.primary.slice().sort().join(",") + "|" + ids.secondary.slice().sort().join(",");
+  const bodyState = {};
+  BodyMuscles.MUSCLE_MAP.forEach(m=>{
+    const on = ids.primary.includes(m.id) || ids.secondary.includes(m.id);
+    bodyState[m.id] = { intensity: on ? 10 : 0, selected: on };
+  });
+  // Recovery re-renders replace the containers, so stale chart refs must rebuild.
+  if (wmCharts && (wmCharts.frontEl !== front || wmCharts.backEl !== back)) wmCharts = null;
+  if (!wmCharts){
+    front.innerHTML = ""; back.innerHTML = "";
+    wmCharts = {
+      frontEl: front, backEl: back,
+      f: new BodyMuscles.BodyChart(front, { view: BodyMuscles.ViewSide.FRONT, bodyState, showViewLabel: false, enableTransitions: false }),
+      b: new BodyMuscles.BodyChart(back, { view: BodyMuscles.ViewSide.BACK, bodyState, showViewLabel: false, enableTransitions: false })
+    };
+  } else if (key !== wmLastKey){
+    wmCharts.f.update({ bodyState });
+    wmCharts.b.update({ bodyState });
+  }
+  wmLastKey = key;
+  wmPaint(front, ids.primary, WM_PRIM); wmPaint(back, ids.primary, WM_PRIM);
+  wmPaint(front, ids.secondary, WM_SEC); wmPaint(back, ids.secondary, WM_SEC);
+  try{ window._BodyMusclesReady = true; }catch(e){}
+  return true;
+}
+window.renderWeeklyBodyCharts = function(){ try{ wmEnsure(); }catch(e){} };
+if (typeof MutationObserver !== "undefined"){
+  try{
+    new MutationObserver(()=>{ try{ wmEnsure(); }catch(e){} })
+      .observe(document.documentElement, { childList: true, subtree: true });
+  }catch(e){}
+}
+try{ wmEnsure(); }catch(e){}
 </script>
 </body>
 </html>

@@ -99,5 +99,74 @@ check($("#you-recovery-section") && $("#you-recovery-section").textContent.index
 check($$("#you-recovery-section [data-rec-muscle]").length === 12, "12 per-muscle recovery rows rendered");
 check(!!(E("document.querySelector('.you-overview').innerHTML.indexOf('you-carousel')") < E("document.querySelector('.you-overview').innerHTML.indexOf('you-recovery-section')")), "recovery section sits directly under the carousel");
 
+// Weekly trained-muscles map (Monday-start week, primary red / secondary blue)
+E(`(function(){
+  var ex1 = getEx('ex-1');
+  ex1.primaryMuscles = ['Pectoralis major'];
+  ex1.secondaryMuscles = ['Triceps brachii'];
+  var ex6 = getEx('ex-6');
+  ex6.primaryMuscles = ['Latissimus dorsi'];
+  ex6.secondaryMuscles = [];
+  var monday = new Date(); monday.setDate(monday.getDate() - ((monday.getDay()+6)%7)); monday.setHours(12,0,0,0);
+  var old = new Date(monday.getTime() - 3*86400000);
+  state.sessions = [
+    { id:'s-w1', dayId:'day-1', dateISO: monday.toISOString(), completedSets: [
+      { exId:'ex-1', setIndex:0, reps:10, weight:0, rating:2, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:0, reps:10, weight:0, rating:2, hit:true, type:'warmup' }
+    ]},
+    { id:'s-w2', dayId:'day-1', dateISO: new Date(monday.getTime()+86400000).toISOString(), completedSets: [
+      { exId:'ex-6', setIndex:0, reps:6, weight:0, rating:2, hit:true, type:'regular' }
+    ]},
+    { id:'s-old', dayId:'day-1', dateISO: old.toISOString(), completedSets: [
+      { exId:'ex-1', setIndex:0, reps:10, weight:0, rating:2, hit:true, type:'regular' }
+    ]}
+  ];
+})();`);
+const wk = E("weeklyMusclesTrained(Date.now())");
+check(wk && wk.primary.indexOf('Pectoralis major') !== -1, "this-week primary includes chest mover");
+check(wk && wk.primary.indexOf('Latissimus dorsi') !== -1, "this-week primary includes back mover");
+check(wk && wk.secondary.indexOf('Triceps brachii') !== -1, "this-week secondary includes triceps");
+check(!wk.primary.concat(wk.secondary).some(function(x){ return false; }), "weekly query runs");
+E("state.sessions[2].completedSets[0].exId='ex-6'; ");
+const wk2 = E("weeklyMusclesTrained(Date.now())");
+check(wk2.primary.indexOf('Latissimus dorsi') !== -1, "old-week session excluded (still trained this week via s-w2)");
+check(E("weeklyMusclesTrained(new Date('2020-01-01').getTime()).primary.length") === 0, "empty week returns no muscles");
+E("state.sessions = []; renderYouTab();");
+clickTab("you");
+check(Boolean($("#you-weekly-muscles")), "weekly muscles section rendered under Recovery");
+check($("#you-weekly-muscles").textContent.indexOf("Trained this week") !== -1, "weekly section titled Trained this week");
+check($$("#you-weekly-muscles svg [data-wmuscle]").length >= 10, "body map renders muscle shapes");
+check($("#you-weekly-muscles").textContent.indexOf("Primary") !== -1 && $("#you-weekly-muscles").textContent.indexOf("Secondary") !== -1, "legend shows Primary/Secondary");
+check(Boolean($("#wm-front-container")) && Boolean($("#wm-back-container")), "front/back chart containers present for the CDN upgrade");
+
+// body-muscles CDN wiring (same library as highlighter.html); jsdom/offline keeps the fallback above
+const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+check(src.indexOf("https://esm.sh/body-muscles") !== -1, "index.html imports the body-muscles CDN");
+check(src.indexOf("BodyChart") !== -1 && src.indexOf("ViewSide") !== -1 && src.indexOf("MUSCLE_MAP") !== -1, "CDN module uses BodyChart + ViewSide + MUSCLE_MAP");
+check(src.indexOf("renderWeeklyBodyCharts") !== -1, "CDN upgrade hook renderWeeklyBodyCharts is wired");
+
+// keyword mapper resolves our detailed names to live CDN ids (pure, fake map)
+const fakeMap = [{ id: "biceps-left" }, { id: "biceps-right" }, { id: "chest-left" }, { id: "triceps-left" }, { id: "quadriceps-left" }];
+const bic = E("bodyMuscleIdsForDetail('Biceps brachii', " + JSON.stringify(fakeMap) + ")");
+check(JSON.stringify(bic.slice().sort()) === JSON.stringify(["biceps-left", "biceps-right"]), "Biceps brachii maps to biceps CDN ids");
+check(E("bodyMuscleIdsForDetail('Quadriceps', " + JSON.stringify(fakeMap) + ")").join(",") === "quadriceps-left", "Quadriceps maps via substring");
+check(E("bodyMuscleIdsForDetail('No Such Muscle', " + JSON.stringify(fakeMap) + ")").length === 0, "unknown muscle maps to nothing");
+E("getEx('ex-1').primaryMuscles=['Pectoralis major'];getEx('ex-1').secondaryMuscles=['Triceps brachii'];state.sessions=[{id:'s-cdn',dayId:'day-1',dateISO:new Date().toISOString(),completedSets:[{exId:'ex-1',setIndex:0,reps:10,weight:0,rating:2,hit:true,type:'regular'}]}];");
+const cdnIds = E("weeklyBodyMuscleIds(Date.now(), " + JSON.stringify(fakeMap) + ")");
+check(cdnIds.primary.indexOf("chest-left") !== -1, "CDN ids: chest primary this week");
+check(cdnIds.secondary.indexOf("triceps-left") !== -1, "CDN ids: triceps secondary this week");
+check(cdnIds.primary.indexOf("triceps-left") === -1, "CDN ids: primary wins over secondary");
+
+// Regression: anatomical near-names must not cross-map. Biceps femoris is a
+// hamstring, triceps surae is calf, *-lateral-* is not lats, rectus femoris
+// is quad — substring matching lit calves/hamstrings red on upper-body days.
+const anatMap = ["biceps-left", "biceps-femoris-left", "triceps-left", "triceps-surae-left", "chest-left", "quadriceps-left", "gastrocnemius-lateral-left", "rectus-femoris-left", "latissimus-left"];
+check(E("bodyMuscleIdsForDetail('Biceps brachii', " + JSON.stringify(anatMap) + ")").join(",") === "biceps-left", "arm biceps does not map to biceps-femoris hamstring");
+check(E("bodyMuscleIdsForDetail('Triceps brachii', " + JSON.stringify(anatMap) + ")").join(",") === "triceps-left", "arm triceps does not map to triceps-surae calf");
+check(E("bodyMuscleIdsForDetail('Latissimus dorsi', " + JSON.stringify(anatMap) + ")").join(",") === "latissimus-left", "lats do not map to lateral calf head");
+check(E("bodyMuscleIdsForDetail('Rectus abdominis', " + JSON.stringify(anatMap) + ")").join(",") === "", "abs do not map to rectus-femoris quad");
+check(E("bodyMuscleIdsForDetail('Hamstrings', " + JSON.stringify(anatMap) + ")").join(",") === "biceps-femoris-left", "hamstrings still resolve to biceps-femoris");
+check(E("bodyMuscleIdsForDetail('Gastrocnemius (calf)', " + JSON.stringify(anatMap) + ")").slice().sort().join(",") === "gastrocnemius-lateral-left,triceps-surae-left", "calf resolves to calf ids");
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
