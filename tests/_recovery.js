@@ -168,5 +168,27 @@ check(E("bodyMuscleIdsForDetail('Rectus abdominis', " + JSON.stringify(anatMap) 
 check(E("bodyMuscleIdsForDetail('Hamstrings', " + JSON.stringify(anatMap) + ")").join(",") === "biceps-femoris-left", "hamstrings still resolve to biceps-femoris");
 check(E("bodyMuscleIdsForDetail('Gastrocnemius (calf)', " + JSON.stringify(anatMap) + ")").slice().sort().join(",") === "gastrocnemius-lateral-left,triceps-surae-left", "calf resolves to calf ids");
 
+// Live refresh: retagging an exercise (e.g. adding a secondary muscle) and
+// saving must update the rendered map in place, without a tab switch.
+const hasLiveRefresh = E("typeof refreshWeeklyMapIfVisible") === "function";
+check(hasLiveRefresh, "refreshWeeklyMapIfVisible hook exists");
+check(src.split("refreshWeeklyMapIfVisible()").length >= 3, "exercise save + delete paths call the live-refresh hook");
+const liveFill = id => { const el = $("#you-weekly-muscles [data-wmuscle=\"" + id + "\"]"); return el && el.getAttribute("fill"); };
+if (hasLiveRefresh){
+  E("getEx('ex-1').primaryMuscles=[];getEx('ex-1').secondaryMuscles=[];state.sessions=[{id:'s-live',dayId:'day-1',dateISO:new Date().toISOString(),completedSets:[{exId:'ex-1',setIndex:0,reps:10,weight:0,rating:2,hit:true,type:'regular'}]}];renderYouTab();");
+  clickTab("you");
+  check(liveFill("chest-l") === "#ddd6c4" && liveFill("triceps-l") === "#ddd6c4", "map starts neutral with no muscle tags");
+  E("getEx('ex-1').secondaryMuscles=['Triceps brachii'];refreshWeeklyMapIfVisible();");
+  check(liveFill("triceps-l") === "#5C9CE6" && liveFill("chest-l") === "#ddd6c4", "new secondary muscle lights blue in real time");
+  E("getEx('ex-1').primaryMuscles=['Pectoralis major'];refreshWeeklyMapIfVisible();");
+  check(liveFill("chest-l") === "#E5533D", "new primary muscle lights red in real time");
+  check(E("refreshWeeklyMapIfVisible()") === true, "hook reports true while the section is visible");
+  clickTab("library");
+  check(E("refreshWeeklyMapIfVisible()") === false, "hook is a safe no-op when You is not visible");
+} else {
+  check(false, "live refresh updates map fills (skipped: hook missing)");
+  check(false, "live refresh reports visibility (skipped: hook missing)");
+}
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

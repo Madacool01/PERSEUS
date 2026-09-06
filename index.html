@@ -2154,7 +2154,7 @@ function openExEditor(id){
     if (!confirm("Delete \""+ex.name+"\"? Workouts using it keep their plan copy.")) return;
     state.exercises = state.exercises.filter(x=>x.id!==ex.id);
     document.removeEventListener("keydown", onKey);
-    saveState(); render(); toast("Exercise deleted");
+    saveState(); render(); refreshWeeklyMapIfVisible(); toast("Exercise deleted");
   });
   $("#ex-save", host).addEventListener("click", ()=>{
     const name = $("#ex-name", host).value.trim();
@@ -2194,7 +2194,7 @@ function openExEditor(id){
       resolveProgressions(state.exercises);
     }
     document.removeEventListener("keydown", onKey);
-    saveState(); render(); toast(isEdit?"Exercise updated":"Exercise added");
+    saveState(); render(); refreshWeeklyMapIfVisible(); toast(isEdit?"Exercise updated":"Exercise added");
   });
 }
 
@@ -5563,6 +5563,19 @@ function youRecoveryHtml(nowMs){
     '<div class="micro">Total is the mean of all muscles · updates automatically as time passes</div></div>'+
     '<b>' + total + '%</b></div>'+
     '<div class="rec-grid">' + rows + '</div>';
+}
+/* Re-render the Recovery section (bars + weekly map) in place when exercise
+   muscle tags change, so a save updates the visible map in real time without
+   a tab switch. Safe no-op when the section isn't in the DOM. Returns whether
+   a refresh happened. */
+function refreshWeeklyMapIfVisible(){
+  try{
+    if (currentView !== "you" || youTab !== "overview") return false;
+    const sec = $("#you-recovery-section");
+    if (!sec || !sec.isConnected) return false;
+    renderYouRecoverySection();
+    return true;
+  }catch(e){ return false; }
 }
 function renderYouRecoverySection(){
   const sec = $("#you-recovery-section");
