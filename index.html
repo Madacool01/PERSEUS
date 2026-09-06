@@ -589,13 +589,14 @@
     position: absolute; top: 50%; transform: translateY(-50%);
     width: 36px; height: 36px; border-radius: 50%;
     display: grid; place-items: center;
-    background: var(--surface); border: 1px solid var(--line);
-    box-shadow: var(--shadow-1); color: var(--ink);
+    background: var(--accent); border: 1px solid var(--accent);
+    box-shadow: var(--shadow-1); color: #fff;
     cursor: pointer; z-index: 2;
-    transition: background .2s, transform .2s, border-color .2s;
+    transition: background .2s, transform .2s, border-color .2s, opacity .2s;
   }
-  .you-nav:hover { background: var(--surface-2); border-color: var(--line-2); transform: translateY(-50%) scale(1.06); }
+  .you-nav:hover { background: var(--accent-deep); border-color: var(--accent-deep); transform: translateY(-50%) scale(1.06); }
   .you-nav:active { transform: translateY(-50%) scale(0.96); }
+  .you-nav[hidden] { display: none !important; }
   .you-nav-prev { left: 8px; }
   .you-nav-next { right: 8px; }
   .you-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -5190,19 +5191,28 @@ function bindYouOverview(){
   if (!car) return;
   const pageCount = () => $$("#you-carousel .you-page").length || 2;
   const currentIndex = () => Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
+  const prevBtn = $("[data-you-nav='prev']");
+  const nextBtn = $("[data-you-nav='next']");
+  const syncNav = (idx)=>{
+    const n = pageCount();
+    if (prevBtn) prevBtn.hidden = idx <= 0;
+    if (nextBtn) nextBtn.hidden = idx >= n - 1;
+  };
   const goTo = (idx)=>{
     const n = pageCount();
-    idx = ((idx % n) + n) % n;
+    idx = Math.max(0, Math.min(n - 1, idx));
     const target = idx * (car.clientWidth || 1);
     if (typeof car.scrollTo === "function") car.scrollTo({ left: target, behavior: "smooth" });
     else car.scrollLeft = target;
     dots.forEach((x,j)=>x.classList.toggle("active", j===idx));
+    syncNav(idx);
   };
   car.addEventListener("scroll", ()=>{
     clearTimeout(car._t);
     car._t = setTimeout(()=>{
-      const i = currentIndex();
+      const i = Math.max(0, Math.min(pageCount()-1, currentIndex()));
       dots.forEach((d,k)=>d.classList.toggle("active", k===i));
+      syncNav(i);
     }, 80);
   }, { passive:true });
   dots.forEach((d,k)=>d.addEventListener("click", ()=> goTo(k)));
@@ -5212,6 +5222,7 @@ function bindYouOverview(){
       goTo(currentIndex() + dir);
     });
   });
+  syncNav(currentIndex());
 }
 function renderYouPage(i){
   const page = $("#you-page-"+i);
