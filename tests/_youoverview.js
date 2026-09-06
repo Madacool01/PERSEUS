@@ -27,8 +27,8 @@ check(!$("#you-count"), "no standalone workout count widget");
 check(!$("#you-page-0 .you-period"), "no period selector on the collapsed workouts view");
 check(!$("#you-page-1 .you-period"), "no period selector on the collapsed volume view");
 check(E("youPeriod") === "3m" && E("youVolPeriod") === "3m", "both views default to the last 3 months");
-check($$("#you-carousel .you-page").length === 3, "carousel has three pages (workouts, volume, recovery)");
-check($$(".you-dot").length === 3, "three pager dots at the bottom");
+check($$("#you-carousel .you-page").length === 2, "carousel has two pages");
+check($$(".you-dot").length === 2, "two pager dots at the bottom");
 check($(".you-dot").classList.contains("active"), "first dot active (workouts per week)");
 
 const p0 = $("#you-page-0");

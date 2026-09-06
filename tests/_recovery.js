@@ -90,13 +90,14 @@ const vals = E("RECOVERY_GROUPS.map(function(g){ return muscleRecoveryAt(Date.no
 const mean = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 check(E("totalRecoveryAt(Date.now())") === mean, "total recovery is the mean of 12 muscles");
 
-// You overview shows Recovery page
+// You overview: charts stay 2-page carousel, Recovery is a separate section below
 E("state.sessions = []; renderYouTab();");
 clickTab("you");
-check($$("#you-carousel .you-page").length === 3, "carousel has three pages (workouts, volume, recovery)");
-check($$(".you-dot").length === 3, "three pager dots");
-check($("#you-page-2") && $("#you-page-2").textContent.indexOf("Recovery") !== -1, "page 3 titled Recovery");
-check($$("#you-page-2 [data-rec-muscle]").length === 12, "12 per-muscle recovery rows rendered");
+check($$("#you-carousel .you-page").length === 2, "carousel keeps two pages (workouts, volume)");
+check($$(".you-dot").length === 2, "two pager dots");
+check($("#you-recovery-section") && $("#you-recovery-section").textContent.indexOf("Recovery") !== -1, "separate Recovery section rendered below charts");
+check($$("#you-recovery-section [data-rec-muscle]").length === 12, "12 per-muscle recovery rows rendered");
+check(!!(E("document.querySelector('.you-overview').innerHTML.indexOf('you-carousel')") < E("document.querySelector('.you-overview').innerHTML.indexOf('you-recovery-section')")), "recovery section sits directly under the carousel");
 
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

@@ -5299,10 +5299,9 @@ function youPeriodBtns(scope, active){
 function youOverviewHtml(){
   return '<div class="you-overview">'+
     '<div class="you-carousel-wrap">'+
-      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume and recovery">'+
+      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
         '<div class="you-page" id="you-page-0"></div>'+
         '<div class="you-page" id="you-page-1"></div>'+
-        '<div class="you-page" id="you-page-2"></div>'+
       '</div>'+
       '<button type="button" class="you-nav you-nav-prev" data-you-nav="prev" aria-label="Previous chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>'+
       '<button type="button" class="you-nav you-nav-next" data-you-nav="next" aria-label="Next chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>'+
@@ -5310,8 +5309,8 @@ function youOverviewHtml(){
     '<div class="you-dots">'+
       '<button type="button" class="you-dot active" data-you-page="0" aria-label="Workouts per week"></button>'+
       '<button type="button" class="you-dot" data-you-page="1" aria-label="Total volume"></button>'+
-      '<button type="button" class="you-dot" data-you-page="2" aria-label="Recovery"></button>'+
     '</div>'+
+    '<div class="you-page" id="you-recovery-section" aria-label="Muscle recovery"></div>'+
   '</div>';
 }
 function youRecoveryHtml(nowMs){
@@ -5338,14 +5337,22 @@ function youRecoveryHtml(nowMs){
     '<b>' + total + '%</b></div>'+
     '<div class="rec-grid">' + rows + '</div>';
 }
+function renderYouRecoverySection(){
+  const sec = $("#you-recovery-section");
+  if (!sec) return;
+  sec.innerHTML =
+    '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
+    youRecoveryHtml(Date.now())+
+    '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>';
+}
 function bindYouOverview(){
   renderYouPage(0);
   renderYouPage(1);
-  renderYouPage(2);
+  renderYouRecoverySection();
   const car = $("#you-carousel");
   const dots = $$(".you-dot");
   if (!car) return;
-  const pageCount = () => $$("#you-carousel .you-page").length || 3;
+  const pageCount = () => $$("#you-carousel .you-page").length || 2;
   const currentIndex = () => Math.round(car.scrollLeft / Math.max(1, car.clientWidth));
   const prevBtn = $("[data-you-nav='prev']");
   const nextBtn = $("[data-you-nav='next']");
@@ -5384,9 +5391,9 @@ function bindYouOverview(){
     window._youRecTimer = setInterval(()=>{
       try{
         if (currentView !== "you" || youTab !== "overview") return;
-        const p2 = $("#you-page-2");
-        if (!p2 || !p2.isConnected) return;
-        renderYouPage(2);
+        const sec = $("#you-recovery-section");
+        if (!sec || !sec.isConnected) return;
+        renderYouRecoverySection();
       }catch(e){}
     }, 60000);
     if (window._youRecTimer.unref) window._youRecTimer.unref();
@@ -5405,11 +5412,6 @@ function renderYouPage(i){
       '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
-  } else if (i===2){
-    page.innerHTML =
-      '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
-      youRecoveryHtml(Date.now())+
-      '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>';
   } else {
     page.innerHTML =
       '<div class="you-page-head"><h3>Total volume</h3></div>'+
