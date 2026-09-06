@@ -661,6 +661,7 @@
   .you-pt { fill: var(--surface); stroke: #2f63c9; stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: fill .15s, transform .15s; }
   .you-pt:hover { fill: #dbe7fb; transform: scale(1.5); }
   .you-hit { fill: transparent; }
+  .you-val { font-family: var(--font-mono); font-size: 13px; font-weight: 600; fill: var(--ink-2); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
   .you-xaxis { display: flex; gap: 3px; margin-top: 5px; }
   .you-x {
     flex: 1 1 0; min-width: 0; text-align: center; font-family: var(--font-mono);
@@ -5081,7 +5082,7 @@ function youVolumeData(period){
 /* Bars when there is countable volume; a plain-language reason otherwise. */
 function youVolumeBody(period){
   const d = youVolumeData(period);
-  if (d.total>0) return youLineHtml(d.bars);
+  if (d.total>0) return youLineHtml(d.bars, { values: true });
   return '<div class="vis-empty">'+(d.sessions===0
     ? "No sessions in this period yet — log a workout to see your weekly volume."
     : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load — timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
@@ -5097,14 +5098,15 @@ function youNeedWeightHtml(){
    read them; dense periods get the bare line. Zero values sit on the
    baseline. */
 let youGradSeq = 0; // each chart gets its own gradient id (two SVGs share a page)
-function youLineHtml(bars){
+function youLineHtml(bars, opts){
+  const showValues = !!(opts && opts.values);
   const n = bars.length;
-  const W = 1000, H = 200, PADX = 16, PADY = 20;
+  const W = 1000, H = 200, PADX = 16, PADY = 20, TOP_PAD = showValues ? 30 : PADY;
   const gid = "youAreaGrad"+(++youGradSeq);
   const max = Math.max(1, ...bars.map(b=>b.v));
   const step = Math.max(1, Math.ceil(n/7));
   const px = i => n<=1 ? W/2 : PADX + i*((W-2*PADX)/(n-1));
-  const py = v => H-PADY - (Math.max(0,v)/max)*(H-2*PADY);
+  const py = v => H-PADY - (Math.max(0,v)/max)*(H-TOP_PAD-PADY);
   const pts = bars.map((b,i)=>[px(i), py(b.v)]);
   const line = pts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
   const area = pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")+
@@ -5117,6 +5119,12 @@ function youLineHtml(bars){
     return '<circle class="'+(dense?"you-hit":"you-pt")+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(dense?7:4)+'">'+
       '<title>'+esc(b.label)+' · '+b.v+' '+esc(b.unit)+'</title></circle>';
   }).join("");
+  const labels = showValues ? pts.map((p,i)=>{
+    const b = bars[i];
+    // keep label inside viewBox even for max values
+    const y = Math.max(12, p[1] - 10);
+    return '<text class="you-val" x="'+p[0].toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle">'+esc(String(b.v))+'</text>';
+  }).join("") : "";
   const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
   return '<div class="you-chart" role="img" aria-label="Line chart">'+
       '<svg class="you-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+
@@ -5129,7 +5137,7 @@ function youLineHtml(bars){
         '<line class="you-grid-line" x1="0" y1="'+(H-PADY)+'" x2="'+W+'" y2="'+(H-PADY)+'"/>'+
         '<polygon class="you-area" fill="url(#'+gid+')" points="'+area+'"/>'+
         '<path class="you-line-path" d="'+line+'"/>'+
-        dots+
+        dots+labels+
       '</svg>'+
     '</div><div class="you-xaxis">'+xaxis+'</div>';
 }
