@@ -5364,10 +5364,16 @@ function youSplitHtml(nowMs){
   const rows = SPLIT_GROUPS.map(g=>{
     const s = d.groups[g];
     const w = maxVol > 0 ? Math.round(100 * s.volumeKg / maxVol) : Math.round(100 * s.sets / maxSets);
-    const sub = s.sets === 0 ? "no volume this week" : s.sets + (s.sets === 1 ? " set" : " sets");
+    const setsW = Math.round(100 * s.sets / maxSets);
+    let sub;
+    if (s.sets === 0) sub = "no volume this week";
+    else if (maxVol > 0) sub = Math.round(100 * s.volumeKg / maxVol) + "% of top muscle volume";
+    else sub = "holds only — no tonnage";
     return '<div class="rec-row" data-split-muscle="' + g + '">'+
       '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + fmtVol(s.volumeKg) + ' ' + esc(weightUnit()) + '</span></div>'+
       '<div class="rec-bar"><div class="rec-fill" style="width:' + w + '%;background:var(--accent)"></div></div>'+
+      '<div class="rec-top" style="margin-top:.55rem"><span class="rec-sub" style="margin:0">Sets</span><span class="rec-pct">' + s.sets + '</span></div>'+
+      '<div class="rec-bar"><div class="rec-fill" style="width:' + setsW + '%;background:#5C9CE6"></div></div>'+
       '<div class="rec-sub">' + sub + '</div></div>';
   }).join("");
   const cap = d.sessionCount === 0

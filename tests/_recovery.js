@@ -237,5 +237,23 @@ clickTab("you");
 const splitTxt = $("#you-muscle-split").textContent;
 check(splitTxt.indexOf("804") !== -1 && splitTxt.indexOf("3") !== -1, "split row shows 804 volume and 3 sets for chest");
 
+// Sets get a count plus a second (blue) bar that fills relative to the top muscle
+E(`getEx('ex-1').primaryMuscles=['Pectoralis major'];getEx('ex-1').secondaryMuscles=[];
+getEx('ex-6').primaryMuscles=['Latissimus dorsi'];getEx('ex-6').secondaryMuscles=[];
+state.sessions=[{id:'s-splitbar',dayId:'day-1',dateISO:new Date().toISOString(),completedSets:[
+ {exId:'ex-1',setIndex:0,reps:8,weight:0,rating:2,hit:true,type:'regular'},
+ {exId:'ex-1',setIndex:1,reps:8,weight:0,rating:2,hit:true,type:'regular'},
+ {exId:'ex-1',setIndex:2,reps:8,weight:0,rating:2,hit:true,type:'regular'},
+ {exId:'ex-6',setIndex:0,reps:6,weight:0,rating:2,hit:true,type:'regular'}
+]}];renderYouTab();`);
+clickTab("you");
+const splitRow = g => $("#you-muscle-split [data-split-muscle=\"" + g + "\"]");
+const splitBars = g => Array.from(splitRow(g).querySelectorAll(".rec-fill"));
+check(splitBars("chest").length === 2, "split row has two bars (volume + sets)");
+check(splitBars("chest")[1].getAttribute("style").indexOf("#5C9CE6") !== -1, "sets bar is blue");
+check(splitBars("chest")[1].getAttribute("style").indexOf("100%") !== -1, "top muscle sets bar fills 100% (3/3)");
+check(splitBars("back")[1].getAttribute("style").indexOf("33%") !== -1, "1-set muscle fills a third of the blue bar (1/3)");
+check(splitRow("chest").textContent.indexOf("3") !== -1, "sets count number shown next to the blue bar");
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
