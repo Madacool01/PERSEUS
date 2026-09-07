@@ -711,7 +711,7 @@
   .wm-radar-btn.active { background: var(--ink); color: var(--paper); }
   .wm-radar-stage { position: relative; width: 100%; max-width: 340px; margin: 0 auto; aspect-ratio: 1 / 1; }
   .wm-radar-stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .wm-radar-ico { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-3); overflow: hidden; filter: grayscale(1); opacity: .45; }
+  .wm-radar-ico { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-3); overflow: hidden; filter: grayscale(1); opacity: .45; text-decoration: none; cursor: pointer; }
   .wm-radar-ico svg { position: static; width: 18px; height: 18px; }
   .wm-radar-ico.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep); filter: none; opacity: 1; box-shadow: 0 0 0 3px rgba(217,95,43,.14); }
   .wm-radar-ico img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -5320,7 +5320,19 @@ const RADAR_BODYPART_MAP = {
   "Hips":["glutes"], "Glutes":["glutes"], "Thighs":["quads","hamstrings"],
   "Legs":["quads","hamstrings"], "Calves":["calves"], "Neck":["upper-mid-back"]
 };
-const RADAR_ICON_FILE = { "chest":"chest", "shoulders":"shoulders", "rear-delts":"rear-delts", "lats":"lats", "upper-mid-back":"upper-mid back", "biceps":"biceps", "forearms":"forearms", "triceps":"triceps", "core":"core", "quads":"quads", "hamstrings":"hamstrings", "glutes":"glutes", "calves":"calves" };
+const RADAR_ICON_FILE = { "chest":"chest", "shoulders":"shoulders", "rear-delts":"rear-delts", "lats":"lats", "upper-mid-back":"upper-mid-back", "biceps":"biceps", "forearms":"forearms", "triceps":"triceps", "core":"core", "quads":"quads", "hamstrings":"hamstrings", "glutes":"glutes", "calves":"calves" };
+/* Exact per-muscle Flaticon links from icon_muscles.txt — each radar icon
+   links out to its source page (all by cube29). Flaticon blocks hotlinking
+   (403), so the pages can't be embedded as images directly. */
+const RADAR_FLATICON_URL = {
+  "chest":"https://www.flaticon.com/free-icons/chest",
+  "shoulders":"https://www.flaticon.com/free-icons/muscle", "rear-delts":"https://www.flaticon.com/free-icons/muscle",
+  "lats":"https://www.flaticon.com/free-icons/muscle", "upper-mid-back":"https://www.flaticon.com/free-icons/muscle",
+  "biceps":"https://www.flaticon.com/free-icons/muscle", "forearms":"https://www.flaticon.com/free-icons/muscle",
+  "triceps":"https://www.flaticon.com/free-icons/muscle", "core":"https://www.flaticon.com/free-icons/muscle",
+  "quads":"https://www.flaticon.com/free-icons/muscle", "hamstrings":"https://www.flaticon.com/free-icons/muscle",
+  "glutes":"https://www.flaticon.com/free-icons/muscle", "calves":"https://www.flaticon.com/free-icons/muscle"
+};
 /* Minimal inline glyphs per muscle (icon-only vertices). When the Flaticon
    files from icon_muscles.txt are added as icon_muscles/<name>.png|svg they
    replace the glyph via the <img> onerror fallback below. */
@@ -5405,8 +5417,9 @@ function youMuscleRadarHtml(nowMs){
     const on = vals[i] > 0;
     const file = "icon_muscles/" + (RADAR_ICON_FILE[g] || g) + ".png";
     const glyph = RADAR_GLYPHS[g] || "";
-    return '<span class="wm-radar-ico' + (on ? " on" : "") + '" data-radar-muscle="' + g + '" title="' + RADAR_LABELS[g] + (on ? " · " + (metric === "volume" ? Math.round(vals[i]) + " kg" : vals[i] + " sets") : " · rest") + '" style="left:' + (p[0] / 2).toFixed(2) + '%;top:' + (p[1] / 2).toFixed(2) + '%">' +
-      '<img src="' + file + '" alt="' + RADAR_LABELS[g] + '" loading="lazy" onerror="this.remove()"/>' + glyph + '</span>';
+    const href = RADAR_FLATICON_URL[g] || "https://www.flaticon.com/free-icons/muscle";
+    return '<a class="wm-radar-ico' + (on ? " on" : "") + '" data-radar-muscle="' + g + '" href="' + href + '" target="_blank" rel="noopener" title="' + RADAR_LABELS[g] + (on ? " · " + (metric === "volume" ? Math.round(vals[i]) + " kg" : vals[i] + " sets") : " · rest") + '" style="left:' + (p[0] / 2).toFixed(2) + '%;top:' + (p[1] / 2).toFixed(2) + '%">' +
+      '<img src="' + file + '" alt="' + RADAR_LABELS[g] + '" loading="lazy" onerror="this.remove()"/>' + glyph + '</a>';
   }).join("");
   const cap = d.sessionCount === 0
     ? "No volume yet — log a workout to shape the radar."
