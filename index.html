@@ -724,6 +724,16 @@
     .wm-views--right { justify-content: center; padding-right: 0; flex-wrap: wrap; }
     .wm-views--right .wm-view { flex: 1 1 200px; max-width: 280px; }
   }
+  .wm-week-nav { display: inline-flex; gap: .3rem; align-items: center; margin-left: auto; }
+  .wm-week-btn {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink);
+    cursor: pointer; transition: border-color .18s, color .18s, background .18s, opacity .18s;
+  }
+  .wm-week-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .wm-week-btn[disabled] { opacity: .35; cursor: default; }
+  .wm-week-btn[disabled]:hover { border-color: var(--line); color: var(--ink); }
+  .wm-week-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .wm-view { flex: 1 1 220px; max-width: 300px; text-align: center; }
   .wm-view svg { width: 100%; height: auto; display: block; }
   .wm-view .label { font-size: 12px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .1em; }
@@ -5433,6 +5443,20 @@ function youMuscleRadarHtml(nowMs){
     '<div class="wm-radar-stage"><svg viewBox="0 0 200 200" role="img" aria-label="Muscle radar">' + rings + spokes + poly + dots + '</svg>' + icons + '</div>' +
     '<div class="wm-radar-cap">' + cap + ' · icons: cube29 / Flaticon (see icon_muscles.txt)</div></div>';
 }
+/* Week pager for the trained-muscles section: 0 = current Mon–Sun week,
+   negative = previous weeks. Past weeks resolve to end-of-week (Sunday
+   23:59:59) so the full Monday–Sunday span counts, not just days ≤ today. */
+let youMuscleWeekOffset = 0; // 0 = this week, -1 = last week, …
+function youMuscleWeekRef(){
+  if (youMuscleWeekOffset >= 0) return Date.now();
+  const curStart = youWeekStart(Date.now());
+  return curStart + youMuscleWeekOffset * 7 * 86400000 + (7 * 86400000 - 1);
+}
+function youMuscleWeekRange(refMs){
+  const start = youWeekStart(+refMs || Date.now());
+  const end = start + 6 * 86400000;
+  return { start, end, label: fmtDate(new Date(start).toISOString()) + " – " + fmtDate(new Date(end).toISOString()) };
+}
 function youWeeklyMusclesHtml(nowMs){
   const ch = weeklyChartIds(nowMs);
   const pSet = new Set(ch.primary), sSet = new Set(ch.secondary);
@@ -5461,11 +5485,21 @@ function youWeeklyMusclesHtml(nowMs){
     wmShape("ham-l", 42, 138, 17, 42, 8, pSet, sSet, "Hamstrings") + wmShape("ham-r", 61, 138, 17, 42, 8, pSet, sSet, "Hamstrings") +
     wmShape("calf-l", 44, 184, 14, 34, 7, pSet, sSet, "Calves") + wmShape("calf-r", 62, 184, 14, 34, 7, pSet, sSet, "Calves") +
     '</svg>';
+  const range = youMuscleWeekRange(nowMs);
   const cap = ch.sessionCount === 0
-    ? "No sessions logged this week yet — log a workout to light up the map."
+    ? (youMuscleWeekOffset === 0
+      ? "No sessions logged this week yet — log a workout to light up the map."
+      : "No sessions logged this week.")
     : ch.sessionCount + (ch.sessionCount === 1 ? " session" : " sessions") + " · " + ch.exerciseCount + (ch.exerciseCount === 1 ? " exercise" : " exercises") + " this week";
+  const title = youMuscleWeekOffset === 0 ? "Trained this week"
+    : youMuscleWeekOffset === -1 ? "Trained last week"
+    : "Trained week of " + fmtDate(new Date(range.start).toISOString());
   return '<div class="week-muscles" id="you-weekly-muscles">' +
-    '<div class="you-page-head"><h3>Trained this week</h3><span class="pill time">Mon–Sun</span></div>' +
+    '<div class="you-page-head"><h3>' + title + '</h3>' +
+    '<span class="wm-week-nav" role="group" aria-label="Browse weeks">' +
+    '<button type="button" class="wm-week-btn" data-you-week-nav="prev" aria-label="Previous week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>' +
+    '<button type="button" class="wm-week-btn" data-you-week-nav="next" aria-label="Next week"' + (youMuscleWeekOffset >= 0 ? " disabled" : "") + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>' +
+    '</span><span class="pill time">' + range.label + '</span></div>' +
     '<div class="wm-legend"><span><span class="dot" style="background:#E5533D"></span> Primary</span>' +
     '<span><span class="dot" style="background:#5C9CE6"></span> Secondary</span>' +
     '<span>' + cap + '</span></div>' +
@@ -5816,11 +5850,21 @@ function renderYouRecoverySection(){
     '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
     youRecoveryHtml(Date.now())+
     '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>'+
-    youWeeklyMusclesHtml(Date.now())+
+    youWeeklyMusclesHtml(youMuscleWeekRef())+
     youSplitHtml(Date.now());
   /* Upgrade the fallback map to the anatomical body-muscles charts when the
      CDN module has loaded (no-op offline / in jsdom — the fallback stays). */
   try{ if (typeof window.renderWeeklyBodyCharts === "function") window.renderWeeklyBodyCharts(); }catch(e){}
+  try{
+    sec.querySelectorAll("[data-you-week-nav]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if (btn.getAttribute("data-you-week-nav") === "prev") youMuscleWeekOffset--;
+        else if (youMuscleWeekOffset < 0) youMuscleWeekOffset++;
+        else return;
+        renderYouRecoverySection();
+      });
+    });
+  }catch(e){}
   try{
     sec.querySelectorAll("[data-you-radar-metric]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
@@ -6101,7 +6145,8 @@ let wmCharts = null, wmLastKey = "";
 function wmCurrentIds(){
   try{
     if (typeof window.weeklyBodyMuscleIds !== "function") return null;
-    return window.weeklyBodyMuscleIds(Date.now(), BodyMuscles.MUSCLE_MAP);
+    const ref = (typeof youMuscleWeekRef === "function") ? youMuscleWeekRef() : Date.now();
+    return window.weeklyBodyMuscleIds(ref, BodyMuscles.MUSCLE_MAP);
   }catch(e){ return null; }
 }
 function wmElsForId(root, id){
