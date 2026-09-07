@@ -5423,7 +5423,8 @@ function youMuscleRadarHtml(nowMs){
     return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
   }).join("");
   const icons = RADAR_GROUPS.map((g, i)=>{
-    const p = pt(i, 1);
+    const a = -Math.PI / 2 + i * 2 * Math.PI / n;
+    const p = [cx + 96 * Math.cos(a), cy + 96 * Math.sin(a)];
     const on = vals[i] > 0;
     const file = "icon_muscles/" + (RADAR_ICON_FILE[g] || g) + ".png";
     const glyph = RADAR_GLYPHS[g] || "";
