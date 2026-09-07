@@ -5410,7 +5410,7 @@ function youMuscleRadarHtml(nowMs){
   const poly = '<polygon points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="rgba(217,95,43,.28)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
   const dots = fracs.map((f, i)=>{
     const p = pt(i, f);
-    return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="var(--accent)"/>';
+    return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
   }).join("");
   const icons = RADAR_GROUPS.map((g, i)=>{
     const p = pt(i, 1);
