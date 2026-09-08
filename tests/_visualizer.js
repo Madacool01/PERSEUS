@@ -143,5 +143,47 @@ check(Boolean(recRow("Best set")) && recRow("Best set").querySelector("b").textC
 check(Boolean(recRow("Volume peak")) && recRow("Volume peak").querySelector("b").textContent === "804 kg", "volume peak = tonnage formula: 3 sets × 8 reps × (0 + 50 kg × 0.67) = 804 kg");
 click($("#ex-vis-host [data-vis-back]"));
 
-console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
-process.exit(fail?1:0);
+(async () => {
+  const tick = () => new Promise(r => setTimeout(r, 5));
+  console.log("\n== Clipboard photo paste ==");
+  click($("#view-library .exercise-item [data-edit]"));
+  check(Boolean($("#ex-image-paste")), "editor has a paste-from-clipboard button");
+  // stub the canvas downscaler for jsdom (no canvas support) so pastes land instantly
+  E(`window.__pastedType = '';
+window.__readImageOrig = window.readImageFile;
+window.readImageFile = function(blob, cb){ window.__pastedType = (blob && blob.type) || ''; cb('data:image/jpeg;base64,CLIPBOARD'); };`);
+  try{
+    // API path: the latest copied item is an image -> it appears in the preview
+    E(`Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      read: function(){ return Promise.resolve([{ types:['image/png'], getType: function(t){ return Promise.resolve(new Blob(['x'], {type:'image/png'})); } }]); }
+    } });`);
+    click($("#ex-image-paste"));
+    await tick();
+    check($("#ex-photo-thumb").innerHTML.indexOf("CLIPBOARD") !== -1, "latest clipboard image appears in the photo preview");
+    check(E("window.__pastedType") === "image/png", "clipboard image goes through the same downscaler as uploads");
+    // latest item is NOT an image -> message
+    E(`navigator.clipboard.read = function(){ return Promise.resolve([{ types:['text/plain'], getType: function(){ return Promise.reject(new Error('no')); } }]); };`);
+    click($("#ex-image-paste"));
+    await tick();
+    check(($("#toast").textContent || "").indexOf("No image copied") !== -1, "text-only clipboard shows 'No image copied'");
+  }catch(err){ check(false, "clipboard API path: " + err.message); }
+  try{
+    // No clipboard-read API (file://) -> Ctrl+V fallback captures the paste
+    E(`delete navigator.clipboard; window.__pastedType = '';`);
+    click($("#ex-image-paste"));
+    const evText = new W.Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(evText, "clipboardData", { value: { items: [] } });
+    W.document.dispatchEvent(evText);
+    await tick();
+    check(($("#toast").textContent || "").indexOf("No image copied") !== -1, "Ctrl+V fallback: pasting non-image shows 'No image copied'");
+    click($("#ex-image-paste"));
+    const evImg = new W.Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(evImg, "clipboardData", { value: { items: [ { kind: "file", type: "image/png", getAsFile: function(){ return new Blob(['x'], {type:'image/png'}); } } ] } });
+    W.document.dispatchEvent(evImg);
+    await tick();
+    check($("#ex-photo-thumb").innerHTML.indexOf("CLIPBOARD") !== -1, "Ctrl+V fallback: pasting an image previews it");
+  }catch(err){ check(false, "clipboard fallback path: " + err.message); }
+
+  console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
+  process.exit(fail?1:0);
+})();

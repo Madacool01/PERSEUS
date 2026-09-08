@@ -2003,6 +2003,7 @@ function openExEditor(id){
         '<span class="ex-photo-thumb" id="ex-photo-thumb" role="img" aria-label="Exercise photo preview"><span class="ex-photo-empty">+</span></span>'+
         '<span class="ex-photo-meta">'+
           '<button type="button" class="btn small" id="ex-image-pick">Upload photo</button>'+
+          '<button type="button" class="btn ghost small" id="ex-image-paste">Paste from clipboard</button>'+
           '<button type="button" class="btn ghost small" id="ex-image-clear" style="display:none">Remove</button>'+
           '<input type="file" id="ex-image-input" accept="image/*"/>'+
         '</span>'+
@@ -2176,7 +2177,50 @@ function openExEditor(id){
     if (!/^image\//.test(f.type)){ toast("Please pick an image file"); pInput.value=""; return; }
     readImageFile(f, dataUrl=>{ pendingImage = dataUrl; renderPhoto(); });
   });
-  if (pClear) pClear.addEventListener("click", ()=>{ pendingImage = ""; if (pInput) pInput.value=""; renderPhoto(); });
+  /* ---- paste from clipboard: show the latest copied image, or say "no image
+     copied" when the latest clipboard item isn't an image. Uses the async
+     clipboard-read API where available; on file:// or denied permission it
+     falls back to listening for the user's own Ctrl+V paste. ---- */
+  const pPaste = $("#ex-image-paste", host);
+  function capturePasteOnce(onImage){
+    const onPaste = ev=>{
+      const items = ev.clipboardData && ev.clipboardData.items;
+      if (items){
+        for (const it of items){
+          if (it.kind === "file" && /^image\//.test(it.type)){
+            ev.preventDefault();
+            cleanup();
+            readImageFile(it.getAsFile(), onImage);
+            return;
+          }
+        }
+      }
+      ev.preventDefault();
+      cleanup();
+      toast("No image copied");
+    };
+    const cleanup = ()=>{ document.removeEventListener("paste", onPaste, true); clearTimeout(timer); };
+    const timer = setTimeout(cleanup, 6000);
+    document.addEventListener("paste", onPaste, true);
+  }
+  if (pPaste) pPaste.addEventListener("click", ()=>{
+    const apply = dataUrl=>{ pendingImage = dataUrl; renderPhoto(); toast("Photo pasted from clipboard"); };
+    try{
+      if (!navigator.clipboard || typeof navigator.clipboard.read !== "function") throw new Error("clipboard-read unavailable");
+      navigator.clipboard.read().then(items=>{
+        const item = items && items[0];
+        const imgType = item && (item.types || []).find(t=>/^image\//.test(t));
+        if (!imgType){ toast("No image copied — the latest clipboard item isn't an image"); return; }
+        return item.getType(imgType).then(blob=>readImageFile(blob, apply));
+      }).catch(()=>{
+        toast("Clipboard blocked — press Ctrl+V to paste the image");
+        capturePasteOnce(apply);
+      });
+    }catch(e){
+      toast("Clipboard blocked — press Ctrl+V to paste the image");
+      capturePasteOnce(apply);
+    }
+  });
   renderPhoto();
   $("#ex-cancel", host).addEventListener("click", dismiss);
   $("#ex-close", host).addEventListener("click", dismiss);
