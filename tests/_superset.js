@@ -203,6 +203,41 @@ function section(t) { console.log("\n== " + t + " =="); }
   check(E("getDay('day-1').exercises.find(x=>x.exId==='" + curl + "').targetSets") === 2,
     "exercises keep their plans after unlinking");
 
+  section("Superset wizard: per-member type on hybrid days");
+  // day-1 is hypertrophy -> the wizard must NOT show per-member focus pickers
+  window.switchView("workouts");
+  click($("#view-workouts [data-edit-day]"));
+  click($("#view-workouts [data-add-ss]"));
+  check($$("#view-workouts .ss-focus-in").length === 0, "non-hybrid day: wizard has no per-member focus pickers");
+  click($("#view-workouts #ss-cancel"));
+  E("getDay('day-1').type = 'hybrid'");
+  click($("#view-workouts [data-add-ss]"));
+  check($$("#view-workouts .ss-focus-in").length === 2, "hybrid day: every member card gets a focus picker");
+  const foc0 = $("#view-workouts .ss-focus-in[data-k='0']");
+  const foc1 = $("#view-workouts .ss-focus-in[data-k='1']");
+  check(Boolean(foc0) && Boolean(foc1), "focus selects render per member");
+  foc0.value = "strength";
+  foc1.value = "hypertrophy";
+  click($("#view-workouts #ss-ok"));
+  const hyGrp = E("getDay('day-1').supersets[0]");
+  check(Boolean(hyGrp) && hyGrp.exIds.length === 2, "hybrid superset group created with 2 members");
+  const hy0 = E("getDay('day-1').exercises.find(x=>x.exId==='" + hyGrp.exIds[0] + "')");
+  const hy1 = E("getDay('day-1').exercises.find(x=>x.exId==='" + hyGrp.exIds[1] + "')");
+  check(hy0.focus === "strength" && hy1.focus === "hypertrophy",
+    "per-member focus saved from the wizard (strength + hypertrophy)");
+
+  section("Coach payload carries superset membership + per-exercise type");
+  const pl = G("buildAIPayload({ session:{ type:'hybrid', recovery:{}, completedSets:[] }, day: getDay('day-1'), entries: [], base: [] })");
+  check(Array.isArray(pl.supersets) && pl.supersets.length >= 1, "payload lists the superset groups");
+  const pl0 = pl.plan.find(p => p.exId === hyGrp.exIds[0]);
+  const pl1 = pl.plan.find(p => p.exId === hyGrp.exIds[1]);
+  check(Boolean(pl0) && pl0.superset === hyGrp.id && Boolean(pl1) && pl1.superset === hyGrp.id,
+    "superset members tagged with their group id");
+  check(pl0.type === "strength" && pl0.focus === "strength" && pl1.type === "hypertrophy" && pl1.focus === "hypertrophy",
+    "each member's effective type + focus sent to the coach");
+  const solo = pl.plan.find(p => p.superset === "");
+  check(Boolean(solo) && solo.type === "hybrid", "standalone exercises carry the day type with an empty superset field");
+
   section("Runtime errors");
   check(errors.length === 0, "no window errors during flows" + (errors.length ? " -> " + errors.join(" | ") : ""));
 

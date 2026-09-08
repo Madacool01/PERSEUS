@@ -3532,6 +3532,10 @@ function openAddSuperset(dayId){
       const k = +inp.dataset.k;
       if (picks[k]) picks[k].w = inp.value;
     });
+    $$(".ss-focus-in", host).forEach(sel => {
+      const k = +sel.dataset.k;
+      if (picks[k]) picks[k].focus = sel.value;
+    });
   }
   /* One target card per member: a weight field when the movement takes load,
      then a per-set reps / hold ladder sized to the shared round count. */
@@ -3558,9 +3562,18 @@ function openAddSuperset(dayId){
     const w = showW
       ? '<label class="field ss-weight"><span>Working weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="ss-weight-in" data-k="'+k+'" value="'+wVal+'"/></label>'
       : "";
+    /* Hybrid days let each member declare its own training type (hypertrophy /
+       strength) — same per-entry `focus` the add-exercise flow uses, so the
+       coach judges this member against that focus's rep zone. */
+    const foc = (day.type==="hybrid")
+      ? '<label class="field ss-focus"><span>Type: hypertrophy or strength</span><select class="ss-focus-in" data-k="'+k+'">'+
+          '<option value="hypertrophy"'+(pick.focus==="hypertrophy"?" selected":"")+'>Hypertrophy: 6-12 reps</option>'+
+          '<option value="strength"'+(pick.focus==="strength"?" selected":"")+'>Strength: 3-6 reps</option>'+
+        '</select><div class="micro">Hybrid day — pick which rep zone this member is judged against.</div></label>'
+      : "";
     return '<div class="ss-member" data-k="'+k+'">'+
       '<div class="ss-member-head"><b>'+esc(ex.name)+'</b>'+modePill(ex)+(ex.weightAvailable ? ' <span class="pill weight">wgt</span>' : '')+'</div>'+
-      '<div class="ss-member-body">'+w+'<div class="set-targets">'+cells.join("")+'</div></div>'+
+      '<div class="ss-member-body">'+foc+w+'<div class="set-targets">'+cells.join("")+'</div></div>'+
     '</div>';
   }
   function pickerRow(k){
@@ -3602,7 +3615,7 @@ function openAddSuperset(dayId){
     $$(".ss-ex-sel", host).forEach(sel => sel.addEventListener("change", ()=>{
       const k = +sel.dataset.k;
       picks[k].exId = sel.value;
-      picks[k].vals = null; picks[k].w = null;   // fresh exercise → fresh defaults
+      picks[k].vals = null; picks[k].w = null; picks[k].focus = null;   // fresh exercise → fresh defaults
       renderCard();
     }));
     $$(".ss-rm", host).forEach(b => b.addEventListener("click", ()=>{
@@ -3657,6 +3670,9 @@ function openAddSuperset(dayId){
       const wEl = $('.ss-weight-in[data-k="'+k+'"]', host);
       const wRaw = (wEl && wEl.value != null && wEl.value !== "") ? wEl.value : picks[k].w;
       if (ex.weightAvailable || ex.mode==="weight") entry.weight = (wRaw != null && wRaw !== "") ? +wRaw : (base.weight || 0);
+      const focEl = $('.ss-focus-in[data-k="'+k+'"]', host);
+      if (day.type==="hybrid"){ if (focEl && focEl.value) entry.focus = focEl.value; else delete entry.focus; }
+      else delete entry.focus;
       entry.modifiedAt = Date.now();
       day.exercises.push(entry);
       syncExercisePlan(ex.id, entry);
@@ -4412,7 +4428,13 @@ const SYSTEM_PROMPT = [
   "(if the exercise takes load) or a harder progression over endless rep chasing.",
   "In 'hybrid' sessions each exercise may carry a 'focus' of 'hypertrophy' or 'strength':",
   "judge that exercise against that focus's rep zone (hypertrophy 6-12, strength 1-6)",
-  "instead of the blended hybrid zone.",
+  "instead of the blended hybrid zone. Every plan entry also carries its effective",
+  "'type' (the zone it is judged against: strength|hypertrophy|hybrid|endurance).",
+  "Exercises in a superset carry a 'superset' field with the group id, and the payload",
+  "lists every group under 'supersets'. Superset members are logged as paired rounds",
+  "(one set of every member back to back before a single rest) and share one set count:",
+  "judge each member against its own zone, keep suggestions conservative and",
+  "independent, and never change set counts or reorder members.",
   "Rules you MUST respect:",
   "- NEVER change number of sets; only reps, hold-time, or weight.",
   "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -4423,12 +4445,18 @@ const SYSTEM_PROMPT = [
 ].join("\n");
 
 function buildAIPayload({ session, day, entries, base }){
+  const dayType = (day && day.type) || "hypertrophy";
   const plan = day.exercises.map(de=>{
     const ex = getEx(de.exId);
+    const ss = supersetFor(day, de.exId);
+    /* The effective zone this exercise is judged against: the day's session
+       type, or the member's own focus on hybrid days (same as exerciseZone). */
+    const eff = (dayType==="hybrid" && (de.focus==="hypertrophy"||de.focus==="strength")) ? de.focus : dayType;
     return { exId:de.exId, name:ex?ex.name:"?", mode:ex?ex.mode:"reps",
       weightAvailable: ex?!!ex.weightAvailable:false,
       targetSets:de.targetSets, targetReps:de.reps, targetTime:de.time, weight:de.weight,
-      focus: de.focus||"",
+      focus: de.focus||"", type: eff,
+      superset: ss ? ss.id : "",
       setTypes: Array.isArray(de.setTypes) ? de.setTypes.map(t=>t||"regular") : [] };
   });
   const performed = session.completedSets.map(c=>({
@@ -4438,6 +4466,7 @@ function buildAIPayload({ session, day, entries, base }){
   return {
     instruction:"Given the plan, the performed sets, recovery, and candidate suggestions below, return updated suggestions + a summary.",
     sessionType: session.type || "hypertrophy",
+    supersets: (day.supersets||[]).map(g=>({ id:g.id, exIds:(g.exIds||[]).slice() })),
     recovery:session.recovery, plan, performed, candidates
   };
 }
