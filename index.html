@@ -5417,7 +5417,7 @@ function youMuscleRadarHtml(nowMs){
     return '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>';
   }).join("");
   const fracs = vals.map(v=> max > 0 ? (v / max) : 0);
-  const poly = '<polygon points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="rgba(217,95,43,.28)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
+  const poly = '<polygon points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="rgba(217,95,43,.28)" stroke="var(--accent)" stroke-width="0.5" stroke-linejoin="round"/>';
   const dots = fracs.map((f, i)=>{
     const p = pt(i, f);
     return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
