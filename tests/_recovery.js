@@ -84,6 +84,25 @@ E(`(function(){
 })();`);
 check(E("muscleRecoveryAt(Date.now()).chest") === 100, "warmup-only session leaves chest at 100%");
 
+// ETA: closed-form hours to ~95% readiness, bounded and shrinking over time
+check(E("typeof recoveryEtaHours") === "function" && E("RECOVERY_READY_PCT") === 95, "ready threshold defined at 95%");
+E(`(function(){
+  state.sessions = [{
+    id:'s-eta', dayId:'day-1', dateISO: new Date(Date.now() - 12*3600*1000).toISOString(),
+    completedSets: [
+      { exId:'ex-1', setIndex:0, reps:10, weight:0, rating:3, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:1, reps:10, weight:0, rating:3, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:2, reps:10, weight:0, rating:3, hit:true, type:'regular' }
+    ]
+  }];
+})();`);
+const etaNow = E("recoveryEtaHours('chest', Date.now())");
+check(etaNow >= 1 && etaNow <= 168, "trained chest has a bounded ETA (" + etaNow + "h)");
+check(E("recoveryEtaHours('calves', Date.now())") === 0, "untrained muscle has 0h ETA");
+const eta24 = E("recoveryEtaHours('chest', Date.now() + 24*3600*1000)");
+check(eta24 < etaNow, "ETA shrinks over the next 24h (" + etaNow + " -> " + eta24 + ")");
+check(E("typeof muscleRecoveryAt(Date.now())._remaining") === "object" && E("muscleRecoveryAt(Date.now())._remaining.chest") > 0, "recovery exposes per-group remaining dose");
+
 // Total = mean of 12
 const m = E("muscleRecoveryAt(Date.now())");
 const vals = E("RECOVERY_GROUPS.map(function(g){ return muscleRecoveryAt(Date.now())[g]; })");

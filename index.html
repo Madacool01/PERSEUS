@@ -5047,6 +5047,10 @@ function renderSettings(){
 const RECOVERY_GROUPS = ["chest","shoulders","triceps","back","biceps","forearms","quads","hamstrings","hips","calves","abs","neck"];
 const RECOVERY_TAU_H = { chest:40, shoulders:40, triceps:30, back:40, biceps:30, forearms:30, quads:48, hamstrings:48, hips:40, calves:30, abs:30, neck:30 };
 const RECOVERY_SCALE = 3;
+/* Recovery counts as "ready" at this % — the point where training again is
+   sensible. The exponential tail past it is glacial (95 -> 100 takes days),
+   so ETA + the "ready" label target this instead of 99.5. */
+const RECOVERY_READY_PCT = 95;
 const RECOVERY_DETAIL_MAP = {
   "Pectoralis major":"chest",
   "Anterior deltoid":"shoulders", "Lateral deltoid":"shoulders", "Posterior deltoid":"shoulders",
@@ -5137,6 +5141,7 @@ function muscleRecoveryAt(nowMs){
     res[g] = Math.max(0, Math.min(100, Math.round(100 * Math.exp(-remaining[g] / RECOVERY_SCALE))));
   });
   res._lastHit = lastHit;
+  res._remaining = remaining;
   return res;
 }
 function totalRecoveryAt(nowMs){
@@ -5144,13 +5149,21 @@ function totalRecoveryAt(nowMs){
   const sum = RECOVERY_GROUPS.reduce((a,g)=>a + (m[g] || 0), 0);
   return Math.round(sum / RECOVERY_GROUPS.length);
 }
+/* Hours until a muscle crosses the ready threshold. Closed form: remaining
+   dose decays as rem*exp(-X/tau) (one tau per group), and ready means the
+   % mapping hits RECOVERY_READY_PCT, i.e. remaining = -scale*ln(ready/100).
+   Solves X directly — no per-hour recompute loop (the old version reran the
+   whole recovery scan 168x per row). */
 function recoveryEtaHours(g, nowMs){
   const m = muscleRecoveryAt(nowMs);
-  if ((m[g] || 0) >= 99.5) return 0;
-  for (let h = 1; h <= 168; h++){
-    if (muscleRecoveryAt((+nowMs || Date.now()) + h * 3600000)[g] >= 99.5) return h;
-  }
-  return 168;
+  const pct = m[g] || 0;
+  if (pct >= RECOVERY_READY_PCT) return 0;
+  const rem = (m._remaining && m._remaining[g]) || 0;
+  if (!(rem > 0)) return 0;
+  const tau = RECOVERY_TAU_H[g] || 40;
+  const target = -RECOVERY_SCALE * Math.log(RECOVERY_READY_PCT / 100);
+  const h = Math.ceil(tau * Math.log(rem / target));
+  return Math.max(0, Math.min(168, h));
 }
 
 /* =========================================================================
@@ -5853,7 +5866,7 @@ function youRecoveryHtml(nowMs){
     if (!lastHit[g]) sub = "no logged work — fresh";
     else {
       const h = Math.max(0, Math.round((now - lastHit[g]) / 3600000));
-      sub = pct >= 99.5 ? "ready — trained " + h + "h ago" : "trained " + h + "h ago · ~" + recoveryEtaHours(g, now) + "h to full";
+      sub = pct >= RECOVERY_READY_PCT ? "ready — trained " + h + "h ago" : "trained " + h + "h ago · ~" + recoveryEtaHours(g, now) + "h to ready";
     }
     return '<div class="rec-row" data-rec-muscle="' + g + '">'+
       '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + pct + '%</span></div>'+
