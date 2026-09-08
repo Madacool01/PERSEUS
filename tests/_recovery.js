@@ -144,6 +144,7 @@ const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 check(src.indexOf("https://esm.sh/body-muscles") !== -1, "index.html imports the body-muscles CDN");
 check(src.indexOf("BodyChart") !== -1 && src.indexOf("ViewSide") !== -1 && src.indexOf("MUSCLE_MAP") !== -1, "CDN module uses BodyChart + ViewSide + MUSCLE_MAP");
 check(src.indexOf("renderWeeklyBodyCharts") !== -1, "CDN upgrade hook renderWeeklyBodyCharts is wired");
+check(src.indexOf("wmPaintChart") !== -1 && src.indexOf("musclePaths.get") !== -1 && src.indexOf("WM_SEC") !== -1, "CDN repaint paints through the chart id→path map (body-muscles paths have no data attrs, so blue must not rely on DOM lookups)");
 
 // keyword mapper resolves our detailed names to live CDN ids (pure, fake map)
 const fakeMap = [{ id: "biceps-left" }, { id: "biceps-right" }, { id: "chest-left" }, { id: "triceps-left" }, { id: "quadriceps-left" }];
@@ -167,6 +168,36 @@ check(E("bodyMuscleIdsForDetail('Latissimus dorsi', " + JSON.stringify(anatMap) 
 check(E("bodyMuscleIdsForDetail('Rectus abdominis', " + JSON.stringify(anatMap) + ")").join(",") === "", "abs do not map to rectus-femoris quad");
 check(E("bodyMuscleIdsForDetail('Hamstrings', " + JSON.stringify(anatMap) + ")").join(",") === "biceps-femoris-left", "hamstrings still resolve to biceps-femoris");
 check(E("bodyMuscleIdsForDetail('Gastrocnemius (calf)', " + JSON.stringify(anatMap) + ")").slice().sort().join(",") === "gastrocnemius-lateral-left,triceps-surae-left", "calf resolves to calf ids");
+
+// No family expansion: a primary tag lights only its own region, so sibling
+// muscles that were never tagged (brachialis, other deltoid heads, other
+// forearm muscles, other trap bands) stay unlit instead of glowing red.
+// Ids mirror the live body-muscles CDN (npm 1.0.0).
+const realMap = [
+  "biceps-left","biceps-right","brachialis-left","brachialis-right",
+  "shoulder-front-left","shoulder-front-right","shoulder-side-left","shoulder-side-right",
+  "deltoid-rear-left","deltoid-rear-right",
+  "forearm-left","forearm-right","forearm-flexors-left","forearm-flexors-right","forearm-extensors-left","forearm-extensors-right",
+  "traps-upper-left","traps-upper-right","traps-mid-left","traps-mid-right","traps-lower-left","traps-lower-right",
+  "lats-upper-left","lats-upper-right","lats-mid-left","lats-lower-left","lats-mid-right","lats-lower-right",
+  "chest-upper-left","chest-lower-left","chest-upper-right","chest-lower-right",
+  "quads-left","quads-right","calves-gastroc-medial-left","calves-gastroc-lateral-left","calves-soleus-left",
+  "gluteus-medius-left","gluteus-maximus-left"
+];
+const rm = JSON.stringify(realMap);
+check(E("bodyMuscleIdsForDetail('Biceps brachii', " + rm + ")").slice().sort().join(",") === "biceps-left,biceps-right", "Biceps brachii lights only biceps, not brachialis");
+check(E("bodyMuscleIdsForDetail('Brachialis', " + rm + ")").slice().sort().join(",") === "biceps-left,biceps-right,brachialis-left,brachialis-right", "Brachialis lights its own shape plus the front upper-arm shape");
+check(E("bodyMuscleIdsForDetail('Anterior deltoid', " + rm + ")").slice().sort().join(",") === "shoulder-front-left,shoulder-front-right", "Anterior deltoid lights only the front shoulder, not side/rear");
+check(E("bodyMuscleIdsForDetail('Lateral deltoid', " + rm + ")").slice().sort().join(",") === "shoulder-side-left,shoulder-side-right", "Lateral deltoid lights only the side shoulder");
+check(E("bodyMuscleIdsForDetail('Posterior deltoid', " + rm + ")").slice().sort().join(",") === "deltoid-rear-left,deltoid-rear-right", "Posterior deltoid lights only the rear deltoid");
+check(E("bodyMuscleIdsForDetail('Wrist flexors', " + rm + ")").slice().sort().join(",") === "forearm-flexors-left,forearm-flexors-right", "Wrist flexors lights only flexors, not extensors or front forearm");
+check(E("bodyMuscleIdsForDetail('Wrist extensors', " + rm + ")").slice().sort().join(",") === "forearm-extensors-left,forearm-extensors-right", "Wrist extensors lights only extensors");
+check(E("bodyMuscleIdsForDetail('Brachioradialis', " + rm + ")").slice().sort().join(",") === "forearm-left,forearm-right", "Brachioradialis lights only the front forearm");
+check(E("bodyMuscleIdsForDetail('Middle trapezius', " + rm + ")").slice().sort().join(",") === "traps-mid-left,traps-mid-right", "Middle trapezius lights only the mid trap band");
+check(E("bodyMuscleIdsForDetail('Lower trapezius', " + rm + ")").slice().sort().join(",") === "traps-lower-left,traps-lower-right", "Lower trapezius lights only the lower trap band");
+check(E("bodyMuscleIdsForDetail('Teres major', " + rm + ")").slice().sort().join(",") === "lats-upper-left,lats-upper-right", "Teres major lights only the upper lat region");
+check(E("bodyMuscleIdsForDetail('Gastrocnemius (calf)', " + rm + ")").slice().sort().join(",") === "calves-gastroc-lateral-left,calves-gastroc-medial-left", "gastrocnemius excludes soleus");
+check(E("bodyMuscleIdsForDetail('Soleus (calf)', " + rm + ")").join(",") === "calves-soleus-left", "soleus excludes gastrocnemius");
 
 // Live refresh: retagging an exercise (e.g. adding a secondary muscle) and
 // saving must update the rendered map in place, without a tab switch.

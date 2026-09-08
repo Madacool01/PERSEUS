@@ -5167,7 +5167,12 @@ const BODYPART_TO_WMUSCLE = {
    matched on whole tokens — never substrings — because anatomy reuses names:
    biceps FEMORIS is a hamstring, triceps SURAE is calf, "lat" sits inside
    "lateral", and rectus FEMORIS is quad. `any` accepts single tokens or
-   "a+b" phrases (all parts present); `none` vetoes. Pure + testable. */
+   "a+b" phrases (all parts present); `none` vetoes. Each detail resolves to
+   its OWN region only — e.g. "Biceps brachii" must not light brachialis,
+   "Anterior deltoid" must not light the side/rear deltoid, and "Wrist
+   flexors" must not light the extensors or front forearm — otherwise muscles
+   that were never tagged glow primary-red instead of staying unlit. Pure +
+   testable. */
 function bodyIdTokens(id){ return String(id).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); }
 function bodySpecMatches(tokens, spec){
   if (!spec) return false;
@@ -5179,35 +5184,35 @@ function bodySpecMatches(tokens, spec){
 }
 const DETAIL_TO_BODY_MATCH = {
   "Pectoralis major":{any:["chest","pec","pectoralis"],none:[]},
-  "Anterior deltoid":{any:["shoulder","deltoid","delt"],none:[]},
-  "Lateral deltoid":{any:["shoulder","deltoid","delt"],none:[]},
-  "Posterior deltoid":{any:["shoulder","deltoid","delt","rear+delt"],none:[]},
+  "Anterior deltoid":{any:["shoulder+front"],none:[]},
+  "Lateral deltoid":{any:["shoulder+side"],none:[]},
+  "Posterior deltoid":{any:["deltoid+rear"],none:[]},
   "Triceps brachii":{any:["triceps"],none:["surae","sural","gastrocnemius","soleus","calf","calves"]},
-  "Biceps brachii":{any:["biceps","brachialis"],none:["femoris","femoral"]},
+  "Biceps brachii":{any:["biceps"],none:["femoris","femoral"]},
   "Brachialis":{any:["biceps","brachialis"],none:["femoris","femoral"]},
-  "Brachioradialis":{any:["forearm","brachioradialis"],none:[]},
-  "Wrist flexors":{any:["forearm"],none:[]},
-  "Wrist extensors":{any:["forearm"],none:[]},
+  "Brachioradialis":{any:["forearm","brachioradialis"],none:["flexors","extensors"]},
+  "Wrist flexors":{any:["forearm+flexors"],none:[]},
+  "Wrist extensors":{any:["forearm+extensors"],none:[]},
   "Rectus abdominis":{any:["abs","rectus"],none:["femoris","femoral"]},
   "Obliques":{any:["oblique","obliques"],none:[]},
-  "Upper trapezius":{any:["traps","trapezius","nape","neck"],none:[]},
-  "Middle trapezius":{any:["traps","trapezius","rhomboid"],none:[]},
-  "Lower trapezius":{any:["traps","trapezius","rhomboid"],none:[]},
-  "Teres major":{any:["teres","shoulder"],none:[]},
-  "Teres minor":{any:["teres","shoulder"],none:[]},
+  "Upper trapezius":{any:["traps+upper","trapezius+upper","nape"],none:[]},
+  "Middle trapezius":{any:["traps+mid","trapezius+middle"],none:[]},
+  "Lower trapezius":{any:["traps+lower","trapezius+lower"],none:[]},
+  "Teres major":{any:["teres+major","lats+upper"],none:[]},
+  "Teres minor":{any:["teres+minor","lats+upper"],none:[]},
   "Latissimus dorsi":{any:["lat","lats","latissimus"],none:["lateral"]},
-  "Erector spinae":{any:["erector","spine","lower+back"],none:[]},
+  "Erector spinae":{any:["erector","erectors","spine","lower+back"],none:[]},
   "Glutes":{any:["glute","glutes","gluteus"],none:[]},
-  "Abductors":{any:["glute","glutes","gluteus","abductor"],none:[]},
-  "Hip flexors":{any:["hip","psoas","iliacus"],none:[]},
-  "Quadriceps":{any:["quadriceps","quad","vastus","rectus+femoris"],none:["hamstring","hamstrings","semitendinosus","semimembranosus"]},
-  "Hamstrings":{any:["hamstring","hamstrings","semitendinosus","semimembranosus","biceps+femoris"],none:["rectus","vastus","quad","quadriceps"]},
-  "Gastrocnemius (calf)":{any:["gastrocnemius","calf","calves","triceps+surae"],none:[]},
-  "Soleus (calf)":{any:["soleus","calf","calves","triceps+surae"],none:[]}
+  "Abductors":{any:["gluteus+medius","abductor"],none:[]},
+  "Hip flexors":{any:["hip+flexor","hip","psoas","iliacus"],none:[]},
+  "Quadriceps":{any:["quadriceps","quad","quads","vastus","rectus+femoris"],none:["hamstring","hamstrings","semitendinosus","semimembranosus"]},
+  "Hamstrings":{any:["hamstring","hamstrings","semitendinosus","semimembranosus","biceps+femoris"],none:["rectus","vastus","quad","quadriceps","quads"]},
+  "Gastrocnemius (calf)":{any:["gastrocnemius","gastroc","calf","calves","triceps+surae"],none:["soleus"]},
+  "Soleus (calf)":{any:["soleus","calf","calves","triceps+surae"],none:["gastroc","gastrocnemius"]}
 };
 const BODYPART_TO_BODY_MATCH = {
   "Chest":{any:["chest"],none:[]},
-  "Shoulders":{any:["shoulder"],none:[]},
+  "Shoulders":{any:["shoulder","deltoid"],none:[]},
   "Arms":{any:["biceps","triceps"],none:["femoris","femoral","surae","sural","gastrocnemius","soleus","calf","calves"]},
   "Forearms":{any:["forearm"],none:[]},
   "Back":{any:["lat","lats","latissimus","back"],none:["lateral"]},
@@ -6174,6 +6179,20 @@ function wmPaint(root, ids, color){
     });
   });
 }
+/* body-muscles paths carry NO id/data-* attributes (just a class + <title>),
+   so DOM lookups find nothing and the secondary repaint silently no-ops —
+   every trained muscle kept the library's own red intensity fill. Paint
+   through the chart's internal id→path map instead. style.fill (CSS) wins
+   over the library's fill attribute, so hover re-paints can't flip a
+   secondary muscle back to red. */
+function wmPaintChart(chart, ids, color){
+  if (!chart || !chart.musclePaths || typeof chart.musclePaths.get !== "function") return;
+  (ids || []).forEach(id=>{
+    const el = chart.musclePaths.get(id);
+    if (!el) return;
+    try{ el.setAttribute("fill", color); el.style.fill = color; }catch(e){}
+  });
+}
 function wmEnsure(){
   const front = document.getElementById("wm-front-container");
   const back = document.getElementById("wm-back-container");
@@ -6200,6 +6219,8 @@ function wmEnsure(){
     wmCharts.b.update({ bodyState });
   }
   wmLastKey = key;
+  wmPaintChart(wmCharts.f, ids.primary, WM_PRIM); wmPaintChart(wmCharts.b, ids.primary, WM_PRIM);
+  wmPaintChart(wmCharts.f, ids.secondary, WM_SEC); wmPaintChart(wmCharts.b, ids.secondary, WM_SEC);
   wmPaint(front, ids.primary, WM_PRIM); wmPaint(back, ids.primary, WM_PRIM);
   wmPaint(front, ids.secondary, WM_SEC); wmPaint(back, ids.secondary, WM_SEC);
   try{ window._BodyMusclesReady = true; }catch(e){}
