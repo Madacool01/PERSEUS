@@ -5505,7 +5505,10 @@ function youMuscleRadarHtml(nowMs){
   const n = RADAR_GROUPS.length, cx = 100, cy = 100, R = 78;
   const pt = (i, frac)=>{
     const a = -Math.PI / 2 + i * 2 * Math.PI / n;
-    const r = 10 + frac * (R - 10);
+    /* frac 0 = untouched muscle -> a hair outside the centre so the
+       collapsed polygon reads as a small nub instead of a single dot;
+       frac 1 = the top muscle -> the outer ring. */
+    const r = 4 + frac * (R - 4);
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   };
   const rings = [0.33, 0.66, 1].map(f=>{
