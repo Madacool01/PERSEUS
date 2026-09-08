@@ -5045,8 +5045,15 @@ function renderSettings(){
    Total = mean of the 12 groups. Untouched/untagged muscles stay 100%.
    ========================================================================= */
 const RECOVERY_GROUPS = ["chest","shoulders","triceps","back","biceps","forearms","quads","hamstrings","hips","calves","abs","neck"];
-const RECOVERY_TAU_H = { chest:40, shoulders:40, triceps:30, back:40, biceps:30, forearms:30, quads:48, hamstrings:48, hips:40, calves:30, abs:30, neck:30 };
-const RECOVERY_SCALE = 3;
+/* Calibration from the recovery literature (Peake et al. 2017, J Appl Physiol;
+   Sousa et al. 2024 review of 24 recovery studies): strength/force lost right
+   after a session is ~10-30% (restored within ~2 days for <=20% drops), and
+   most muscle groups are ready to train again within 48-72h, with the lower
+   body needing longer than the upper body. RECOVERY_SCALE maps the capped
+   single-session dose (~2.5) to ~75% right after a hard session, and the tau
+   values put upper-body groups at ~95% by ~44h and lower-body by ~60h. */
+const RECOVERY_TAU_H = { chest:26, shoulders:26, triceps:24, back:26, biceps:24, forearms:24, quads:34, hamstrings:34, hips:30, calves:26, abs:24, neck:24 };
+const RECOVERY_SCALE = 9;
 /* Recovery counts as "ready" at this % — the point where training again is
    sensible. The exponential tail past it is glacial (95 -> 100 takes days),
    so ETA + the "ready" label target this instead of 99.5. */

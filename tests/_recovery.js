@@ -102,6 +102,20 @@ check(E("recoveryEtaHours('calves', Date.now())") === 0, "untrained muscle has 0
 const eta24 = E("recoveryEtaHours('chest', Date.now() + 24*3600*1000)");
 check(eta24 < etaNow, "ETA shrinks over the next 24h (" + etaNow + " -> " + eta24 + ")");
 check(E("typeof muscleRecoveryAt(Date.now())._remaining") === "object" && E("muscleRecoveryAt(Date.now())._remaining.chest") > 0, "recovery exposes per-group remaining dose");
+// Literature calibration (Peake 2017; Sousa 2024): acute deficit <= ~30%, and
+// ready (>=95%) within 48-72h of training — not a ~50% crater that takes days.
+E(`(function(){
+  state.sessions = [{
+    id:'s-acute', dayId:'day-1', dateISO: new Date(Date.now() - 1*3600*1000).toISOString(),
+    completedSets: [
+      { exId:'ex-1', setIndex:0, reps:10, weight:0, rating:3, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:1, reps:10, weight:0, rating:3, hit:true, type:'regular' },
+      { exId:'ex-1', setIndex:2, reps:10, weight:0, rating:3, hit:true, type:'regular' }
+    ]
+  }];
+})();`);
+check(E("muscleRecoveryAt(Date.now()).chest") >= 70, "acute deficit after a session stays within ~30% (chest " + E("muscleRecoveryAt(Date.now()).chest") + "%)");
+check(E("muscleRecoveryAt(Date.now() + 48*3600*1000).chest") >= 95, "chest is ready (>=95%) within 48h of training");
 
 // Total = mean of 12
 const m = E("muscleRecoveryAt(Date.now())");
