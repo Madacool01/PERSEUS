@@ -28,15 +28,8 @@ check(tabs[5].dataset.view === "you" && tabs[6].dataset.view === "settings", "Yo
 
 clickTab("you");
 check($("#view-you").classList.contains("active"), "You view activates after click");
-check($$("#view-you .sub-tab").length === 2, "two sub-tabs (Overview / Exercises)");
-check(["Overview", "Exercises"].every((t, i) => $$("#view-you .sub-tab")[i].textContent === t), "sub-tab labels in order");
-check($("#view-you .sub-tab").classList.contains("active"), "Overview sub-tab active by default");
-check(Boolean($("#view-you #you-content .you-page")), "Overview sub-tab renders content (charts)");
-
-// Switch to the Exercises sub-tab through the real UI
-$$("#view-you .sub-tab")[1].dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
-check($("#view-you .sub-tab:nth-child(2)").classList.contains("active"), "Exercises sub-tab becomes active");
-check(Boolean($("#view-you #you-content .card")), "Exercises sub-tab renders content");
+check($$("#view-you .sub-tab").length === 0, "no placeholder sub-tabs in You");
+check(Boolean($("#view-you #you-content .you-page")), "You renders overview content (charts) directly");
 
 // The You view survives a simulated refresh via the view-restore path
 clickTab("you");

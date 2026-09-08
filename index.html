@@ -1810,7 +1810,6 @@ let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" 
 let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
 let libraryFilters = { eq:"", search:"" };
-let youTab = "overview";             // You tab: "overview" | "exercises"
 
 /* ==== APP CORE END ==== */
 /* =========================================================================
@@ -5684,10 +5683,8 @@ function youSplitHtml(nowMs){
 }
 
 /* =========================================================================
-   YOU — TRAINING ANALYTICS (Overview / Exercises)
+   YOU — TRAINING ANALYTICS
    ========================================================================= */
-const YOU_TABS = ["overview","exercises"];
-const YOU_TAB_LABELS = { overview:"Overview", exercises:"Exercises" };
 
 function renderYou(){
   const s = $("#view-you");
@@ -5700,24 +5697,16 @@ function renderYou(){
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
-      '<nav class="sub-tabs" aria-label="Training analytics sections" style="margin:1.6rem 0 1.2rem">' +
-        YOU_TABS.map(t=>'<button type="button" class="sub-tab'+(youTab===t?" active":"")+'" data-you-tab="'+t+'">'+YOU_TAB_LABELS[t]+'</button>').join("") +
-      '</nav>' +
       '<div id="you-content"></div>' +
     '</div>';
-  bindYouTabs();
   renderYouTab();
 }
 
 function renderYouTab(){
   const host = $("#you-content");
   if (!host) return;
-  if (youTab==="overview"){
-    host.innerHTML = youOverviewHtml();
-    bindYouOverview();
-  } else {
-    host.innerHTML = youExercisesHtml();
-  }
+  host.innerHTML = youOverviewHtml();
+  bindYouOverview();
 }
 
 /* Comparison periods shared by the overview charts and the expanded screen. */
@@ -5939,7 +5928,7 @@ function youRecoveryHtml(nowMs){
    a refresh happened. */
 function refreshWeeklyMapIfVisible(){
   try{
-    if (currentView !== "you" || youTab !== "overview") return false;
+    if (currentView !== "you") return false;
     const sec = $("#you-recovery-section");
     if (!sec || !sec.isConnected) return false;
     renderYouRecoverySection();
@@ -6022,7 +6011,7 @@ function bindYouOverview(){
     if (window._youRecTimer) clearInterval(window._youRecTimer);
     window._youRecTimer = setInterval(()=>{
       try{
-        if (currentView !== "you" || youTab !== "overview") return;
+        if (currentView !== "you") return;
         const sec = $("#you-recovery-section");
         if (!sec || !sec.isConnected) return;
         renderYouRecoverySection();
@@ -6075,7 +6064,7 @@ function openYouModal(mode){
   const close = ()=>{
     document.removeEventListener("keydown", onKey);
     if (host.parentNode) host.parentNode.removeChild(host);
-    if (currentView==="you" && youTab==="overview") renderYouPage(youModalMode==="volume" ? 1 : 0);
+    if (currentView==="you") renderYouPage(youModalMode==="volume" ? 1 : 0);
   };
   const onKey = ev=>{ if (ev.key==="Escape") close(); };
   document.addEventListener("keydown", onKey);
@@ -6113,20 +6102,6 @@ function renderYouModalBody(host){
       renderYouModalBody(host);
     }));
   }
-}
-
-function youExercisesHtml(){
-  return '<div class="card"><h3>Exercises</h3>' +
-    '<div class="vis-empty">Per-exercise analytics will live here — progression, performance, and records for each movement.</div></div>';
-}
-
-function bindYouTabs(){
-  const h = $("#view-you");
-  $$("[data-you-tab]", h).forEach(b=>b.addEventListener("click", ()=>{
-    youTab = b.dataset.youTab;
-    $$("[data-you-tab]", h).forEach(x=>x.classList.toggle("active", x===b));
-    renderYouTab();
-  }));
 }
 
 /* =========================================================================
