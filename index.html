@@ -2177,6 +2177,7 @@ function openExEditor(id){
     if (!/^image\//.test(f.type)){ toast("Please pick an image file"); pInput.value=""; return; }
     readImageFile(f, dataUrl=>{ pendingImage = dataUrl; renderPhoto(); });
   });
+  if (pClear) pClear.addEventListener("click", ()=>{ pendingImage = ""; if (pInput) pInput.value=""; renderPhoto(); });
   /* ---- paste from clipboard: show the latest copied image, or say "no image
      copied" when the latest clipboard item isn't an image. Uses the async
      clipboard-read API where available; on file:// or denied permission it

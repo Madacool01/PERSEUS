@@ -161,6 +161,10 @@ window.readImageFile = function(blob, cb){ window.__pastedType = (blob && blob.t
     await tick();
     check($("#ex-photo-thumb").innerHTML.indexOf("CLIPBOARD") !== -1, "latest clipboard image appears in the photo preview");
     check(E("window.__pastedType") === "image/png", "clipboard image goes through the same downscaler as uploads");
+    // Remove clears the preview back to the empty state (regression: the
+    // clipboard feature had wiped the remove handler)
+    click($("#ex-image-clear"));
+    check($("#ex-photo-thumb").innerHTML.indexOf("ex-photo-empty") !== -1, "Remove button clears the preview back to empty");
     // latest item is NOT an image -> message
     E(`navigator.clipboard.read = function(){ return Promise.resolve([{ types:['text/plain'], getType: function(){ return Promise.reject(new Error('no')); } }]); };`);
     click($("#ex-image-paste"));
