@@ -4685,11 +4685,12 @@ function renderCoach(){
     state.pending = state.pending.filter(p=>p.id!==b.dataset.delPend);
     saveState(); renderCoach();
   }));
-  // delete a single suggestion card
+  // delete a single suggestion card (matched by exercise + field, since one
+  // exercise can carry several suggestions, e.g. weight + reps)
   $$("[data-del-sug]", s).forEach(b=>b.addEventListener("click", ()=>{
     const pend = state.pending.find(p=>p.id===b.dataset.delSug);
     if (!pend) return;
-    pend.suggestions = (pend.suggestions||[]).filter(sg=>!(sg.exId===b.dataset.ai));
+    pend.suggestions = (pend.suggestions||[]).filter(sg=>!(sg.exId===b.dataset.ai && (b.dataset.field==null || b.dataset.field==="" || sg.field===b.dataset.field)));
     saveState(); renderCoach();
   }));
 }
@@ -4706,8 +4707,8 @@ function recCard(sug, ex, open, pendId){
   // variation. Rendered as a distinct card carrying from→to exercise names.
   if (field==="progression"){
     const actions = (sug.kept===null && open)
-      ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="keep">Accept</button>'+
-        '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="reject">Reject</button></div>'
+      ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" data-act="keep">Accept</button>'+
+        '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" data-act="reject">Reject</button></div>'
       : '';
     const fromN = esc(sug.fromName||(ex?ex.name:exId));
     const toN = esc(sug.toName||sug.to);
@@ -4716,7 +4717,7 @@ function recCard(sug, ex, open, pendId){
         '<span class="change-tag">harder progression</span><span class="arrow">→</span>'+
         '<span class="ex-name">'+toN+'</span>'+
         '<span class="rec-status" style="margin-left:auto">'+status+'</span>'+
-        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this suggestion">✕</button></div>'+
+        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" aria-label="Delete this suggestion">✕</button></div>'+
       (sug.reason?'<div class="rec-expl">'+esc(sug.reason)+'</div>':"")+
       actions+'</div>';
   }
@@ -4732,32 +4733,37 @@ function recCard(sug, ex, open, pendId){
       '<div class="rec-head"><span class="ex-name">'+label+'</span>'+
         '<span class="change-tag">hold</span>'+
         '<span class="rec-status" style="margin-left:auto">no change</span>'+
-        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this note">✕</button></div>'+
+        '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" aria-label="Delete this note">✕</button></div>'+
       '<div class="rec-expl">'+esc(sug.reason||"Hold the current plan. No change needed next session.")+'</div>'+
     '</div>';
   }
   const actions = (sug.kept===null && open)
-    ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="keep">Accept</button>'+
-      '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-act="reject">Reject</button></div>'
+    ? '<div class="rec-actions"><button class="btn small primary" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" data-act="keep">Accept</button>'+
+      '<button class="btn small" data-recid="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" data-act="reject">Reject</button></div>'
     : '';
   return '<div class="rec-card'+cardClass+'">'+
     '<div class="rec-head"><span class="ex-name">'+esc(ex?ex.name:"unknown")+'</span>'+
       '<span class="change-tag">'+esc(field)+'</span><span class="arrow"></span>'+
       '<span class="mono small">'+fromTxt+'</span> <span class="arrow">→</span> <span class="mono small">'+toTxt+'</span>'+
       '<span class="rec-status" style="margin-left:auto">'+status+'</span>'+
-      '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" aria-label="Delete this suggestion">✕</button></div>'+
+      '<button type="button" class="rec-del" data-del-sug="'+pendId+'" data-ai="'+sug.exId+'" data-field="'+sug.field+'" aria-label="Delete this suggestion">✕</button></div>'+
     (sug.reason?'<div class="rec-expl">'+esc(sug.reason)+'</div>':"")+
     actions+'</div>';
 }
 
 function recAct(ds, actVal){
-  // ds = { recid, act, ai } where ai=exId
+  // ds = { recid, act, ai, field } where ai=exId; field disambiguates when one
+  // exercise carries several suggestions (e.g. weight + reps). Legacy callers
+  // without field fall back to the exId-only match.
   const pendId = ds.recid;
   const exId = ds.ai;
   const act = ds.act;
+  const field = (ds.field==null || ds.field==="") ? null : ds.field;
   const pend = state.pending.find(p=>p.id===pendId);
   if (!pend) return;
-  const sug = pend.suggestions.find(s=>s.exId===exId);
+  const sug = field==null
+    ? pend.suggestions.find(s=>s.exId===exId)
+    : pend.suggestions.find(s=>s.exId===exId && s.field===field);
   if (!sug){ toast("Change not found"); return; }
   if (act==="keep"){
     // apply to the day's exercise plan (only reps/time/weight/swap, never sets)
