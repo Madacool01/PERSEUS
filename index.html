@@ -295,15 +295,18 @@
   #ex-editor-host .mgroup-lbl { text-transform: none; }
   #ex-editor-host:empty { display: none; }
   #ex-editor-host:not(:empty) {
-    background: rgba(23,19,12,.55);
-    -webkit-backdrop-filter: blur(7px);
-    backdrop-filter: blur(7px);
+    background: rgba(23,19,12,.42);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4);
     animation: modalBack .25s ease;
   }
   #ex-editor-host .card {
     width: min(600px, 100%); max-height: 88vh; overflow-y: auto;
-    border: 1px solid var(--line); border-radius: var(--r-xl);
-    box-shadow: var(--shadow-2);
+    background: rgba(250,245,234,.78);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.55); border-radius: 16px;
+    box-shadow: 0 24px 64px -16px rgba(23,19,12,.35), inset 0 1px 0 rgba(255,255,255,.6);
     animation: modalIn .32s cubic-bezier(.22,1,.36,1);
   }
   @keyframes modalIn { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
@@ -1944,19 +1947,19 @@ function modePill(ex){
   return '<span class="'+cls+'">'+label+'</span>';
 }
 function equipmentTags(ex){
-  const map = {bodyweight:"BW", rings:"rings", pullup:"pull-up bar", dumbbell:"dumbbell", barbell:"barbell", kettlebell:"kettlebell", ezbar:"ez-bar", plates:"plates", machine:"machine", bands:"bands", trapbar:"trap-bar"};
+  const map = {bodyweight:"BW", rings:"rings", pullup:"pull-up bar", dumbbell:"dumbbell", barbell:"barbell", kettlebell:"kettlebell", ezbar:"ez-bar", plates:"plates", machine:"machine", bands:"bands", trapbar:"trap-bar", suspension:"suspension"};
   return (ex.equipment||[]).map(e=>'<span class="pill">'+esc(map[e]||e)+'</span>').join(" ");
 }
 
 /* =========================================================================
    EXERCISES LIBRARY
    ========================================================================= */
-const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell","barbell","kettlebell","ezbar","plates","machine","bands","trapbar"];
-const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ bar", plates:"Weight plates", machine:"Gym machine", bands:"Resistance bands", trapbar:"Trap bar" };
+const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell","barbell","kettlebell","ezbar","plates","machine","bands","trapbar","suspension"];
+const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ bar", plates:"Weight plates", machine:"Gym machine", bands:"Resistance bands", trapbar:"Trap bar", suspension:"Suspension trainer" };
 /* Short display names for the library equipment filter dropdown. */
-const EQUIP_FILTER_LABELS = { bodyweight:"Body Weight", rings:"Rings", pullup:"Pull-up Bar", dumbbell:"Dumbbell", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ Bar", plates:"Plates", machine:"Machine", bands:"Bands", trapbar:"Trap Bar" };
+const EQUIP_FILTER_LABELS = { bodyweight:"Body Weight", rings:"Rings", pullup:"Pull-up Bar", dumbbell:"Dumbbell", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ Bar", plates:"Plates", machine:"Machine", bands:"Bands", trapbar:"Trap Bar", suspension:"Suspension" };
 /* Thumbnail illustrations for the exercise-editor equipment picker (icon-equipment/). */
-const EQUIP_ICONS = { bodyweight:"icon-equipment/bodyweight.png", rings:"icon-equipment/gymnastic-rings.png", pullup:"icon-equipment/pull-up-bar.png", dumbbell:"icon-equipment/dumbells.png", barbell:"icon-equipment/barbell.png", kettlebell:"icon-equipment/kettlebell.png", ezbar:"icon-equipment/ez-bar.png", plates:"icon-equipment/weight-plates.png", machine:"icon-equipment/gym-machine.png", bands:"icon-equipment/resistance-bands.png", trapbar:"icon-equipment/trap-bar.png" };
+const EQUIP_ICONS = { bodyweight:"icon-equipment/bodyweight.png", rings:"icon-equipment/gymnastic-rings.png", pullup:"icon-equipment/pull-up-bar.png", dumbbell:"icon-equipment/dumbells.png", barbell:"icon-equipment/barbell.png", kettlebell:"icon-equipment/kettlebell.png", ezbar:"icon-equipment/ez-bar.png", plates:"icon-equipment/weight-plates.png", machine:"icon-equipment/gym-machine.png", bands:"icon-equipment/resistance-bands.png", trapbar:"icon-equipment/trap-bar.png", suspension:"icon-equipment/suspension.png" };
 /* Designer attribution for the equipment icons (see equipment-credits.txt). */
 const EQUIP_CREDITS = "Equipment icons: " +
   '<a href="https://www.flaticon.com/free-icons/push-up" title="push up icons">Push up icons by ultimatearm</a> · ' +
@@ -1968,7 +1971,8 @@ const EQUIP_CREDITS = "Equipment icons: " +
   '<a href="https://www.flaticon.com/free-icons/ez-bar" title="ez bar icons">Ez bar icons by Magnific</a> · ' +
   '<a href="https://www.flaticon.com/free-icons/weight-plates" title="weight plates icons">Weight plates icons by smashingstocks</a> · ' +
   '<a href="https://www.flaticon.com/free-icons/gym" title="gym icons">Gym icons by photo3idea_studio</a> · ' +
-  '<a href="https://www.flaticon.com/free-icons/resistance-band" title="resistance band icons">Resistance band icons by bsd</a> — via Flaticon';
+  '<a href="https://www.flaticon.com/free-icons/resistance-band" title="resistance band icons">Resistance band icons by bsd</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/train" title="train icons">Train icons by photo3idea_studio</a> — via Flaticon';
 const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
 const EX_TYPES = {
   duration:   { label:"Duration",      desc:"Held and timed. Plank, wall sit, hollow hold, L-sit." },
