@@ -95,14 +95,14 @@
   }
   .brand { display: flex; align-items: center; gap: .8rem; margin-right: auto; }
   .brand .logo {
-    width: 40px; height: 40px; border-radius: 11px;
-    background: transparent;
-    border: 1.5px solid var(--accent);
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--surface);
+    border: 2.5px solid var(--accent);
     color: #fff; display: grid; place-items: center;
     box-shadow: 0 8px 22px -10px rgba(217,95,43,.35);
-    overflow: hidden;
+    overflow: hidden; flex: none;
   }
-  .brand .logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .brand .logo img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 9px; filter: contrast(1.06) saturate(1.06); }
   .brand h1 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; letter-spacing: .26em; color: var(--ink); }
   .brand small { display: block; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-3); margin-top: 2px; }
   .status-chip {
