@@ -28,7 +28,7 @@ check(Boolean($("#view-library .exercise-item")), "library rendered");
 // Equipment filter options show capitalized display names (not raw keys)
 const eqLabels = $$("#lib-eq option").map(o=>o.textContent);
 check(eqLabels[0] === "All equipment", "filter starts with 'All equipment'");
-["Body Weight", "Rings", "Pull-up Bar", "Dumbbell"].forEach((l,i)=>{
+["Body Weight", "Rings", "Pull-up Bar", "Dumbbell", "Barbell", "Kettlebell", "EZ Bar", "Plates", "Machine", "Bands", "Trap Bar"].forEach((l,i)=>{
   check(eqLabels[i+1] === l, "equipment option '" + l + "' is capitalized");
 });
 check($$("#lib-eq option").map(o=>o.value).indexOf("bodyweight") !== -1, "option values still use raw keys for matching");

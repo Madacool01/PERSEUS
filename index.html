@@ -358,6 +358,9 @@
   .eqpick:hover, .bpchip:hover, .mchip:hover { border-color: var(--accent-line); }
   .eqpick.on, .bpchip.on, .mchip.on { border-color: var(--accent); background: var(--accent-soft); }
   .eqpick input, .bpchip input, .mchip input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .eqpick img { width: 28px; height: 28px; object-fit: contain; flex: none; }
+  .equip-credits { margin: .45rem 0 0; }
+  .equip-credits a { color: var(--ink-2); }
   .bodypart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .4rem; }
   /* pop-up pickers: a summary rectangle opens a checklist overlay */
   .ex-pick {
@@ -1941,17 +1944,31 @@ function modePill(ex){
   return '<span class="'+cls+'">'+label+'</span>';
 }
 function equipmentTags(ex){
-  const map = {bodyweight:"BW", rings:"rings", pullup:"pull-up bar", dumbbell:"dumbbell"};
+  const map = {bodyweight:"BW", rings:"rings", pullup:"pull-up bar", dumbbell:"dumbbell", barbell:"barbell", kettlebell:"kettlebell", ezbar:"ez-bar", plates:"plates", machine:"machine", bands:"bands", trapbar:"trap-bar"};
   return (ex.equipment||[]).map(e=>'<span class="pill">'+esc(map[e]||e)+'</span>').join(" ");
 }
 
 /* =========================================================================
    EXERCISES LIBRARY
    ========================================================================= */
-const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell"];
-const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells" };
+const ALL_EQUIP = ["bodyweight","rings","pullup","dumbbell","barbell","kettlebell","ezbar","plates","machine","bands","trapbar"];
+const EQUIP_LABELS = { bodyweight:"Body weight", rings:"Gymnastics rings", pullup:"Pull-up bar", dumbbell:"Dumbbells", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ bar", plates:"Weight plates", machine:"Gym machine", bands:"Resistance bands", trapbar:"Trap bar" };
 /* Short display names for the library equipment filter dropdown. */
-const EQUIP_FILTER_LABELS = { bodyweight:"Body Weight", rings:"Rings", pullup:"Pull-up Bar", dumbbell:"Dumbbell" };
+const EQUIP_FILTER_LABELS = { bodyweight:"Body Weight", rings:"Rings", pullup:"Pull-up Bar", dumbbell:"Dumbbell", barbell:"Barbell", kettlebell:"Kettlebell", ezbar:"EZ Bar", plates:"Plates", machine:"Machine", bands:"Bands", trapbar:"Trap Bar" };
+/* Thumbnail illustrations for the exercise-editor equipment picker (icon-equipment/). */
+const EQUIP_ICONS = { bodyweight:"icon-equipment/bodyweight.png", rings:"icon-equipment/gymnastic-rings.png", pullup:"icon-equipment/pull-up-bar.png", dumbbell:"icon-equipment/dumbells.png", barbell:"icon-equipment/barbell.png", kettlebell:"icon-equipment/kettlebell.png", ezbar:"icon-equipment/ez-bar.png", plates:"icon-equipment/weight-plates.png", machine:"icon-equipment/gym-machine.png", bands:"icon-equipment/resistance-bands.png", trapbar:"icon-equipment/trap-bar.png" };
+/* Designer attribution for the equipment icons (see equipment-credits.txt). */
+const EQUIP_CREDITS = "Equipment icons: " +
+  '<a href="https://www.flaticon.com/free-icons/push-up" title="push up icons">Push up icons by ultimatearm</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/gymnast" title="gymnast icons">Gymnast icons by Magnific</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/pull-up" title="pull up icons">Pull up icons by Yogi Aprelliyanto</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/dumbells" title="dumbells icons">Dumbells icons by Candy Design</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/barbell" title="barbell icons">Barbell icons by Magnific</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/weight" title="weight icons">Weight icons by Magnific</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/ez-bar" title="ez bar icons">Ez bar icons by Magnific</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/weight-plates" title="weight plates icons">Weight plates icons by smashingstocks</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/gym" title="gym icons">Gym icons by photo3idea_studio</a> · ' +
+  '<a href="https://www.flaticon.com/free-icons/resistance-band" title="resistance band icons">Resistance band icons by bsd</a> — via Flaticon';
 const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
 const EX_TYPES = {
   duration:   { label:"Duration",      desc:"Held and timed. Plank, wall sit, hollow hold, L-sit." },
@@ -2075,7 +2092,8 @@ function openExEditor(id){
        : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight"));
   const eqTags = ALL_EQUIP.map(k=>{
     const on = (e.equipment||[]).includes(k) ? " on" : "";
-    return '<label class="eqpick'+on+'"><input type="checkbox" class="eqbox" value="'+esc(k)+'"'+(on?" checked":"")+">"+esc(EQUIP_LABELS[k]||k)+"</label>";
+    const ico = EQUIP_ICONS[k] ? '<img src="'+EQUIP_ICONS[k]+'" alt="" width="28" height="28" loading="lazy"/>' : "";
+    return '<label class="eqpick'+on+'"><input type="checkbox" class="eqbox" value="'+esc(k)+'"'+(on?" checked":"")+">"+ico+"<span>"+esc(EQUIP_LABELS[k]||k)+"</span></label>";
   }).join("");
   const typeCards = EX_TYPE_ORDER.map(t=>{
     const T = EX_TYPES[t];
@@ -2130,6 +2148,7 @@ function openExEditor(id){
 
       '<div class="field-head"><span>Equipment</span></div>'+
       '<div class="eq-cards">'+eqTags+'</div>'+
+      '<p class="micro equip-credits">'+EQUIP_CREDITS+'</p>'+
 
       '<div class="field-head"><span>Body parts</span><span class="hint">all areas involved</span></div>'+
       '<button type="button" class="ex-pick" data-pick="bodyParts" aria-haspopup="dialog">'+pickTags("bodyParts")+'</button>'+
