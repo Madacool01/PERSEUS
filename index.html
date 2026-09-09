@@ -723,6 +723,24 @@
   .wm-radar-ico.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep); opacity: 1; box-shadow: 0 0 0 3px rgba(217,95,43,.14); }
   .wm-radar-ico img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
   .wm-radar-cap { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: .5rem; text-align: center; }
+  /* radar loading pulse: shimmer veil + spinner while recomputing, draw-in on fresh data */
+  #you-muscle-radar .radar-poly { stroke-dasharray: 100; stroke-dashoffset: 100; animation: radarDraw 1s cubic-bezier(.4,0,.2,1) .1s forwards; }
+  @keyframes radarDraw { to { stroke-dashoffset: 0; } }
+  #you-muscle-radar.is-loading .wm-radar-stage svg,
+  #you-muscle-radar.is-loading .wm-radar-ico { opacity: .3; }
+  #you-muscle-radar.is-loading .wm-radar-stage::after {
+    content: ""; position: absolute; inset: 0; z-index: 2; border-radius: 12px;
+    background: linear-gradient(100deg, transparent 30%, rgba(217,95,43,.14) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: radarShimmer .8s linear infinite;
+  }
+  @keyframes radarShimmer { from { background-position: 180% 0; } to { background-position: -80% 0; } }
+  #you-muscle-radar.is-loading .wm-radar-stage::before {
+    content: ""; position: absolute; z-index: 3; width: 42px; height: 42px; inset: 0; margin: auto;
+    border-radius: 50%; border: 3px solid var(--line-2); border-top-color: var(--accent);
+    animation: radarSpin .7s linear infinite;
+  }
+  @keyframes radarSpin { to { transform: rotate(360deg); } }
   .wm-views { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
   .wm-views--right { justify-content: flex-end; flex-wrap: nowrap; padding-right: 1.4rem; }
   .wm-views--right .wm-view { flex: 0 1 180px; max-width: 210px; }
@@ -5588,6 +5606,54 @@ const RADAR_GLYPHS = {
   "calves":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3v11c-2 1-2 4 0 7M14 3v11c2 1 2 4 0 7"/></svg>'
 };
 let youRadarMetric = "sets"; // "sets" | "volume"
+let radarLoadTimer = 0;
+/* Brief loading pulse so radar metric/week switches read as live recomputation:
+   veil + spinner first, then re-render and the fresh polygon draws itself in. */
+function pulseRadarAnd(rerender){
+  const radar = document.getElementById("you-muscle-radar");
+  let reduced = false;
+  try{ reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+  if (!radar || reduced){ rerender(); return; }
+  radar.classList.add("is-loading");
+  try{ clearTimeout(radarLoadTimer); }catch(e){}
+  radarLoadTimer = setTimeout(()=>{ try{ rerender(); }catch(e){} }, 450);
+}
+/* Emergence animation: on (re)render the radar polygon and its dots grow out
+   of the centre to their target positions with an ease-out curve. The markup
+   always carries the final state, so no-JS / reduced-motion stays correct. */
+function animateRadarEmergence(){
+  try{
+    const radar = document.getElementById("you-muscle-radar");
+    const poly = radar && radar.querySelector(".radar-poly");
+    if (!poly) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const raf = window.requestAnimationFrame;
+    if (typeof raf !== "function") return;
+    const dots = Array.from(radar.querySelectorAll(".radar-dot"));
+    const nums = (poly.getAttribute("points")||"").trim().split(/[\s,]+/).map(Number);
+    if (!nums.length || nums.some(v=>!isFinite(v))) return;
+    poly.style.animation = "none";
+    poly.style.strokeDasharray = "none";
+    poly.style.strokeDashoffset = "0";
+    const cx = 100, cy = 100, dur = 850;
+    let t0 = 0;
+    const frame = (t)=>{
+      if (!t0) t0 = t;
+      const p = Math.min(1, (t - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      const pts = [];
+      for (let i = 0; i + 1 < nums.length; i += 2){
+        const x = cx + (nums[i] - cx) * e, y = cy + (nums[i+1] - cy) * e;
+        pts.push(x.toFixed(1) + "," + y.toFixed(1));
+        const d = dots[i/2];
+        if (d){ d.setAttribute("cx", x.toFixed(1)); d.setAttribute("cy", y.toFixed(1)); }
+      }
+      poly.setAttribute("points", pts.join(" "));
+      if (p < 1) raf(frame);
+    };
+    raf(frame);
+  }catch(e){}
+}
 function radarGroupsForExercise(ex){
   const out = [];
   const push = g=>{ if (g && RADAR_GROUPS.indexOf(g) !== -1 && out.indexOf(g) === -1) out.push(g); };
@@ -5646,10 +5712,10 @@ function youMuscleRadarHtml(nowMs){
     return '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>';
   }).join("");
   const fracs = vals.map(v=> max > 0 ? (v / max) : 0);
-  const poly = '<polygon points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="rgba(217,95,43,.28)" stroke="var(--accent)" stroke-width="0.5" stroke-linejoin="round"/>';
+  const poly = '<polygon class="radar-poly" pathLength="100" points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="rgba(217,95,43,.28)" stroke="var(--accent)" stroke-width="0.5" stroke-linejoin="round"/>';
   const dots = fracs.map((f, i)=>{
     const p = pt(i, f);
-    return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
+    return '<circle class="radar-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
   }).join("");
   const icons = RADAR_GROUPS.map((g, i)=>{
     const a = -Math.PI / 2 + i * 2 * Math.PI / n;
@@ -6081,7 +6147,7 @@ function renderYouRecoverySection(){
         if (btn.getAttribute("data-you-week-nav") === "prev") youMuscleWeekOffset--;
         else if (youMuscleWeekOffset < 0) youMuscleWeekOffset++;
         else return;
-        renderYouRecoverySection();
+        pulseRadarAnd(renderYouRecoverySection);
       });
     });
   }catch(e){}
@@ -6089,10 +6155,11 @@ function renderYouRecoverySection(){
     sec.querySelectorAll("[data-you-radar-metric]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         youRadarMetric = btn.getAttribute("data-you-radar-metric") === "volume" ? "volume" : "sets";
-        renderYouRecoverySection();
+        pulseRadarAnd(renderYouRecoverySection);
       });
     });
   }catch(e){}
+  animateRadarEmergence();
 }
 function bindYouOverview(){
   renderYouPage(0);
