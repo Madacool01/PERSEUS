@@ -1242,6 +1242,71 @@
   }
   .foot-mark img { width: 100%; height: 100%; display: block; object-fit: cover; }
 
+  /* ---------- Mobile chapter: Android browser (additive, max-width only) ----------
+     Desktop (min-width:769px) renders byte-identical. Everything below is
+     scoped to small screens so the PC/laptop view is never touched. */
+  #m-tabs { display: none; }
+  @media (max-width: 768px) {
+    body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); touch-action: manipulation; }
+    * { -webkit-tap-highlight-color: transparent; }
+    .app-inner { flex-wrap: wrap; gap: .6rem; padding: .6rem 1rem; }
+    .brand { gap: .6rem; }
+    .brand .logo { width: 36px; height: 36px; border-radius: 10px; border-width: 2px; }
+    .brand h1 { font-size: .92rem; }
+    .brand small { display: none; }
+    nav.tabs { display: none; }
+    .view-hero { padding: 2.6rem 0 2rem; text-align: center; }
+    .view-hero.slim { padding: 2.2rem 0 1.8rem; }
+    .view-hero-inner { max-width: 100%; }
+    .view-title { font-size: clamp(1.7rem, 7vw, 2.4rem); line-height: 1.12; text-wrap: balance; max-width: 100%; }
+    .view-sub { font-size: .95rem; margin-top: .9rem; }
+    .hero-cta { flex-direction: column; align-items: stretch; }
+    .hero-cta .btn-xl { width: 100%; justify-content: center; min-height: 54px; }
+    .ticker-track { animation-duration: 60s; }
+    .bento, .settings-grid { grid-template-columns: 1fr; }
+    .bento .span-4, .bento .span-5, .bento .span-7,
+    .settings-grid .cell, .settings-grid .cell.s7, .settings-grid .cell.s5, .settings-grid .cell.s12 { grid-column: span 1; }
+    .exercise-list { grid-template-columns: 1fr; grid-auto-flow: dense; }
+    .set-grid { grid-template-columns: 1fr; grid-auto-flow: dense; }
+    .round-grid { grid-template-columns: 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search { flex-basis: auto; }
+    .eq-select { width: 100%; }
+    .toolbar .btn { width: 100%; justify-content: center; min-height: 48px; }
+    button.btn, a.btn { min-height: 48px; }
+    nav.tabs button, .seg-btn, .strip-btn, .sub-tab, .ex-vis-tab { min-height: 44px; }
+    input[type=text], input[type=number], input[type=password], select, textarea { font-size: 16px; padding: .8rem .9rem; min-height: 48px; }
+    input[type=checkbox] { width: 20px; height: 20px; }
+    .effort-range { height: 8px; }
+    .effort-range::-webkit-slider-thumb { width: 30px; height: 30px; }
+    .effort-range::-moz-range-thumb { width: 30px; height: 30px; }
+    .log-step { padding: 1.2rem 1rem; }
+    .log-step .btn-row { position: sticky; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--surface); padding: .6rem 0; z-index: 5; }
+    .log-step .btn-row .btn { flex: 1 1 auto; justify-content: center; min-height: 54px; }
+    .ex-vis-shell, .you-modal-shell, .load-est-card { height: 100dvh; max-height: 100dvh; border-radius: 14px 14px 0 0; }
+    .toast { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+    .foot-inner { padding-bottom: calc(2.8rem + env(safe-area-inset-bottom, 0px)); }
+    .fx-mob { transform: scale(.92); opacity: 0; transition: transform .6s ease-out, opacity .6s ease-out; }
+    .fx-mob.in { transform: scale(1); opacity: 1; }
+    #m-tabs {
+      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+      background: rgba(250,245,234,.94);
+      -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+      border-top: 1px solid var(--line);
+      padding: .4rem .3rem calc(.4rem + env(safe-area-inset-bottom, 0px));
+      gap: .1rem; overflow-x: auto; scrollbar-width: none;
+    }
+    #m-tabs::-webkit-scrollbar { display: none; }
+    #m-tabs .tab-btn {
+      flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem;
+      font-family: var(--font-body); font-size: .62rem; font-weight: 700; color: var(--ink-2);
+      background: transparent; border: none; min-width: 52px; min-height: 56px; padding: .45rem .4rem;
+      cursor: pointer; border-radius: var(--r-md); white-space: nowrap;
+    }
+    #m-tabs .tab-btn svg { width: 20px; height: 20px; }
+    #m-tabs .tab-btn.active { color: var(--accent-deep); background: var(--accent-soft); }
+  }
+
   /* ---------- Focus / reduced motion ---------- */
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
@@ -1312,6 +1377,15 @@
 </main>
 
 <div id="toast" class="toast"></div>
+<nav id="m-tabs" aria-label="Primary">
+  <button data-view="workouts" class="tab-btn active" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
+  <button data-view="log" class="tab-btn" aria-label="Log session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Log</span></button>
+  <button data-view="coach" class="tab-btn" aria-label="Coach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6v4"/><path d="M21 6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.675A7 7 0 1 1 9 6z"/></svg><span>Coach</span></button>
+  <button data-view="history" class="tab-btn" aria-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg><span>History</span></button>
+  <button data-view="library" class="tab-btn" aria-label="Exercises"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg><span>Moves</span></button>
+  <button data-view="you" class="tab-btn" aria-label="You"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c1.3-3.1 3.9-4.6 7.2-4.6s5.9 1.5 7.2 4.6"/></svg><span>You</span></button>
+  <button data-view="settings" class="tab-btn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg><span>More</span></button>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
@@ -6313,6 +6387,34 @@ if (typeof MutationObserver !== "undefined"){
   }catch(e){}
 }
 try{ wmEnsure(); }catch(e){}
+</script>
+<script>
+(function(){
+  try{
+    var mq = window.matchMedia && window.matchMedia("(max-width: 768px)");
+    if (!mq || !("IntersectionObserver" in window)) return;
+    var SEL = ".card,.exercise-item,.strip-card,.stat-card,.log-step";
+    function tag(root){
+      if (!mq.matches) return;
+      (root||document).querySelectorAll(SEL).forEach(function(el){
+        if (!el.classList.contains("fx-mob")) el.classList.add("fx-mob");
+      });
+      observe();
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+      });
+    }, { threshold: .12 });
+    function observe(){
+      document.querySelectorAll(".fx-mob:not(.in)").forEach(function(el){ try{ io.observe(el); }catch(e){} });
+    }
+    tag(document);
+    if (typeof MutationObserver !== "undefined"){
+      new MutationObserver(function(){ tag(document); }).observe(document.body, { childList: true, subtree: true });
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
