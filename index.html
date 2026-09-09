@@ -5618,40 +5618,65 @@ function pulseRadarAnd(rerender){
   try{ clearTimeout(radarLoadTimer); }catch(e){}
   radarLoadTimer = setTimeout(()=>{ try{ rerender(); }catch(e){} }, 450);
 }
-/* Emergence animation: on (re)render the radar polygon and its dots grow out
-   of the centre to their target positions with an ease-out curve. The markup
-   always carries the final state, so no-JS / reduced-motion stays correct. */
+/* Emergence animation: the radar polygon and its dots grow out of the centre
+   one vertex at a time, clockwise starting from the top point — and only once
+   the card has been scrolled into view. The markup always carries the final
+   state, so no-JS / no-IntersectionObserver / reduced-motion stays correct. */
+let radarIO = null;
 function animateRadarEmergence(){
   try{
     const radar = document.getElementById("you-muscle-radar");
     const poly = radar && radar.querySelector(".radar-poly");
     if (!poly) return;
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const raf = window.requestAnimationFrame;
-    if (typeof raf !== "function") return;
+    if (typeof window.requestAnimationFrame !== "function") return;
     const dots = Array.from(radar.querySelectorAll(".radar-dot"));
     const nums = (poly.getAttribute("points")||"").trim().split(/[\s,]+/).map(Number);
     if (!nums.length || nums.some(v=>!isFinite(v))) return;
-    poly.style.animation = "none";
-    poly.style.strokeDasharray = "none";
-    poly.style.strokeDashoffset = "0";
-    const cx = 100, cy = 100, dur = 850;
-    let t0 = 0;
-    const frame = (t)=>{
-      if (!t0) t0 = t;
-      const p = Math.min(1, (t - t0) / dur);
-      const e = 1 - Math.pow(1 - p, 3);
-      const pts = [];
-      for (let i = 0; i + 1 < nums.length; i += 2){
-        const x = cx + (nums[i] - cx) * e, y = cy + (nums[i+1] - cy) * e;
-        pts.push(x.toFixed(1) + "," + y.toFixed(1));
-        const d = dots[i/2];
-        if (d){ d.setAttribute("cx", x.toFixed(1)); d.setAttribute("cy", y.toFixed(1)); }
-      }
-      poly.setAttribute("points", pts.join(" "));
-      if (p < 1) raf(frame);
+    const run = ()=>{
+      try{
+        poly.style.animation = "none";
+        poly.style.strokeDasharray = "none";
+        poly.style.strokeDashoffset = "0";
+        const cx = 100, cy = 100, dur = 550, stagger = 110;
+        let t0 = 0;
+        const frame = (t)=>{
+          if (!t0) t0 = t;
+          const el = t - t0;
+          const pts = [];
+          let done = true;
+          for (let i = 0; i + 1 < nums.length; i += 2){
+            const k = i / 2;
+            const p = Math.min(1, Math.max(0, (el - k * stagger) / dur));
+            if (p < 1) done = false;
+            const e = 1 - Math.pow(1 - p, 3);
+            const x = cx + (nums[i] - cx) * e, y = cy + (nums[i+1] - cy) * e;
+            pts.push(x.toFixed(1) + "," + y.toFixed(1));
+            const d = dots[k];
+            if (d){ d.setAttribute("cx", x.toFixed(1)); d.setAttribute("cy", y.toFixed(1)); }
+          }
+          poly.setAttribute("points", pts.join(" "));
+          if (!done) window.requestAnimationFrame(frame);
+        };
+        window.requestAnimationFrame(frame);
+      }catch(e){}
     };
-    raf(frame);
+    try{ if (radarIO) radarIO.disconnect(); }catch(e){}
+    radarIO = null;
+    if (typeof window.IntersectionObserver === "function"){
+      radarIO = new window.IntersectionObserver((entries)=>{
+        entries.forEach((en)=>{
+          if (en.isIntersecting){
+            try{ radarIO.disconnect(); }catch(e){}
+            radarIO = null;
+            run();
+          }
+        });
+      }, { threshold: 0.3 });
+      radarIO.observe(radar);
+    } else {
+      run();
+    }
   }catch(e){}
 }
 function radarGroupsForExercise(ex){
