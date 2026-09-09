@@ -1308,6 +1308,29 @@
     #m-tabs .tab-btn.active { color: var(--accent-deep); background: var(--accent-soft); }
   }
 
+  /* ---------- Motion polish (transitions only; global reduced-motion kill applies) ---------- */
+  .view.active { animation: viewIn .38s cubic-bezier(.22,1,.36,1); }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  button.btn { will-change: transform; }
+  button.btn:active { transform: translateY(1px) scale(.985); }
+  nav.tabs button { transition: color .18s, background .2s; }
+  #m-tabs .tab-btn { transition: color .2s, background .2s, transform .15s; }
+  #m-tabs .tab-btn:active { transform: scale(.93); }
+  .exercise-item, .strip-card, .routine-card, .wo-card, .stat-card, .super-band { transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .25s; }
+  .exercise-item:active, .strip-card:active, .routine-card:active { transform: scale(.985); }
+  .set-cell { transition: border-color .2s, background .2s, transform .2s; }
+  .set-cell:active { transform: scale(.98); }
+  .seg-btn, .sub-tab, .ex-vis-tab, .you-period-btn { transition: background .2s, color .2s, transform .15s; }
+  .seg-btn:active, .sub-tab:active { transform: scale(.96); }
+  .strip-avatar, .vis-avatar { transition: transform .3s; }
+  .you-dot:active { transform: scale(1.4); }
+  details[open] > *:not(summary) { animation: viewIn .3s ease-out; }
+  @media (hover: hover) {
+    .exercise-item .name, .routine-open { transition: transform .25s; }
+    .exercise-item:hover .name { transform: translateX(2px); }
+    .routine-card:hover .routine-open { transform: translateX(4px); }
+  }
+
   /* ---------- Focus / reduced motion ---------- */
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
@@ -6237,6 +6260,27 @@ const FX = {
           if (!ST){ g.fromTo(el, {y:24, opacity:0}, {y:0, opacity:1, duration:.7, ease:"power2.out"}); return; }
           g.fromTo(el, {y:30, opacity:0}, {y:0, opacity:1, duration:.8, ease:"power3.out",
             scrollTrigger:{ trigger: el, start:"top 90%" }});
+        });
+        // staggered entrances for card grids (desktop + mobile, no behavior change)
+        g.utils.toArray(".exercise-list .exercise-item, .strip-track .strip-card, .rec-grid .rec-row", scope).forEach((el,i)=>{
+          const d = Math.min(i*.04,.4);
+          if (!ST){ g.fromTo(el, {y:18, opacity:0}, {y:0, opacity:1, duration:.5, ease:"power2.out", delay:d}); return; }
+          g.fromTo(el, {y:22, opacity:0}, {y:0, opacity:1, duration:.55, ease:"power3.out", delay:d,
+            scrollTrigger:{ trigger: el, start:"top 94%" }});
+        });
+        // count-up stat numbers (leading numeric text node only, suffix nodes kept)
+        g.utils.toArray(".stat-num", scope).forEach(el=>{
+          const tn = el.childNodes && el.childNodes[0];
+          if (!tn || tn.nodeType !== 3) return;
+          const m = (tn.nodeValue||"").trim().match(/^(\d+(?:\.\d+)?)/);
+          if (!m) return;
+          const target = parseFloat(m[1]); if (!isFinite(target)) return;
+          const dec = (m[1].split(".")[1]||"").length;
+          const obj = { v: 0 };
+          const vars = { v: target, duration: 1, ease: "power2.out",
+            onUpdate: ()=>{ tn.nodeValue = obj.v.toFixed(dec); } };
+          if (ST) vars.scrollTrigger = { trigger: el, start: "top 92%" };
+          g.to(obj, vars);
         });
         // card stacking: routine cards pile up on top of each other as the user
         // scrolls down (pin + scrub). Skipped when there are fewer than two cards.
