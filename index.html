@@ -501,8 +501,8 @@
   #ex-vis-host:empty { display: none; }
   #ex-vis-host {
     position: fixed; inset: 0; z-index: 70;
-    background: rgba(18,15,11,.72);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    background: rgba(18,15,11,.42);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
     animation: modalBack .25s ease;
     padding: clamp(.5rem, 2vw, 1.6rem);
   }
@@ -510,8 +510,10 @@
   .ex-vis-shell {
     width: min(760px, 100%); height: 100%; max-height: 900px;
     display: flex; flex-direction: column;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    background: rgba(250,245,234,.78);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 16px; box-shadow: 0 24px 64px -16px rgba(23,19,12,.35), inset 0 1px 0 rgba(255,255,255,.6);
     overflow: hidden; animation: modalIn .32s cubic-bezier(.22,1,.36,1);
   }
   .ex-vis-top { flex: 0 0 auto; display: flex; align-items: center; gap: .35rem; padding: .65rem .8rem; border-bottom: 1px solid var(--line); }
@@ -1197,7 +1199,7 @@
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px);
     background: var(--ink); color: var(--on-dark); padding: .78rem 1.4rem; border-radius: var(--r-md);
     border: 1px solid var(--dark-line); font-size: .9rem; box-shadow: var(--shadow-2);
-    opacity: 0; transition: opacity .25s, transform .25s;
+    opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
     z-index: 60; max-width: min(92vw, 560px); text-align: center;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
