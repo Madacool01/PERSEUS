@@ -1066,15 +1066,18 @@
   .phase.active { display: block; }
   .log-head { margin: 0 0 .6rem; max-width: 72rem; }
   .log-kicker { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
-  .log-kicker .kick-spacer { flex: 1 1 auto; }
-  .log-kicker .btn.small { flex: 0 0 auto; }
-  .how-link {
-    display: inline-flex; align-items: center; gap: .3rem; margin: .15rem 0 .6rem; padding: 0;
-    background: none; border: none; cursor: pointer;
-    font-family: var(--font-mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--accent-deep); text-decoration: underline; text-underline-offset: 3px;
+  /* Big "?" badge beside exercise names: opens the visualizer mid-session. */
+  .title-how {
+    display: inline-grid; place-items: center; vertical-align: middle;
+    width: 46px; height: 46px; margin-left: .55rem; border-radius: 50%;
+    border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-deep);
+    font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; line-height: 1; cursor: pointer;
+    transition: background .2s, color .2s, transform .2s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .how-link:hover { color: var(--accent); }
+  .title-how:hover { background: var(--accent); color: #fff; transform: scale(1.08); }
+  .title-how:active { transform: scale(.94); }
+  .round-title-name .title-how { width: 34px; height: 34px; margin-left: .4rem; font-size: 1.05rem; border-width: 1.5px; }
   .log-thumb {
     flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
     background-size: cover; background-position: center;
@@ -2802,13 +2805,18 @@ function setValTxt(ex, c){
   if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit();
   return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()) : (c.reps!=null ? c.reps+" reps" : "—");
 }
-function openExVisualizer(id){
+function openExVisualizer(id, opts){
   const ex = getEx(id);
   if (!ex) return;
+  // Locked mode (e.g. opened mid-session from the logger): the exercise must
+  // not be deletable here — removing it under an active logCtx would corrupt
+  // the in-progress session. The lock propagates when hopping between
+  // similar movements inside the same visualizer.
+  const lockDelete = !!(opts && opts.lockDelete);
   const activeView = $(".view.active") || $(".view") || document.body;
   let host = activeView.querySelector("#ex-vis-host");
   if (!host){ host = document.createElement("div"); host.id = "ex-vis-host"; activeView.appendChild(host); }
-  const vis = { tab:"about", playing:true };
+  const vis = { tab:"about", playing:true, lockDelete:lockDelete };
   function close(){
     document.removeEventListener("keydown", onKey);
     if (host.parentNode) host.parentNode.removeChild(host);
@@ -2830,7 +2838,7 @@ function openExVisualizer(id){
         '<button type="button" class="ex-vis-icon" data-vis-menu aria-label="More options" aria-haspopup="true" aria-expanded="false">'+VIS_ICO_MORE+'</button>'+
         '<div class="ex-vis-pop" id="ex-vis-pop" role="menu">'+
           '<button type="button" role="menuitem" data-menu="edit">Edit exercise</button>'+
-          '<button type="button" role="menuitem" class="danger" data-menu="delete">Delete exercise</button>'+
+          (vis.lockDelete ? "" : '<button type="button" role="menuitem" class="danger" data-menu="delete">Delete exercise</button>')+
         '</div>'+
       '</div>'+
     '</div>';
@@ -3078,7 +3086,7 @@ function openExVisualizer(id){
   function bindTabContent(){
     $$("[data-alt]", h).forEach(b=>b.addEventListener("click", ()=>{
       const alt = getEx(b.dataset.alt);
-      if (alt){ close(); openExVisualizer(alt.id); }
+      if (alt){ close(); openExVisualizer(alt.id, { lockDelete: vis.lockDelete }); }
     }));
     bindCarouselWheel();
     $$("[data-goto]", h).forEach(b=>b.addEventListener("click", ()=>{
@@ -4242,9 +4250,8 @@ function renderLogExerciseStep(s, day, step, total){
     '<div class="wrap"><div class="phase active">' +
       '<div class="log-head fx-in">' +
         '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
-        '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span><span class="kick-spacer"></span>'+
-        '<button type="button" class="btn ghost small" data-vis-how="'+de.exId+'">How to perform</button></div>' +
-        '<div class="big-title">'+esc(ex.name)+'</div>' +
+        '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
+        '<div class="big-title">'+esc(ex.name)+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
         '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
         logTickerHtml(day) +
       '</div>' +
@@ -4301,7 +4308,7 @@ function renderLogExerciseStep(s, day, step, total){
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
   // Form check mid-session: typed sets are already synced on every input, so
   // opening the visualizer loses nothing; closing it returns to this screen.
-  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readFromDom(); openExVisualizer(b.dataset.visHow); }));
+  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readFromDom(); openExVisualizer(b.dataset.visHow, { lockDelete:true }); }));
   if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx = null; saveState(); render();
@@ -4334,7 +4341,6 @@ function renderLogRoundStep(s, day, step, total){
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      '<button type="button" class="how-link" data-vis-how="'+de.exId+'">How to perform <span aria-hidden="true">›</span></button>'+
       (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
@@ -4342,8 +4348,12 @@ function renderLogRoundStep(s, day, step, total){
       '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
   };
-  const names = members.map(de => { const ex = getEx(de.exId); return ex ? ex.name : "(deleted exercise)"; });
-  const titleParts = names.map((n,i) => (i ? '<span class="title-plus" aria-hidden="true">+</span>' : '') + '<span class="round-title-name">'+esc(n)+'</span>').join("");
+  const titleParts = members.map((mde,i) => {
+    const mx = getEx(mde.exId);
+    const n = mx ? mx.name : "(deleted exercise)";
+    const how = mx ? '<button type="button" class="title-how" data-vis-how="'+mde.exId+'" aria-label="How to perform '+esc(n)+'">?</button>' : '';
+    return (i ? '<span class="title-plus" aria-hidden="true">+</span>' : '') + '<span class="round-title-name">'+esc(n)+how+'</span>';
+  }).join("");
   const lastRound = r+1 >= rounds;
   const nextLabel = !lastRound ? "Next set →" : (logCtx.idx < total-1 ? "Next exercise →" : "Log recovery →");
   const firstEx = getEx(members[0].exId);
@@ -4414,7 +4424,7 @@ function renderLogRoundStep(s, day, step, total){
   const prev = ()=>{ readPanels(); if (logCtx.idx>0){ logCtx.idx--; render(); } };
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
-  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readPanels(); openExVisualizer(b.dataset.visHow); }));
+  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readPanels(); openExVisualizer(b.dataset.visHow, { lockDelete:true }); }));
   if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx = null; saveState(); render();
