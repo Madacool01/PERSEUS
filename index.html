@@ -2007,10 +2007,29 @@ function setTarget(de, field, i){
   if (Array.isArray(arr) && arr[i]!=null && arr[i]!=="") return arr[i];
   return field==="time" ? de.time : de.reps;
 }
+/* Previous-session actual for one set: the number to beat on AMRAP/failure
+   sets, so lifters can track progress against last time. */
+function prevSetActual(dayId, exId, setIndex, field){
+  try{
+    const prev = lastSessionForDay(dayId);
+    if (!prev || !prev.completedSets) return null;
+    const hits = prev.completedSets.filter(c=>c.exId===exId && c.setIndex===setIndex);
+    if (!hits.length) return null;
+    const v = field==="time" ? hits[0].time : hits[0].reps;
+    return (v==null || v==="" || Number.isNaN(+v)) ? null : +v;
+  }catch(e){ return null; }
+}
 /* plan text for a set in the logger, aware of set type */
-function setPlanTxt(de, ex, i){
+function setPlanTxt(de, ex, i, dayId){
   const st = setTypeOf(de, i);
-  if (st==="failure") return ex.mode==="time" ? "hold to failure" : "AMRAP to failure";
+  if (st==="failure"){
+    const timed = ex.mode==="time";
+    const prev = dayId ? prevSetActual(dayId, de.exId, i, timed?"time":"reps") : null;
+    if (prev!=null) return timed ? ("hold · beat "+prev+"s") : ("AMRAP · beat "+prev);
+    const stored = setTarget(de, timed?"time":"reps", i);
+    if (stored!=null && stored!=="" && +stored>0) return timed ? ("hold · aim "+stored+"s") : ("AMRAP · aim "+stored);
+    return timed ? "hold to failure" : "AMRAP to failure";
+  }
   if (st==="warmup") return "light warm-up";
   const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
     : (de.weight? (setTarget(de,"reps",i)+'×'+fmtWeight(de.weight)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
@@ -4189,13 +4208,15 @@ function renderLogExerciseStep(s, day, step, total){
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
     const st = setTypeOf(plan, i);
-    const planTxt = setPlanTxt(plan, ex, i);
+    const planTxt = setPlanTxt(plan, ex, i, day.id);
+    const beat = st==="failure" ? prevSetActual(day.id, de.exId, i, showTime?"time":"reps") : null;
+    const failLabel = st==="failure" ? (beat!=null ? (showTime ? 'Hold — beat '+beat+'s' : 'AMRAP reps — beat '+beat) : 'AMRAP reps (to failure)') : "";
     return '<div class="set-cell fx-rise'+(done?' done':"")+'" data-set="'+i+'">'+
       '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps'), i) : "") +
-      (showTime ? numFieldHtml("s-time", set.time, 0.5, "Hold (s)", i) : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':'Actual reps'), i) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s) — beat '+beat+'s' : "Hold (s)"), i) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), i) : "") +
       effortSliderHtml(set, i)+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
@@ -4287,14 +4308,15 @@ function renderLogRoundStep(s, day, step, total){
     const showTime = ex.mode==="time";
     const showWeight = ex.weightAvailable || ex.mode==="weight";
     const showReps = ex.mode!=="time";
-    const planTxt = setPlanTxt(de, ex, r);
+    const planTxt = setPlanTxt(de, ex, r, day.id);
+    const beat = st==="failure" ? prevSetActual(day.id, de.exId, r, showTime?"time":"reps") : null;
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
     return '<div class="set-cell round-cell fx-rise'+(done?' done':'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
-      (showTime ? numFieldHtml("s-time", set.time, 0.5, "Hold (s)", r) : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
       effortSliderHtml(set, r)+
       '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
