@@ -789,11 +789,17 @@
   .ex-vis-inner { max-width: 660px; margin: 0 auto; padding: 1rem 1.1rem 4rem; display: flex; flex-direction: column; gap: .95rem; }
   .ex-vis-media {
     position: relative; border-radius: var(--r-lg); overflow: hidden;
-    background: #14110c; border: 1px solid var(--line); aspect-ratio: 16 / 10;
+    background: #14110c; border: 1px solid var(--line);
+    display: grid; place-items: center;
   }
-  .ex-vis-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .ex-vis-media img.play { animation: visKenburns 20s ease-in-out infinite alternate; }
-  @keyframes visKenburns { from { transform: scale(1) translateX(0); } to { transform: scale(1.1) translateX(-2%); } }
+  /* Uploaded photo is shown in full: the frame sizes to the image's own
+     aspect ratio (no fixed crop box) and the image is contained, never cut. */
+  .ex-vis-media img { width: 100%; height: auto; object-fit: contain; display: block; background: #14110c; animation: visSettle .6s cubic-bezier(.22,1,.36,1); }
+  @keyframes visSettle { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+  /* Gentle filter drift while "playing": keeps the play/pause control alive
+     without ever cropping the photo (transform zooms would cut edges). */
+  .ex-vis-media img.play { animation: visSettle .6s cubic-bezier(.22,1,.36,1), visBreathe 9s ease-in-out 1s infinite alternate; }
+  @keyframes visBreathe { from { filter: saturate(1); } to { filter: saturate(1.08); } }
   .ex-vis-media-empty { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 1rem; }
   .vis-media-hint { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: rgba(247,241,227,.4); }
   .ex-vis-oc { position: absolute; display: flex; gap: .4rem; }
@@ -1060,6 +1066,15 @@
   .phase.active { display: block; }
   .log-head { margin: 0 0 .6rem; max-width: 72rem; }
   .log-kicker { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+  .log-kicker .kick-spacer { flex: 1 1 auto; }
+  .log-kicker .btn.small { flex: 0 0 auto; }
+  .how-link {
+    display: inline-flex; align-items: center; gap: .3rem; margin: .15rem 0 .6rem; padding: 0;
+    background: none; border: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent-deep); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .how-link:hover { color: var(--accent); }
   .log-thumb {
     flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
     background-size: cover; background-position: center;
@@ -4227,7 +4242,8 @@ function renderLogExerciseStep(s, day, step, total){
     '<div class="wrap"><div class="phase active">' +
       '<div class="log-head fx-in">' +
         '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
-        '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
+        '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span><span class="kick-spacer"></span>'+
+        '<button type="button" class="btn ghost small" data-vis-how="'+de.exId+'">How to perform</button></div>' +
         '<div class="big-title">'+esc(ex.name)+'</div>' +
         '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
         logTickerHtml(day) +
@@ -4283,6 +4299,9 @@ function renderLogExerciseStep(s, day, step, total){
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-recovery")) $("#log-recovery").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
+  // Form check mid-session: typed sets are already synced on every input, so
+  // opening the visualizer loses nothing; closing it returns to this screen.
+  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readFromDom(); openExVisualizer(b.dataset.visHow); }));
   if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx = null; saveState(); render();
@@ -4315,6 +4334,7 @@ function renderLogRoundStep(s, day, step, total){
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
+      '<button type="button" class="how-link" data-vis-how="'+de.exId+'">How to perform <span aria-hidden="true">›</span></button>'+
       (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
@@ -4394,6 +4414,7 @@ function renderLogRoundStep(s, day, step, total){
   const prev = ()=>{ readPanels(); if (logCtx.idx>0){ logCtx.idx--; render(); } };
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
+  $$("[data-vis-how]", s).forEach(b=>b.addEventListener("click", ()=>{ readPanels(); openExVisualizer(b.dataset.visHow); }));
   if ($("#log-discard")) $("#log-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx = null; saveState(); render();
