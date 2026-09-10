@@ -837,7 +837,7 @@
   .vis-prog { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; }
   .prog-step { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r-md); padding: .32rem .7rem; color: var(--ink-2); background: var(--surface-2); }
   .prog-arrow { color: var(--accent); font-style: normal; font-size: .7rem; }
-  .vis-carousel { display: flex; gap: .7rem; overflow-x: auto; padding: .2rem .1rem .5rem; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .vis-carousel { display: flex; gap: .7rem; overflow-x: auto; padding: .2rem .1rem .5rem; scroll-snap-type: x proximity; scroll-behavior: smooth; scrollbar-width: none; }
   .vis-carousel::-webkit-scrollbar { display: none; }
   .alt-card {
     flex: 0 0 168px; scroll-snap-align: start; text-align: left; cursor: pointer;
@@ -2910,6 +2910,8 @@ function openExVisualizer(id){
   function bindCarouselWheel(){
     // Let vertical mouse wheels drive the horizontal "Similar movements" strip,
     // so PC users without a horizontal trackpad gesture can still scroll it.
+    // Stateless: each notch nudges scrollLeft directly (CSS scroll-behavior
+    // smooths it into a glide), so reversing direction always works.
     $$(".vis-carousel", h).forEach(el=>{
       if (el.dataset.wheelBound) return;
       el.dataset.wheelBound = "1";
