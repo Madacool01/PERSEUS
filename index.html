@@ -1014,18 +1014,42 @@
   .editor-name:focus { border-color: rgba(217,95,43,.7) !important; box-shadow: 0 0 0 3px rgba(217,95,43,.22) !important; outline: none; }
   .editor-day { margin-top: 1.6rem; }
 
-  /* ---------- Workout card / list ---------- */
-  .wo-list { display: flex; flex-direction: column; gap: .9rem; }
+  /* ---------- Workout picker ---------- */
+  .wo-list { display: flex; flex-direction: column; gap: 1rem; }
   .wo-card {
-    display: flex; align-items: center; gap: 1rem;
-    border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 1.15rem 1.3rem;
+    position: relative; display: flex; align-items: center; gap: 1.1rem;
+    border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    padding: .95rem 1.2rem .95rem .95rem;
     background: var(--surface); cursor: pointer; box-shadow: var(--shadow-1);
+    overflow: hidden;
     transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .25s;
   }
+  .wo-card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+    transform: scaleY(0); transform-origin: top; transition: transform .3s cubic-bezier(.22,1,.36,1);
+  }
   .wo-card:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: var(--shadow-2); }
+  .wo-card:hover::before { transform: scaleY(1); }
+  .wo-thumb {
+    flex: 0 0 auto; width: 62px; height: 62px; border-radius: var(--r-md);
+    background-size: cover; background-position: center;
+    border: 1px solid var(--line); overflow: hidden;
+    filter: saturate(.88) contrast(1.03);
+    transition: transform .5s cubic-bezier(.22,1,.36,1), filter .3s;
+  }
+  .wo-card:hover .wo-thumb { transform: scale(1.06); filter: saturate(1) contrast(1.05); }
+  .wo-meta { min-width: 0; }
   .wo-card .wo-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -.01em; }
   .wo-card .date { color: var(--ink-3); font-size: .82rem; margin-top: 2px; }
-  .wo-card .badge { margin-left: auto; }
+  .wo-card .badge { margin-left: auto; flex: 0 0 auto; }
+  .wo-go {
+    flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 50%; color: var(--ink-2);
+    font-size: 1.05rem; line-height: 1;
+    transition: background .2s, color .2s, border-color .2s, transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .wo-card:hover .wo-go { background: var(--accent); border-color: var(--accent); color: #fff; transform: translateX(3px); }
   .badge {
     font-family: var(--font-mono); font-size: .6rem; letter-spacing: .18em; text-transform: uppercase;
     background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: .32rem .78rem; color: var(--ink-2);
@@ -1034,44 +1058,126 @@
   /* ---------- Logger ---------- */
   .phase { display: none; }
   .phase.active { display: block; }
-  .log-head { margin-bottom: .4rem; }
-  .log-context { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: .35rem; }
-  .big-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 4.2vw, 3.2rem); letter-spacing: -.02em; line-height: 1.05; margin: 0; }
-  .progress-track { height: 6px; background: var(--paper-2); border-radius: 2px; margin: 1.2rem 0 .5rem; overflow: hidden; box-shadow: inset 0 1px 2px rgba(58,42,18,.08); }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #ef8b52); border-radius: 2px; transition: width .5s cubic-bezier(.22,1,.36,1); }
-  .log-step { border: 1px solid var(--line-2); border-radius: var(--r-xl); padding: 1.7rem; background: var(--surface); box-shadow: var(--shadow-1); }
-  .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .8rem; margin: 1.2rem 0; grid-auto-flow: dense; }
-  .set-cell { border: 1px solid var(--line); border-radius: var(--r-md); padding: .95rem; background: var(--surface-2); transition: border-color .2s, background .2s, transform .2s; }
-  .set-cell:hover { border-color: var(--accent-line); transform: translateY(-2px); }
-  .set-cell.done { border-color: var(--green-line); background: var(--green-soft); }
-  .set-top { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .6rem; }
+  .log-head { margin: 0 0 .6rem; max-width: 72rem; }
+  .log-kicker { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+  .log-thumb {
+    flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
+    background-size: cover; background-position: center;
+    border: 2px solid var(--accent-soft); outline: 1px solid var(--accent-line);
+    filter: saturate(.9) contrast(1.03);
+  }
+  .log-kicker-text { font-family: var(--font-mono); font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  .log-kicker-text b { color: var(--accent-deep); }
+  .log-context { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: .5rem; }
+  .big-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.2rem, 4.6vw, 3.4rem); letter-spacing: -.02em; line-height: 1.04; margin: 0; text-wrap: balance; }
+  .title-pill-img {
+    display: inline-block; width: 1.9em; height: .68em; border-radius: 999px;
+    background-size: cover; background-position: center;
+    vertical-align: baseline; transform: translateY(.06em); margin: 0 .08em;
+    border: 1px solid var(--accent-line); filter: saturate(.9) contrast(1.04);
+  }
+  .log-ticker { margin: 1rem 0 0; border-radius: var(--r-md); }
+  .progress-track { height: 10px; background: var(--paper-2); border-radius: 999px; margin: 1.3rem 0 .55rem; overflow: hidden; box-shadow: inset 0 1px 3px rgba(58,42,18,.12); }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-deep), var(--accent) 55%, #ef8b52); border-radius: 999px; transition: width .5s cubic-bezier(.22,1,.36,1); }
+  .log-count { display: flex; justify-content: space-between; gap: .6rem; font-family: var(--font-mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .4rem; }
+  .log-count b { color: var(--accent-deep); }
+  .log-step { border: 1px solid var(--line-2); border-radius: var(--r-xl); padding: clamp(1.2rem, 3vw, 2.1rem); background: linear-gradient(180deg, var(--surface), var(--surface-2)); box-shadow: var(--shadow-1); }
+  .log-hint { max-width: 62ch; }
+  .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin: 1.4rem 0; grid-auto-flow: dense; }
+  .set-cell { position: relative; border: 1px solid var(--line); border-radius: var(--r-md); padding: 1.15rem 1.15rem 1.05rem; background: var(--surface); box-shadow: var(--shadow-1); overflow: hidden; transition: border-color .2s, background .25s, transform .2s, box-shadow .25s; }
+  .set-cell::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #ef8b52);
+    transform: scaleX(0); transform-origin: left; transition: transform .35s cubic-bezier(.22,1,.36,1);
+  }
+  .set-cell:hover { border-color: var(--accent-line); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .set-cell.done { border-color: var(--green-line); background: linear-gradient(180deg, #f4f8f3, var(--green-soft)); box-shadow: 0 14px 30px -20px rgba(47,107,74,.55); }
+  .set-cell.done::before { transform: scaleX(1); background: linear-gradient(90deg, var(--green), #6fae86); }
+  .set-cell.done::after {
+    content: "✓"; position: absolute; top: .55rem; right: .6rem;
+    width: 22px; height: 22px; display: grid; place-items: center;
+    font-size: .72rem; font-weight: 700; color: #fff;
+    background: var(--green); border-radius: 50%; pointer-events: none;
+  }
+  .set-top { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .6rem; padding-right: 1.4rem; }
+  .set-cell.done .set-top { padding-right: 1.4rem; }
+  .set-num { font-family: var(--font-display); font-weight: 800; font-size: 1.45rem; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
+  .set-num small { font-family: var(--font-mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; color: var(--ink-3); margin-left: .45rem; vertical-align: middle; }
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
-  .set-cell label.field { margin: .5rem 0; }
+  .set-cell label.field { margin: .55rem 0; }
   /* Superset round screen: one wide panel per movement, one set each */
-  .round-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.2rem 0; }
+  .round-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 1.4rem 0; }
   .round-cell { min-width: 0; }
   .round-cell .round-ex-name { font-family: var(--font-display); font-weight: 700; font-size: 1.04rem; letter-spacing: -.01em; color: var(--ink); }
   .round-tags { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: .55rem; }
   .round-tags .pill { margin: 0; }
   .title-plus { color: var(--accent); font-weight: 700; margin: 0 .2em; opacity: .92; }
+  /* Number inputs with tactile steppers */
+  .log-step .field input[type=number] {
+    font-family: var(--font-mono); font-size: 1.3rem; font-weight: 600; text-align: center; color: var(--ink);
+    -moz-appearance: textfield; appearance: textfield;
+  }
+  .log-step .field input[type=number]::-webkit-outer-spin-button,
+  .log-step .field input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .num-wrap { display: flex; align-items: stretch; gap: .4rem; }
+  .num-wrap input[type=number] { flex: 1 1 auto; min-width: 0; }
+  .stepper {
+    flex: 0 0 46px; min-height: 52px; display: grid; place-items: center;
+    font-size: 1.25rem; font-weight: 700; line-height: 1; color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
+    transition: background .18s, color .18s, border-color .18s, transform .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stepper:hover { border-color: var(--accent); color: var(--accent-deep); background: var(--accent-soft); }
+  .stepper:active { transform: scale(.9); }
+  /* Sticky action dock */
+  .log-step .log-actions {
+    position: sticky; bottom: 1rem; z-index: 6;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    background: rgba(250,245,234,.88);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: .55rem .6rem; margin-top: 1.5rem; box-shadow: var(--shadow-2);
+  }
+  .log-step .log-actions .btn { border-radius: 999px; }
+  .log-step .log-actions .spacer { flex: 1 1 auto; }
+  /* Recovery recap + done bento */
+  .recap-wrap { border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface); }
+  .recap-wrap table.striped { margin: 0; border: none; }
+  .log-step select {
+    -webkit-appearance: none; appearance: none; min-height: 52px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23a63c12' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.6rem;
+  }
+  .done-recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.6rem 0 .4rem; grid-auto-flow: dense; }
+  .done-rec { border: 1px solid var(--line); border-radius: var(--r-md); padding: 1.1rem 1.15rem; background: var(--surface); box-shadow: var(--shadow-1); }
+  .done-rec b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 2rem; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
+  .done-rec span { display: block; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .5rem; }
   /* ---------- Effort slider (0.5 steps) ---------- */
-  .effort { margin: .65rem 0 .2rem; }
-  .effort-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+  .effort { margin: .8rem 0 .2rem; border: 1px dashed var(--line); border-radius: var(--r-md); padding: .8rem .9rem .7rem; background: rgba(250,245,234,.5); transition: border-color .25s, background .25s; }
+  .effort.rated { border-style: solid; border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-soft), rgba(246,222,208,0)); }
+  .effort-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; }
   .effort-label { font-family: var(--font-mono); font-size: .62rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
   .effort-val {
-    font-family: var(--font-mono); font-size: 1.05rem; font-weight: 600; color: var(--ink-2);
+    font-family: var(--font-mono); font-size: 1.35rem; font-weight: 600; color: var(--ink-2);
     min-width: 2.6rem; text-align: right; transition: color .2s; line-height: 1;
   }
-  .effort-val.rated { color: var(--accent); }
-  .effort-wrap { position: relative; padding: 18px 0 0; }
+  .effort-val.rated { color: var(--accent-deep); }
+  .effort-wrap { position: relative; padding: 20px 0 0; }
+  .effort-wrap::after {
+    content: ""; position: absolute; left: 2px; right: 2px; top: 20px; height: 10px;
+    background: repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 2px), rgba(26,21,15,.22) calc(25% - 2px), rgba(26,21,15,.22) 25%);
+    pointer-events: none;
+  }
   .effort-range {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 2px;
+    -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 999px;
     background: var(--line); outline: none; cursor: pointer; margin: 0;
+    box-shadow: inset 0 1px 3px rgba(58,42,18,.18);
   }
   .effort-range::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--surface); border: 3px solid var(--accent);
+    -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff, var(--surface) 60%), var(--surface); border: 3px solid var(--accent);
     box-shadow: 0 4px 12px -4px rgba(217,95,43,.55); cursor: grab;
     transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
   }
@@ -1308,8 +1414,15 @@
     .effort-range::-webkit-slider-thumb { width: 30px; height: 30px; }
     .effort-range::-moz-range-thumb { width: 30px; height: 30px; }
     .log-step { padding: 1.2rem 1rem; }
-    .log-step .btn-row { position: sticky; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--surface); padding: .6rem 0; z-index: 5; }
-    .log-step .btn-row .btn { flex: 1 1 auto; justify-content: center; min-height: 54px; }
+    .log-step .log-actions {
+      position: sticky; bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      border-radius: 18px; padding: .6rem; z-index: 5;
+    }
+    .log-step .log-actions .btn { flex: 1 1 auto; justify-content: center; min-height: 54px; }
+    .done-recap { grid-template-columns: 1fr; }
+    .wo-thumb { width: 52px; height: 52px; }
+    .wo-card .badge { display: none; }
+    .stepper { flex-basis: 52px; }
     .ex-vis-shell, .you-modal-shell, .load-est-card { height: 100dvh; max-height: 100dvh; border-radius: 14px 14px 0 0; }
     .toast { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
     .foot-inner { padding-bottom: calc(2.8rem + env(safe-area-inset-bottom, 0px)); }
@@ -3921,22 +4034,28 @@ function renderLogPicker(s){
   // the session type lives on each routine; the picker just lists the days
   const dayCards = state.days.map(d => {
     const dt = d.type || "hypertrophy";
-    return '<div class="wo-card" data-start="'+d.id+'">'+
-      '<div><div class="wo-name">'+esc(d.name)+'</div>'+
+    return '<div class="wo-card fx-in" data-start="'+d.id+'" role="button" tabindex="0" aria-label="Log '+esc(d.name)+'">'+
+      '<span class="wo-thumb" style="background-image:url(\'https://picsum.photos/seed/perseus-'+esc(d.id).toLowerCase().replace(/[^a-z0-9]+/g,"-")+'/160/160\')"></span>'+
+      '<div class="wo-meta"><div class="wo-name">'+esc(d.name)+'</div>'+
       '<div class="date">'+d.exercises.length+' exercises · '+d.exercises.reduce((a,x)=>a+(x.targetSets||0),0)+' sets</div></div>'+
-      '<span class="badge">'+sessionTypeLabel(dt)+'</span></div>';
+      '<span class="badge">'+sessionTypeLabel(dt)+'</span><span class="wo-go" aria-hidden="true">→</span></div>';
   }).join("");  s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-log/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
-        '<h2 class="view-title">Log the <em class="serif-i">session</em></h2>' +
+        '<h2 class="view-title">Log the <span class="title-pill-img" style="background-image:url(https://picsum.photos/seed/perseus-log-pill/400/160)"></span> <em class="serif-i">session</em></h2>' +
         '<p class="view-sub fx-scrub">Pick the day you trained. Each routine already knows its training type, and the coach judges every set against it.</p>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
       (dayCards ? '<div class="wo-list">'+dayCards+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>Create a workout day first.</div>') +
     '</div>';
-  $$("[data-start]", s).forEach(el=>el.addEventListener("click", ()=>startLog(el.dataset.start)));
+  $$("[data-start]", s).forEach(el=>{
+    el.addEventListener("click", ()=>startLog(el.dataset.start));
+    el.addEventListener("keydown", ev=>{
+      if (ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); startLog(el.dataset.start); }
+    });
+  });
 }
 
 function startLog(dayId){
@@ -4018,6 +4137,45 @@ function renderLogStep(s){
   if (step.kind === "round"){ renderLogRoundStep(s, day, step, total); return; }
   renderLogExerciseStep(s, day, step, total);
 }
+/* Cover image for a logging header: uploaded photo first, curated picsum fallback. */
+function logThumbFor(ex){
+  if (ex && ex.image) return ex.image;
+  const seed = "perseus-" + String((ex && ex.id) || "log").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return "https://picsum.photos/seed/" + seed + "/160/160";
+}
+/* Number field with tactile - / + steppers. Inputs keep their classes so the
+   existing readers (readFromDom / readPanels) work untouched; steppers just
+   set the value and fire input. */
+function numFieldHtml(cls, val, step, label, i){
+  return '<label class="field"><span>'+label+'</span><div class="num-wrap">'+
+    '<button type="button" class="stepper" data-step="-1" aria-label="Decrease '+label+'">−</button>'+
+    '<input type="number" min="0"'+(step!==1?' step="'+step+'"':"")+' class="'+cls+'" data-i="'+i+'" value="'+val+'"/>'+
+    '<button type="button" class="stepper" data-step="1" aria-label="Increase '+label+'">+</button>'+
+  '</div></label>';
+}
+function bindSteppers(s){
+  $$(".stepper", s).forEach(btn=>btn.addEventListener("click", ()=>{
+    const wrap = btn.closest(".num-wrap");
+    const inp = wrap ? wrap.querySelector("input") : null;
+    if (!inp) return;
+    const step = parseFloat(inp.getAttribute("step")) || 1;
+    const cur = inp.value==="" ? 0 : (+inp.value || 0);
+    inp.value = String(Math.max(0, Math.round((cur + (+btn.dataset.step) * step) * 100) / 100));
+    inp.dispatchEvent(new Event("input", { bubbles:true }));
+  }));
+}
+/* How many sets of an entry already carry performance data or an effort rating. */
+function logSetsDone(entry){
+  if (!entry || !entry.sets) return 0;
+  return entry.sets.filter(s=>s.rating>0 || (s.reps!=="" && s.reps!=null) || (s.time!=="" && s.time!=null)).length;
+}
+/* Slim movement ticker reusing the global marquee system. */
+function logTickerHtml(day){
+  const names = (day.exercises||[]).map(de=>{ const x=getEx(de.exId); return x?x.name:""; }).filter(Boolean);
+  if (names.length < 2) return "";
+  const half = names.map(n=>'<span>'+esc(n)+' <i>◆</i></span>').join("");
+  return '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">'+half+half+'</div></div>';
+}
 /* One screen per standalone exercise: every one of its sets as a cell. */
 function renderLogExerciseStep(s, day, step, total){
   const de = step.de;
@@ -4033,26 +4191,32 @@ function renderLogExerciseStep(s, day, step, total){
     const st = setTypeOf(plan, i);
     const planTxt = setPlanTxt(plan, ex, i);
     return '<div class="set-cell fx-rise'+(done?' done':"")+'" data-set="'+i+'">'+
-      '<div class="set-top"><span class="set-label">Set '+(i+1)+'</span>'+
+      '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" data-i="'+i+'" value="'+set.reps+'"/></label>' : "") +
-      (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" data-i="'+i+'" value="'+set.time+'"/></label>' : "") +
-      (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" data-i="'+i+'" value="'+set.weight+'"/></label>' : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps'), i) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, "Hold (s)", i) : "") +
+      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), i) : "") +
       effortSliderHtml(set, i)+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
-  }).join("");  s.innerHTML =
+  }).join("");
+  const doneCount = logSetsDone(entry);
+  s.innerHTML =
     '<div class="wrap"><div class="phase active">' +
-      '<div class="log-head">' +
+      '<div class="log-head fx-in">' +
+        '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
+        '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
         '<div class="big-title">'+esc(ex.name)+'</div>' +
         '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
+        logTickerHtml(day) +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
-      '<div class="log-step">' +
-        '<p class="small muted">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>' +
+      '<div class="log-count"><span>Exercise '+(logCtx.idx+1)+' of '+total+'</span><span><b>'+doneCount+'/'+entry.sets.length+'</b> sets logged</span></div>' +
+      '<div class="log-step fx-in">' +
+        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>' +
         '<div class="set-grid">'+setCells+'</div>' +
-        '<div class="btn-row">' +
+        '<div class="btn-row log-actions">' +
           (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Previous exercise</button>':"") +
           '<button class="btn danger" id="log-discard">Discard session</button>' +
           '<div class="spacer" style="flex:1"></div>' +
@@ -4088,6 +4252,7 @@ function renderLogExerciseStep(s, day, step, total){
       if (inp) syncEffort(inp, entry.sets[i]);
     });
   });
+  bindSteppers(s);
   const next = ()=>{
     readFromDom();
     if (logCtx.idx<total-1){ logCtx.idx++; render(); }
@@ -4128,9 +4293,9 @@ function renderLogRoundStep(s, day, step, total){
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? '<label class="field"><span>'+(st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps')+'</span><input type="number" min="0" class="s-reps" value="'+set.reps+'"/></label>' : "") +
-      (showTime ? '<label class="field"><span>Hold (s)</span><input type="number" min="0" step="0.5" class="s-time" value="'+set.time+'"/></label>' : "") +
-      (showWeight ? '<label class="field"><span>Weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="s-weight" value="'+set.weight+'"/></label>' : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?'AMRAP reps (to failure)':st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, "Hold (s)", r) : "") +
+      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
       effortSliderHtml(set, r)+
       '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
@@ -4139,18 +4304,24 @@ function renderLogRoundStep(s, day, step, total){
   const titleParts = names.map((n,i) => (i ? '<span class="title-plus" aria-hidden="true">+</span>' : '') + '<span class="round-title-name">'+esc(n)+'</span>').join("");
   const lastRound = r+1 >= rounds;
   const nextLabel = !lastRound ? "Next set →" : (logCtx.idx < total-1 ? "Next exercise →" : "Log recovery →");
+  const firstEx = getEx(members[0].exId);
+  const roundDone = members.reduce((a,de)=>{ const e=logCtx.entries[de.exId]; return a + (e && e.sets[r] ? logSetsDone({sets:[e.sets[r]]}) : 0); }, 0);
   s.innerHTML =
     '<div class="wrap"><div class="phase active">' +
-      '<div class="log-head">' +
+      '<div class="log-head fx-in">' +
+        '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(firstEx)+'\')"></span>'+
+        '<span class="log-kicker-text"><b>Round '+(r+1)+' of '+rounds+'</b> · '+esc(day.name)+' · Superset</span></div>' +
         '<div class="round-tags"><span class="pill">Superset</span><span class="pill">Round '+(r+1)+' of '+rounds+'</span></div>' +
         '<div class="big-title">'+titleParts+'</div>' +
         '<div class="log-context mono">'+esc(day.name)+' · superset · do every move once, then rest · repeat for each round</div>' +
+        logTickerHtml(day) +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
-      '<div class="log-step">' +
-        '<p class="small muted">One round = both movements, back to back. Enter what you actually did for each, then rate how hard each set felt.</p>' +
+      '<div class="log-count"><span>Step '+(logCtx.idx+1)+' of '+total+'</span><span><b>'+roundDone+'/'+members.length+'</b> movements logged</span></div>' +
+      '<div class="log-step fx-in">' +
+        '<p class="small muted log-hint">One round = both movements, back to back. Enter what you actually did for each, then rate how hard each set felt.</p>' +
         '<div class="round-grid">'+members.map(panelOf).join("")+'</div>' +
-        '<div class="btn-row">' +
+        '<div class="btn-row log-actions">' +
           (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Back</button>':"") +
           '<button class="btn danger" id="log-discard">Discard session</button>' +
           '<div class="spacer" style="flex:1"></div>' +
@@ -4192,6 +4363,7 @@ function renderLogRoundStep(s, day, step, total){
       if (inp) syncEffort(inp, entry.sets[r]);
     });
   });
+  bindSteppers(s);
   const next = ()=>{
     readPanels();
     if (logCtx.idx < total-1){ logCtx.idx++; render(); }
@@ -4215,10 +4387,13 @@ function renderRecovery(s){
     return '<tr><td>'+esc(ex.name)+'</td><td>'+done+'/'+ent.sets.length+' sets logged</td></tr>';
   }).join("");  s.innerHTML =
     '<div class="wrap">' +
-    '<h2 class="section">Recovery & how it felt</h2>' +
-    '<p class="subtitle">A few quick context questions help the coach decide whether to progress, hold, or regress.</p>' +
-    '<div class="log-step" style="margin-top:8px">' +
-      '<table class="striped"><tr><th>Exercise</th><th>Logged</th></tr>'+rows+'</table>'+
+    '<div class="log-head fx-in" style="margin-top:.4rem">' +
+      '<div class="log-kicker"><span class="log-kicker-text"><b>Final check-in</b> · '+esc(day.name)+'</span></div>' +
+      '<h2 class="big-title">Recovery and how it felt</h2>' +
+    '</div>' +
+    '<p class="subtitle log-hint">A few quick context questions help the coach decide whether to progress, hold, or regress.</p>' +
+    '<div class="log-step fx-in" style="margin-top:8px">' +
+      '<div class="recap-wrap"><table class="striped"><tr><th>Exercise</th><th>Logged</th></tr>'+rows+'</table></div>'+
       '<div class="grid two" style="margin-top:16px">'+
         '<label class="field"><span>Recovery / readiness (overall)</span><select data-recv="recovery"><option value=3 selected>Feels normal</option><option value=5>Fresh / great</option><option value=4>Good</option><option value=2>Mediocre</option><option value=1>Tired / depleted</option></select></label>'+
         '<label class="field"><span>Sleep last night</span><select data-recv="sleep"><option value=3 selected>Normal</option><option value=5>Excellent</option><option value=4>Good</option><option value=2>Poor</option><option value=1>Very poor</option></select></label>'+
@@ -4227,7 +4402,7 @@ function renderRecovery(s){
       '</div>'+
       '<label class="field"><span>Pain or discomfort?</span><input type="text" data-recv="pain" placeholder="e.g. left shoulder on dips. Leave blank if none"/>'+
         '<div class="micro">Pain is handled conservatively: the coach will hold or reduce load and note it, not push through.</div></label>'+
-      '<label class="field"><span>Session note (optional)</span><textarea data-recv="note" placeholder="How did it go overall? Anything you noticed?"></textarea></label>'+      '<div class="btn-row">' +
+      '<label class="field"><span>Session note (optional)</span><textarea data-recv="note" placeholder="How did it go overall? Anything you noticed?"></textarea></label>'+      '<div class="btn-row log-actions">' +
         '<button class="btn" id="rec-back">‹ Back to exercises</button>' +
         '<button class="btn danger" id="rec-discard">Discard session</button>' +
         '<div class="spacer" style="flex:1"></div>' +
@@ -4572,12 +4747,32 @@ function templateReason(s, ex){
   const f = s.from, t = s.to, nm = ex?ex.name:"";
   return "Coach suggests "+nm+" "+shortRepr(s.field, t)+" (from "+shortRepr(s.field, f)+").";
 }function renderLogDone(s){
+  let recSets = 0, recTotal = 0, recMoves = 0;
+  const recRates = [];
+  try{
+    const ents = (logCtx && logCtx.entries) || {};
+    Object.keys(ents).forEach(k=>{
+      const e = ents[k]; if (!e || !e.sets) return;
+      recMoves++;
+      e.sets.forEach(set=>{
+        recTotal++;
+        if (set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null)) recSets++;
+        if (set.rating>0) recRates.push(+set.rating);
+      });
+    });
+  }catch(e){}
+  const recAvg = recRates.length ? (recRates.reduce((a,b)=>a+b,0)/recRates.length).toFixed(1) : "—";
   s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-done/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
-        '<h2 class="view-title">Session <em class="serif-i">logged</em></h2>' +
-        '<p class="view-sub">Your session is saved and the coach has prepared suggestions for next time. Review them in the Coach feed.</p>' +
+        '<h2 class="view-title">Session <span class="title-pill-img" style="background-image:url(https://picsum.photos/seed/perseus-done-pill/400/160)"></span> <em class="serif-i">logged</em></h2>' +
+        '<p class="view-sub fx-scrub">Your session is saved and the coach has prepared suggestions for next time. Review them in the Coach feed.</p>' +
+        '<div class="done-recap fx-in">' +
+          '<div class="done-rec"><span>Sets logged</span><b><span class="stat-num">'+recSets+'</span><small style="font-size:1rem;color:var(--ink-3)">/'+recTotal+'</small></b></div>' +
+          '<div class="done-rec"><span>Avg effort</span><b>'+recAvg+'</b></div>' +
+          '<div class="done-rec"><span>Movements</span><b><span class="stat-num">'+recMoves+'</span></b></div>' +
+        '</div>' +
         '<div class="hero-cta">' +            '<button class="btn btn-xl primary" id="log-finish">Finish workout</button>' +
           '<button class="btn btn-xl ghost-dark" data-goto="coach">Review coach suggestions <span class="btn-arrow">→</span></button>' +
           '<button class="btn ghost-dark" data-goto="workouts">Back to workouts</button>' +
