@@ -2907,11 +2907,31 @@ function openExVisualizer(id){
       '</div>'+
     '</div>';
   const h = $(".ex-vis", host);
+  function bindCarouselWheel(){
+    // Let vertical mouse wheels drive the horizontal "Similar movements" strip,
+    // so PC users without a horizontal trackpad gesture can still scroll it.
+    $$(".vis-carousel", h).forEach(el=>{
+      if (el.dataset.wheelBound) return;
+      el.dataset.wheelBound = "1";
+      el.addEventListener("wheel", ev=>{
+        if (ev.ctrlKey) return; // pinch-zoom: leave to the browser
+        const dy = ev.deltaY || 0, dx = ev.deltaX || 0;
+        if (Math.abs(dy) <= Math.abs(dx)) return; // horizontal swipe / shift+wheel: native
+        const max = el.scrollWidth - el.clientWidth;
+        if (max <= 0) return;
+        const goingRight = dy > 0;
+        if ((goingRight && el.scrollLeft >= max - 1) || (!goingRight && el.scrollLeft <= 0)) return; // at an end: let page scroll vertically
+        ev.preventDefault();
+        el.scrollLeft += dy * (ev.deltaMode === 1 ? 16 : 1);
+      }, { passive:false });
+    });
+  }
   function bindTabContent(){
     $$("[data-alt]", h).forEach(b=>b.addEventListener("click", ()=>{
       const alt = getEx(b.dataset.alt);
       if (alt){ close(); openExVisualizer(alt.id); }
     }));
+    bindCarouselWheel();
     $$("[data-goto]", h).forEach(b=>b.addEventListener("click", ()=>{
       vis.tab = b.dataset.goto;
       $$("[data-vis-tab]", h).forEach(x=>x.classList.toggle("active", x.dataset.visTab===vis.tab));
