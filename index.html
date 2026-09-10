@@ -2808,10 +2808,10 @@ function setValTxt(ex, c){
 function openExVisualizer(id, opts){
   const ex = getEx(id);
   if (!ex) return;
-  // Locked mode (e.g. opened mid-session from the logger): the exercise must
-  // not be deletable here — removing it under an active logCtx would corrupt
-  // the in-progress session. The lock propagates when hopping between
-  // similar movements inside the same visualizer.
+  // Locked mode (e.g. opened mid-session from the logger): the exercise can
+  // be neither edited nor deleted here — changing it under an active logCtx
+  // would corrupt the in-progress session. The lock propagates when hopping
+  // between similar movements inside the same visualizer.
   const lockDelete = !!(opts && opts.lockDelete);
   const activeView = $(".view.active") || $(".view") || document.body;
   let host = activeView.querySelector("#ex-vis-host");
@@ -2834,13 +2834,14 @@ function openExVisualizer(id, opts){
       '<button type="button" class="ex-vis-icon" data-vis-back aria-label="Back">'+VIS_ICO_BACK+'</button>'+
       '<h2>'+esc(e.name)+'</h2>'+
       '<div class="spacer"></div>'+
+      (vis.lockDelete ? "" :
       '<div class="ex-vis-menuwrap">'+
         '<button type="button" class="ex-vis-icon" data-vis-menu aria-label="More options" aria-haspopup="true" aria-expanded="false">'+VIS_ICO_MORE+'</button>'+
         '<div class="ex-vis-pop" id="ex-vis-pop" role="menu">'+
           '<button type="button" role="menuitem" data-menu="edit">Edit exercise</button>'+
-          (vis.lockDelete ? "" : '<button type="button" role="menuitem" class="danger" data-menu="delete">Delete exercise</button>')+
+          '<button type="button" role="menuitem" class="danger" data-menu="delete">Delete exercise</button>'+
         '</div>'+
-      '</div>'+
+      '</div>')+
     '</div>';
   }
   function visMediaHtml(e){
