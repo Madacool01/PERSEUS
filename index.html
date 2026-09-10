@@ -50,6 +50,7 @@
     --glass-lite: rgba(250,245,234,.78);
     --glass-faint: rgba(250,245,234,.5);
     --accent-glow: rgba(217,95,43,.55);
+    --hero-accent: #f0a271;
     --shadow-1: 0 1px 2px rgba(40,28,10,.05), 0 16px 36px -26px rgba(40,28,10,.30);
     --shadow-2: 0 2px 4px rgba(40,28,10,.06), 0 34px 70px -38px rgba(40,28,10,.38);
     --r-xl: 2px;
@@ -65,6 +66,7 @@
      Every theme redefines the same semantic tokens, so all views re-skin.
      Values verified against WCAG AA in tests/_contrast.js. */
   html[data-theme="slate"] {
+    --hero-accent: #9cc0f5;
     --paper: #e9edf1; --paper-2: #dbe1e7; --surface: #f8fafb; --surface-2: #eef2f6;
     --ink: #17212e; --ink-2: #3a495d; --ink-3: #57697f;
     --accent: #1f5fd0; --accent-deep: #174a9e; --accent-soft: #dbe7fb; --accent-line: #b4cdf3;
@@ -82,6 +84,7 @@
     --shadow-2: 0 2px 4px rgba(30,45,65,.07), 0 34px 70px -38px rgba(30,45,65,.36);
   }
   html[data-theme="forest"] {
+    --hero-accent: #a5d8b4;
     --paper: #e6eae0; --paper-2: #d7dccb; --surface: #f7f9f2; --surface-2: #edf1e4;
     --ink: #16211a; --ink-2: #3b493f; --ink-3: #5a6c5f;
     --accent: #1f7148; --accent-deep: #14593a; --accent-soft: #d8ecdd; --accent-line: #afd3bb;
@@ -99,6 +102,7 @@
     --shadow-2: 0 2px 4px rgba(25,45,30,.07), 0 34px 70px -38px rgba(25,45,30,.36);
   }
   html[data-theme="mono"] {
+    --hero-accent: #d8d8d8;
     --paper: #e8e8e8; --paper-2: #d9d9d9; --surface: #fafafa; --surface-2: #f0f0f0;
     --ink: #161616; --ink-2: #3d3d3d; --ink-3: #5f5f5f;
     --accent: #333333; --accent-deep: #000000; --accent-soft: #e2e2e2; --accent-line: #c2c2c2;
@@ -116,6 +120,7 @@
     --shadow-2: 0 2px 4px rgba(0,0,0,.08), 0 34px 70px -38px rgba(0,0,0,.38);
   }
   html[data-theme="midnight"] {
+    --hero-accent: #f0be6a;
     --paper: #0e1319; --paper-2: #151c25; --surface: #1a212b; --surface-2: #212a36;
     --ink: #edf1f6; --ink-2: #bdc7d3; --ink-3: #95a1af;
     --accent: #e8a33d; --accent-deep: #c08a2e; --accent-soft: #2e2410; --accent-line: #6e5626;
@@ -133,6 +138,7 @@
     --shadow-2: 0 2px 4px rgba(0,0,0,.5), 0 34px 70px -38px rgba(0,0,0,.65);
   }
   html[data-theme="ocean"] {
+    --hero-accent: #8fd4e8;
     --paper: #0c141f; --paper-2: #111c2a; --surface: #13202e; --surface-2: #1a2a3e;
     --ink: #e9f1f8; --ink-2: #b9c7d5; --ink-3: #90a1b3;
     --accent: #35b6d9; --accent-deep: #3198b7; --accent-soft: #0a1c29; --accent-line: #1f5a74;
@@ -304,7 +310,7 @@
     font-family: var(--font-display); font-weight: 700; letter-spacing: -.028em; line-height: 1.04;
     font-size: clamp(2.35rem, 5vw, 4.4rem); max-width: 26ch; margin: 0 auto; color: var(--on-dark);
   }
-  .serif-i { font-family: var(--font-serif); font-style: italic; font-weight: 400; letter-spacing: 0; color: #f0a271; padding-right: .05em; }
+  .serif-i { font-family: var(--font-serif); font-style: italic; font-weight: 400; letter-spacing: 0; color: var(--hero-accent); padding-right: .05em; }
   .view-sub { font-size: clamp(1rem, 1.3vw, 1.14rem); color: var(--on-dark-muted); max-width: 58ch; line-height: 1.66; margin: 1.2rem auto 0; }
   .view-sub .sw { display: inline-block; }
   .hero-cta { display: flex; gap: .9rem; margin-top: 2.1rem; flex-wrap: wrap; justify-content: center; }
