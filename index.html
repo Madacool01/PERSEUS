@@ -1302,15 +1302,22 @@
     min-width: 2.6rem; text-align: right; transition: color .2s; line-height: 1;
   }
   .effort-val.rated { color: var(--accent-deep); }
-  .effort-wrap { position: relative; padding: 20px 0 0; }
-  .effort-wrap::after {
-    content: ""; position: absolute; left: 2px; right: 2px; top: 20px; height: 10px;
-    background: repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 2px), rgba(26,21,15,.22) calc(25% - 2px), rgba(26,21,15,.22) 25%);
-    pointer-events: none;
-  }
+  .effort-wrap { position: relative; padding: 20px 0 0; --thumb: 26px; --p: 0; }
+  /* Whole-number ticks (1-5), each centered exactly where the slider thumb's
+     center rests at that value: center travel runs from thumb/2 to
+     width-thumb/2, so tick = thumb/2 + f*(width-thumb) with f=(v-1)/4.
+     Halves (e.g. 4.5) then land exactly midway between their neighbours. */
+  .effort-ticks { position: absolute; left: 0; right: 0; top: 20px; height: 10px; pointer-events: none; }
+  .effort-ticks i { position: absolute; top: 0; width: 2px; height: 10px; transform: translateX(-50%); background: rgba(26,21,15,.22); }
+  .effort-ticks i:nth-child(1) { left: calc(var(--thumb)/2); }
+  .effort-ticks i:nth-child(2) { left: calc(var(--thumb)/2 + 0.25*(100% - var(--thumb))); }
+  .effort-ticks i:nth-child(3) { left: calc(var(--thumb)/2 + 0.5*(100% - var(--thumb))); }
+  .effort-ticks i:nth-child(4) { left: calc(var(--thumb)/2 + 0.75*(100% - var(--thumb))); }
+  .effort-ticks i:nth-child(5) { left: calc(100% - var(--thumb)/2); }
   .effort-range {
     -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 999px;
-    background: var(--line); outline: none; cursor: pointer; margin: 0;
+    background: linear-gradient(90deg, var(--accent) 0, var(--accent) calc(var(--thumb)/2 + var(--p)*(100% - var(--thumb))), var(--line) calc(var(--thumb)/2 + var(--p)*(100% - var(--thumb))), var(--line) 100%);
+    outline: none; cursor: pointer; margin: 0;
     box-shadow: inset 0 1px 3px rgba(58,42,18,.18);
   }
   .effort-range::-webkit-slider-thumb {
@@ -1320,7 +1327,7 @@
     transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
   }
   .effort-range::-moz-range-thumb {
-    width: 16px; height: 16px; border-radius: 50%; background: var(--surface);
+    width: 26px; height: 26px; border-radius: 50%; background: var(--surface);
     border: 3px solid var(--accent); box-shadow: 0 4px 12px -4px var(--accent-glow); cursor: grab;
     transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .18s, box-shadow .18s;
   }
@@ -1330,6 +1337,7 @@
   .effort-range:active::-moz-range-thumb { transform: scale(1.3); cursor: grabbing; }
   .effort-bubble {
     position: absolute; top: -10px; transform: translateX(-50%);
+    left: calc(var(--thumb)/2 + var(--p)*(100% - var(--thumb)));
     font-family: var(--font-mono); font-size: .66rem; font-weight: 700; line-height: 1;
     color: var(--surface); background: var(--ink); border-radius: 2px; padding: .3rem .5rem;
     pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity .18s;
@@ -1549,6 +1557,7 @@
     .search input { padding-left: 2.6rem; }
     input[type=checkbox] { width: 20px; height: 20px; }
     .effort-range { height: 8px; }
+    .effort-wrap { --thumb: 30px; }
     .effort-range::-webkit-slider-thumb { width: 30px; height: 30px; }
     .effort-range::-moz-range-thumb { width: 30px; height: 30px; }
     .log-step { padding: 1.2rem 1rem; }
@@ -4310,14 +4319,15 @@ function startLog(dayId){
 function effortSliderHtml(set, i){
   const rated = set.rating>0;
   const v = rated ? set.rating : 1;
-  const pct = ((v-1)/4)*100;
+  const f = (v-1)/4;
   const txt = rated ? set.rating.toFixed(1) : "-";
   return '<div class="effort'+(rated?' rated':'')+'" data-effort="'+i+'">'+
     '<div class="effort-head"><span class="effort-label">Effort</span>'+
       '<span class="effort-val'+(rated?' rated':'')+'">'+txt+'</span></div>'+
-    '<div class="effort-wrap">'+
-      '<input type="range" class="effort-range" min="1" max="5" step="0.5" value="'+v+'" data-i="'+i+'" style="background:linear-gradient(90deg,var(--accent) 0%,var(--accent) '+pct+'%,var(--line) '+pct+'%,var(--line) 100%)" aria-label="Effort level for set '+(i+1)+'"/>'+
-      '<span class="effort-bubble" style="left:'+Math.max(4,Math.min(96,pct))+'%">'+txt+'</span>'+
+    '<div class="effort-wrap" style="--p:'+f+'">'+
+      '<input type="range" class="effort-range" min="1" max="5" step="0.5" value="'+v+'" data-i="'+i+'" aria-label="Effort level for set '+(i+1)+'"/>'+
+      '<span class="effort-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>'+
+      '<span class="effort-bubble">'+txt+'</span>'+
     '</div>'+
     '<div class="effort-scale"><span>Very easy</span><span>Near failure</span></div>'+
     '<div class="effort-desc'+(rated?' rated':'')+'">'+(rated?effortDesc(set.rating):"Drag to rate effort in half-point steps")+'</div>'+
@@ -4813,12 +4823,13 @@ function syncEffort(rangeEl, set){
   const eff = rangeEl.closest(".effort");
   const cell = rangeEl.closest(".set-cell");
   const v = rated ? set.rating : 1;
-  const pct = ((v-1)/4)*100;
+  const f = (v-1)/4;
   const txt = rated ? set.rating.toFixed(1) : "-";
   rangeEl.value = v;
-  rangeEl.style.background = "linear-gradient(90deg,var(--accent) 0%,var(--accent) "+pct+"%,var(--line) "+pct+"%,var(--line) 100%)";
+  const wrap = rangeEl.closest(".effort-wrap");
+  if (wrap) wrap.style.setProperty("--p", f);
   const bubble = eff.querySelector(".effort-bubble");
-  if (bubble){ bubble.style.left = Math.max(4,Math.min(96,pct))+"%"; bubble.textContent = txt; }
+  if (bubble){ bubble.textContent = txt; }
   const valEl = eff.querySelector(".effort-val");
   if (valEl){ valEl.textContent = txt; valEl.classList.toggle("rated", rated); }
   const descEl = eff.querySelector(".effort-desc");
