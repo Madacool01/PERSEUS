@@ -848,6 +848,8 @@
   /* radar loading pulse: shimmer veil + spinner while recomputing, draw-in on fresh data */
   #you-muscle-radar.draw .radar-poly { stroke-dasharray: 100; stroke-dashoffset: 100; animation: radarDraw 1s cubic-bezier(.4,0,.2,1) .1s forwards; }
   @keyframes radarDraw { to { stroke-dashoffset: 0; } }
+  .radar-dot { transform-box: fill-box; transform-origin: center; transition: transform .15s; }
+  .radar-pt:hover .radar-dot { transform: scale(2); }
   #you-muscle-radar.is-loading .wm-radar-stage svg,
   #you-muscle-radar.is-loading .wm-radar-ico { opacity: .3; }
   #you-muscle-radar.is-loading .wm-radar-stage::after {
@@ -6309,7 +6311,13 @@ function youMuscleRadarHtml(nowMs){
   const poly = '<polygon class="radar-poly" pathLength="100" points="' + fracs.map((f, i)=>pt(i, f).map(v=>v.toFixed(1)).join(",")).join(" ") + '" fill="var(--accent)" fill-opacity="0.28" stroke="var(--accent)" stroke-width="0.5" stroke-linejoin="round"/>';
   const dots = fracs.map((f, i)=>{
     const p = pt(i, f);
-    return '<circle class="radar-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/>';
+    const g = RADAR_GROUPS[i];
+    const sc = (d.groups[g] && d.groups[g].sets) || 0;
+    const vKg = Math.round((d.groups[g] && d.groups[g].volumeKg) || 0);
+    const tip = (RADAR_LABELS[g] || g) + (sc > 0 ? (" · " + sc + (sc === 1 ? " set" : " sets") + " · " + vKg + " kg") : " · rest");
+    return '<g class="radar-pt"><title>' + tip + '</title>' +
+      '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="7" fill="transparent" style="pointer-events:all"/>' +
+      '<circle class="radar-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="1.2" fill="var(--accent)"/></g>';
   }).join("");
   const icons = RADAR_GROUPS.map((g, i)=>{
     const a = -Math.PI / 2 + i * 2 * Math.PI / n;
