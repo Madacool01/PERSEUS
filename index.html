@@ -4897,13 +4897,83 @@ function buildSession(day, entries, recovery){
   return { completedSets, recovery:recovery||{} };
 }
 
+/* Session plan-undo: every plan change caused by a logged session (PR
+   carry-forward at save time, accepted coach suggestions) records a snapshot
+   first, so deleting the session from history fully unwinds it — counts,
+   analytics, volume AND the stored targets it moved. Snapshots live on the
+   session (ses.planUndo, oldest first). Restore runs newest-first and only
+   touches entries that still carry this session's stamp (or still equal the
+   post-change values, i.e. auto-derived and never hand-edited) — anything the
+   user explicitly changed afterwards is left alone. Sessions saved before
+   this existed simply have no planUndo and delete as before. */
+function planSnapshot(de){
+  if (!de) return null;
+  return { exId: de.exId, targetSets: de.targetSets, reps: de.reps, time: de.time,
+    weight: (de.weight==null ? null : de.weight),
+    setReps: Array.isArray(de.setReps) ? de.setReps.slice() : null,
+    setTimes: Array.isArray(de.setTimes) ? de.setTimes.slice() : null,
+    setTypes: Array.isArray(de.setTypes) ? de.setTypes.slice() : null,
+    modifiedAt: (typeof de.modifiedAt === "number") ? de.modifiedAt : null };
+}
+function applyPlanSnapshot(de, snap){
+  if (!de || !snap) return;
+  de.exId = snap.exId;
+  de.targetSets = snap.targetSets; de.reps = snap.reps; de.time = snap.time; de.weight = snap.weight;
+  if (snap.setReps==null) delete de.setReps; else de.setReps = snap.setReps.slice();
+  if (snap.setTimes==null) delete de.setTimes; else de.setTimes = snap.setTimes.slice();
+  if (snap.setTypes==null) delete de.setTypes; else de.setTypes = snap.setTypes.slice();
+  de.modifiedAt = snap.modifiedAt;
+}
+function planFieldsEqual(a, b){
+  if (!a || !b) return false;
+  const arr = (x)=> (Array.isArray(x) ? x.join(",") : "");
+  return a.exId===b.exId && (+a.targetSets||0)===(+b.targetSets||0) &&
+    (+a.reps||0)===(+b.reps||0) && (+a.time||0)===(+b.time||0) && (+a.weight||0)===(+b.weight||0) &&
+    arr(a.setReps)===arr(b.setReps) && arr(a.setTimes)===arr(b.setTimes) && arr(a.setTypes)===arr(b.setTypes);
+}
+function deepCopyPlan(p){ return (p==null) ? null : JSON.parse(JSON.stringify(p)); }
+/* Revert every plan change recorded on ses.planUndo. Returns the number of
+   exercises reverted. Never throws (delete must always succeed). */
+function restoreSessionPlans(ses){
+  const undos = (ses && Array.isArray(ses.planUndo)) ? ses.planUndo : null;
+  if (!undos || !undos.length) return 0;
+  let restored = 0;
+  for (let k=undos.length-1;k>=0;k--){
+    const u = undos[k];
+    if (!u || !u.pre) continue;
+    const curId = u.exId, oldId = u.prevExId || u.exId;
+    let touched = false;
+    state.days.forEach(d=>{
+      (d.exercises||[]).forEach(de=>{
+        if (de.exId !== curId) return;
+        // Own stamp: this session made the last change. Equal-to-post: the
+        // entry was auto-derived from the bumped plan (e.g. prefilled when the
+        // exercise was added to another routine) and never hand-edited.
+        if (de.modifiedAt === u.stamp || planFieldsEqual(de, u.post)){
+          applyPlanSnapshot(de, u.pre);
+          touched = true;
+        }
+      });
+    });
+    if (touched){
+      restored++;
+      const ex = getEx(oldId);
+      if (ex && u.prePlan !== undefined){
+        if (u.prePlan === null) delete ex.plan;
+        else ex.plan = JSON.parse(JSON.stringify(u.prePlan));
+      }
+    }
+  }
+  return restored;
+}
+
 /* PR carry-forward: when a logged set beats its stored target, that PR becomes
    the new stored target (all non-warmup set types — regular, drop, failure).
    Only upward: a bad day never lowers targets; misses are the coach's job.
    Runs at session-save time (before the coach is produced) so the routine
    editor, the edit form, and the next Log screen all agree. Shared-plan sync
    propagates the PR to every routine using the exercise. */
-function carryPRsForward(day, completedSets){
+function carryPRsForward(day, completedSets, session){
   if (!day || !Array.isArray(completedSets)) return;
   const byExIdx = {};
   completedSets.forEach(c=>{
@@ -4914,6 +4984,8 @@ function carryPRsForward(day, completedSets){
   day.exercises.forEach(de=>{
     const ex = getEx(de.exId);
     if (!ex) return;
+    const undoPre = planSnapshot(de);
+    const undoPrePlan = deepCopyPlan(ex.plan);
     let changed = false;
     const n = Math.max(1, de.targetSets||1);
     const isTime = ex.mode==="time";
@@ -4956,6 +5028,11 @@ function carryPRsForward(day, completedSets){
     if (changed){
       de.modifiedAt = Date.now();
       syncExercisePlan(de.exId, de);
+      if (session){
+        if (!Array.isArray(session.planUndo)) session.planUndo = [];
+        session.planUndo.push({ exId: de.exId, prevExId: null, pre: undoPre,
+          post: planSnapshot(de), stamp: de.modifiedAt, prePlan: undoPrePlan });
+      }
     }
   });
 }
@@ -4976,7 +5053,7 @@ function saveLogSession(){
   // A PR is the new target even when the coach stays quiet: carry any set that
   // beat its stored target forward into the shared plan before the coach runs,
   // so the next Log screen, the routine list, and the edit form all agree.
-  try{ carryPRsForward(day, completedSets); }catch(e){}
+  try{ carryPRsForward(day, completedSets, session); }catch(e){}
   state.pending.push({ id:"pend-"+uid(), sessionId: session.id, generatedAt: nowISO(), suggestions:[] });
   saveState();
   logCtx.session = session;
@@ -5453,6 +5530,8 @@ function recAct(ds, actVal){
     if (day){
       const de = day.exercises.find(x=>x.exId===exId);
       if (de){
+        const undoPre = planSnapshot(de);
+        const undoPrePlan = deepCopyPlan(getEx(de.exId) ? getEx(de.exId).plan : null);
         if (sug.field==="progression"){
           // Swap to the harder variation and adopt its plan — the shared
           // prescription if the variation is used elsewhere, else its defaults.
@@ -5471,7 +5550,12 @@ function recAct(ds, actVal){
           }
           toast("Applied. Swapped to "+(nextEx?nextEx.name:"harder progression")+".");
         } else {
-          const delta = (sug.to!=null && sug.from!=null) ? (sug.to - sug.from) : null;
+          // Rebase onto the CURRENT first-set target: the card promises an
+          // absolute destination (from → to), but the plan may have moved
+          // since the suggestion was generated (PR carry-forward runs at save
+          // time, before the coach), so a stale sug.from must not double-apply.
+          const curT = (sug.field==="time") ? setTarget(de,"time",0) : setTarget(de,"reps",0);
+          const delta = (sug.to!=null) ? ((+sug.to) - (+curT||0)) : null;
           if (sug.field==="reps" && Array.isArray(de.setReps) && delta!==null){
             de.setReps = de.setReps.map(v=>Math.max(0,(+v||0)+delta));
             de.reps = Math.max(0,(de.reps||0)+delta);
@@ -5488,6 +5572,11 @@ function recAct(ds, actVal){
           syncExercisePlan(exId, de);
           const nm = getEx(exId) ? getEx(exId).name : "Exercise";
           toast("Applied. "+nm+" updated in every routine.");
+        }
+        if (session){
+          if (!Array.isArray(session.planUndo)) session.planUndo = [];
+          session.planUndo.push({ exId: de.exId, prevExId: (undoPre.exId !== de.exId ? undoPre.exId : null),
+            pre: undoPre, post: planSnapshot(de), stamp: de.modifiedAt, prePlan: undoPrePlan });
         }
         confettiSmall();
       }
@@ -5627,12 +5716,14 @@ function renderHistory(){
     const ses = state.sessions.find(x=>x.id===sid);
     if (!ses) return false;
     const day = getDay(ses.dayId);
-    if (!confirm('Delete the '+(day?day.name:"session")+' from '+fmtDate(ses.dateISO)+'? This removes it from history and stats.')) return false;
+    if (!confirm('Delete the '+(day?day.name:"session")+' from '+fmtDate(ses.dateISO)+'? This removes it from history and stats, and reverts any plan changes it caused.')) return false;
+    let reverted = 0;
+    try{ reverted = restoreSessionPlans(ses); }catch(e){}
     state.sessions = state.sessions.filter(x=>x.id!==sid);
     state.pending = state.pending.filter(p=>p.sessionId!==sid);
     saveState();
     render();
-    toast("Session deleted");
+    toast(reverted ? "Session deleted · plan changes reverted" : "Session deleted");
     return true;
   }
   function sessionDetail(ses){
