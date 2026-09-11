@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PERSEUS · Adaptive Strength Coach</title>
-<link rel="icon" type="image/png" href="icon/icon.png">
+<link rel="icon" type="image/png" href="icon/icon-heritage.png">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1621,7 +1621,7 @@
   <div class="app-inner">
     <div class="brand">
       <div class="logo" aria-hidden="true">
-        <img src="icon/icon.png" alt="" width="40" height="40">
+        <img src="icon/icon-heritage.png" alt="" width="40" height="40" data-brand-icon>
       </div>
       <div>
         <h1>PERSEUS</h1>
@@ -1671,7 +1671,7 @@
   <section id="view-settings" class="view"></section>
   <footer class="foot">
     <div class="foot-inner">
-      <span class="foot-mark" aria-hidden="true"><img src="icon/icon.png" alt="" width="28" height="28"></span>
+      <span class="foot-mark" aria-hidden="true"><img src="icon/icon-heritage.png" alt="" width="28" height="28" data-brand-icon></span>
       <span>Perseus · your data never leaves this browser</span>
     </div>
   </footer>
@@ -1733,17 +1733,26 @@ const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKe
    applyTheme() maps the saved id onto <html data-theme>, whose CSS blocks
    redefine the same semantic tokens. Unknown ids fall back to heritage. */
 const THEMES = {
-  heritage: { label:"Heritage",  tag:"Warm light",  sw:["#ece5d2","#faf5ea","#d95f2b","#1a150f"] },
-  slate:    { label:"Slate",     tag:"Cool light",  sw:["#e9edf1","#f8fafb","#1f5fd0","#17212e"] },
-  forest:   { label:"Forest",    tag:"Green light", sw:["#e6eae0","#f7f9f2","#1f7148","#16211a"] },
-  mono:     { label:"Mono",      tag:"Neutral light", sw:["#e8e8e8","#fafafa","#333333","#161616"] },
-  midnight: { label:"Midnight",  tag:"Amber dark",  sw:["#0e1319","#1a212b","#e8a33d","#edf1f6"] },
-  ocean:    { label:"Ocean",     tag:"Cyan dark",   sw:["#0c141f","#13202e","#35b6d9","#e9f1f8"] },
+  heritage: { label:"Heritage",  tag:"Warm light",  sw:["#ece5d2","#faf5ea","#d95f2b","#1a150f"], icon:"icon/icon-heritage.png" },
+  slate:    { label:"Slate",     tag:"Cool light",  sw:["#e9edf1","#f8fafb","#1f5fd0","#17212e"], icon:"icon/icon-slate.jpg" },
+  forest:   { label:"Forest",    tag:"Green light", sw:["#e6eae0","#f7f9f2","#1f7148","#16211a"], icon:"icon/icon-forest.jpg" },
+  mono:     { label:"Mono",      tag:"Neutral light", sw:["#e8e8e8","#fafafa","#333333","#161616"], icon:"icon/icon-mono.jpg" },
+  midnight: { label:"Midnight",  tag:"Amber dark",  sw:["#0e1319","#1a212b","#e8a33d","#edf1f6"], icon:"icon/icon-midnight.jpg" },
+  ocean:    { label:"Ocean",     tag:"Cyan dark",   sw:["#0c141f","#13202e","#35b6d9","#e9f1f8"], icon:"icon/icon-ocean.jpg" },
 };
+function themeIcon(id){
+  return (THEMES[id] && THEMES[id].icon) || THEMES.heritage.icon;
+}
 function applyTheme(){
   const id = (state && state.profile && state.profile.theme) || "heritage";
   const key = THEMES[id] ? id : "heritage";
   try{ document.documentElement.dataset.theme = key; }catch(e){}
+  try{
+    const src = themeIcon(key);
+    const fav = document.querySelector('link[rel="icon"]');
+    if (fav) fav.setAttribute("href", src);
+    document.querySelectorAll("[data-brand-icon]").forEach(img=>{ img.setAttribute("src", src); });
+  }catch(e){}
   return key;
 }
 
