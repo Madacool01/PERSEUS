@@ -6526,7 +6526,7 @@ function youPeriodStart(id){
 function youWeeksData(period){
   const monday = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay()+6)%7)); x.setHours(0,0,0,0); return x; };
   const start = monday(youPeriodStart(period));
-  const end = new Date(); end.setHours(0,0,0,0);
+  const end = new Date(); end.setHours(23,59,59,999); // end of today: sessions logged today count
   const weeks = [];
   for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate()+7)) weeks.push(new Date(cur));
   const counts = weeks.map(()=>0);
@@ -6586,7 +6586,7 @@ function fmtVol(kg){
 function youVolumeData(period){
   const monday = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay()+6)%7)); x.setHours(0,0,0,0); return x; };
   const start = monday(youPeriodStart(period));
-  const end = new Date(); end.setHours(0,0,0,0);
+  const end = new Date(); end.setHours(23,59,59,999); // end of today: sessions logged today count
   const weeks = [];
   for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate()+7)) weeks.push(new Date(cur));
   const sums = weeks.map(()=>0);
