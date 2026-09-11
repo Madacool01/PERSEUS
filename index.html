@@ -2197,8 +2197,19 @@ function setPlanTxt(de, ex, i, dayId){
   if (st==="warmup") return "light warm-up";
   const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
     : (de.weight? (setTarget(de,"reps",i)+'×'+fmtWeight(de.weight)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
-  if (st==="drop") return base+" · drop";
-  return base;
+  const baseTxt = st==="drop" ? base+" · drop" : base;
+  // Any set type: when the last session on this routine beat the stored target,
+  // show the PR to beat (same in the logger and the Workouts editor).
+  // Only upward — a bad day never lowers the target; the coach handles misses.
+  if (dayId){
+    const field = ex.mode==="time" ? "time" : "reps";
+    const prev = prevSetActual(dayId, de.exId, i, field);
+    const stored = +setTarget(de, field, i);
+    if (prev!=null && isFinite(prev) && isFinite(stored) && prev>stored){
+      return baseTxt+(ex.mode==="time" ? (" · beat "+prev+"s") : (" · beat "+prev));
+    }
+  }
+  return baseTxt;
 }
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
@@ -3432,20 +3443,29 @@ function renderRoutineList(){
 function gripSvgHtml(){
   return '<svg viewBox="0 0 12 16" width="9" height="12" fill="currentColor" focusable="false"><circle cx="3.6" cy="2.6" r="1.2"/><circle cx="8.4" cy="2.6" r="1.2"/><circle cx="3.6" cy="8" r="1.2"/><circle cx="8.4" cy="8" r="1.2"/><circle cx="3.6" cy="13.4" r="1.2"/><circle cx="8.4" cy="13.4" r="1.2"/></svg>';
 }
-/* Shared internals for a single exercise's rendered row. */
-function exRowInnerHtml(de){
+/* Shared internals for a single exercise's rendered row. Every set type shows the
+   same effective target as the logger (including "· beat N" when the last
+   session on this routine beat the stored target), so the Workouts editor and
+   the Log tab always match. */
+function exRowInnerHtml(de, dayId){
   const ex = getEx(de.exId);
   const nm = ex ? ex.name : "(deleted exercise)";
   const setChips = Array.from({length:de.targetSets||0},(_,j)=>{
     const st = setTypeOf(de,j);
     return '<span class="set-chip'+(st!=="regular"?' type':'')+'">'+(j+1)+(st!=="regular"?'·'+SET_TYPES[st].tag:'')+'</span>';
   }).join("");
-  const ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
-    ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
+  let ladder;
+  const usesBeat = Boolean(ex && dayId);
+  if (usesBeat){
+    ladder = Array.from({length:de.targetSets||0},(_,j)=>setPlanTxt(de, ex, j, dayId)).join(" / ");
+  } else {
+    ladder = (de.setReps||de.setTimes) ? setLadderTxt(de) :
+      ((de.reps?'target '+de.reps+' reps':'')+(de.time?'hold '+de.time+'s':''));
+  }
   return {
     name: nm,
     pills: (ex?modePill(ex):"")+(ex&&ex.weightAvailable?' <span class="pill weight">wgt</span>':"")+(de.focus?' <span class="pill '+(de.focus==="strength"?'time':'reps')+'">'+de.focus+'</span>':""),
-    target: '<div class="micro ex-target">'+ladder+(de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>',
+    target: '<div class="micro ex-target">'+ladder+((!usesBeat) && de.weight?'· '+fmtWeight(de.weight)+' '+weightUnit():"")+'</div>',
     chips: '<div class="set-chips">'+setChips+'</div>',
     actions: '<div class="ex-actions">'+
       '<button class="btn ghost small" data-edit-ex="'+de.exId+'" title="Edit set targets & types">edit</button>'+
@@ -3453,8 +3473,8 @@ function exRowInnerHtml(de){
     '</div>'
   };
 }
-function rowHtml(de){
-  const it = exRowInnerHtml(de);
+function rowHtml(de, dayId){
+  const it = exRowInnerHtml(de, dayId);
   return '<div class="ex-row" data-exid="'+de.exId+'" title="Drag to reorder">'+
     '<div class="ex-name2"><span class="grip" aria-hidden="true">'+gripSvgHtml()+'</span><b>'+esc(it.name)+'</b> '+it.pills+'</div>'+
     it.target+it.chips+it.actions+
@@ -3463,7 +3483,7 @@ function rowHtml(de){
 function supersetBandHtml(day, grp, members){
   const n = supersetRoundCount(day, grp);
   const subs = members.map((de,i)=>{
-    const it = exRowInnerHtml(de);
+    const it = exRowInnerHtml(de, day.id);
     return (i>0?'<div class="super-then" aria-hidden="true"><span class="mono">then</span><span class="super-then-line"></span></div>':"")+
       '<div class="ex-sub" data-exid="'+de.exId+'">'+
         '<div class="ex-name2"><b>'+esc(it.name)+'</b> '+it.pills+'</div>'+
@@ -3485,7 +3505,7 @@ function supersetBandHtml(day, grp, members){
   '</div>';
 }
 function editorUnitsHtml(day){
-  return dayUnits(day).map(unit => unit.group ? supersetBandHtml(day, unit.group, unit.entries) : rowHtml(unit.entries[0])).join("");
+  return dayUnits(day).map(unit => unit.group ? supersetBandHtml(day, unit.group, unit.entries) : rowHtml(unit.entries[0], day.id)).join("");
 }
 /* Equalize a superset's round count across every member: lengthen or trim the
    per-set target/type arrays, stamp the change, and propagate through the
@@ -3859,7 +3879,7 @@ function openAddEx(dayId, exId){
         : '')+
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
-      '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure).</p>'+
+      '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure). When the last session beat the stored target, inputs show that PR (beat-N), same as the Log tab.</p>'+
       '<p class="micro" id="add-sync-note" style="margin-top:.4rem;color:var(--green)"></p>'+
       '<div class="btn-row"><button class="btn primary" id="add-ex-ok">'+(editing?'Save changes':'Add')+'</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
     '</div>';
@@ -3948,12 +3968,22 @@ function openAddEx(dayId, exId){
     // Prefill from the shared plan (canonical copy or derived), which matches
     // this entry once sync has run and unifies legacy copies saved before it.
     // Falls back to the entry itself when the library exercise is gone.
+    // Every non-warmup set shows the same effective target as the logger: when
+    // the last session on this routine beat the stored target, the input shows
+    // that PR ("beat N"), so the edit form matches the routine list + Log tab.
+    // Only upward — a bad day never lowers the inputs.
     const shared = exercisePlan(editing.exId);
     const base = shared ? shared : editing;
     const baseSetsEl = $("#add-ex-sets", host);
     if (baseSetsEl) baseSetsEl.value = base.targetSets || 3;
-    prevVals = (ex && ex.mode==="time" ? base.setTimes : base.setReps) || [];
+    prevVals = ((ex && ex.mode==="time" ? base.setTimes : base.setReps) || []).slice();
     prevTypes = base.setTypes ? base.setTypes.slice() : [];
+    for (let i=0;i<prevTypes.length;i++){
+      if (prevTypes[i]!=="warmup" && ex){
+        const beat = prevSetActual(dayId, editing.exId, i, ex.mode==="time"?"time":"reps");
+        if (beat!=null && isFinite(beat) && +beat>+((+prevVals[i])||0)) prevVals[i] = beat;
+      }
+    }
     $("#add-ex-weight").value = base.weight!=null ? base.weight : 0;
     if (editing.focus && $("#add-ex-focus", host)) $("#add-ex-focus").value = editing.focus;
   }
@@ -4843,6 +4873,69 @@ function buildSession(day, entries, recovery){
   return { completedSets, recovery:recovery||{} };
 }
 
+/* PR carry-forward: when a logged set beats its stored target, that PR becomes
+   the new stored target (all non-warmup set types — regular, drop, failure).
+   Only upward: a bad day never lowers targets; misses are the coach's job.
+   Runs at session-save time (before the coach is produced) so the routine
+   editor, the edit form, and the next Log screen all agree. Shared-plan sync
+   propagates the PR to every routine using the exercise. */
+function carryPRsForward(day, completedSets){
+  if (!day || !Array.isArray(completedSets)) return;
+  const byExIdx = {};
+  completedSets.forEach(c=>{
+    if (c==null) return;
+    const k = c.exId+"::"+c.setIndex;
+    if (!byExIdx[k]) byExIdx[k] = c;
+  });
+  day.exercises.forEach(de=>{
+    const ex = getEx(de.exId);
+    if (!ex) return;
+    let changed = false;
+    const n = Math.max(1, de.targetSets||1);
+    const isTime = ex.mode==="time";
+    // Ensure per-set arrays exist so PRs land per set, not just on the fallback.
+    if (isTime && !Array.isArray(de.setTimes)){
+      de.setTimes = Array.from({length:n}, ()=>de.time||ex.defaultTime||30);
+    } else if (!isTime && !Array.isArray(de.setReps)){
+      de.setReps = Array.from({length:n}, ()=>de.reps||ex.defaultReps||8);
+    }
+    for (let i=0;i<n;i++){
+      if (setTypeOf(de,i)==="warmup") continue;
+      const c = byExIdx[de.exId+"::"+i];
+      if (!c) continue;
+      if (isTime){
+        const actual = +c.time;
+        const stored = +setTarget(de,"time",i);
+        if (isFinite(actual) && actual>0 && isFinite(stored) && actual>stored){
+          de.setTimes[i] = actual;
+          if (i===0) de.time = actual;
+          changed = true;
+        }
+      } else {
+        const actual = +c.reps;
+        const stored = +setTarget(de,"reps",i);
+        if (isFinite(actual) && actual>0 && isFinite(stored) && actual>stored){
+          de.setReps[i] = actual;
+          if (i===0) de.reps = actual;
+          changed = true;
+        }
+        if (ex.mode==="weight"){
+          const wActual = (c.weight==null||c.weight==="") ? null : +c.weight;
+          const wStored = +(de.weight||0);
+          if (wActual!=null && isFinite(wActual) && isFinite(wStored) && wActual>wStored){
+            de.weight = wActual;
+            changed = true;
+          }
+        }
+      }
+    }
+    if (changed){
+      de.modifiedAt = Date.now();
+      syncExercisePlan(de.exId, de);
+    }
+  });
+}
+
 function saveLogSession(){
   // Guard against double-clicks on "Generate coach suggestions": each save must
   // produce exactly one session + one coach record, even while the async AI
@@ -4856,6 +4949,10 @@ function saveLogSession(){
     completedSets, recovery, finalized: false
   };
   state.sessions.push(session);
+  // A PR is the new target even when the coach stays quiet: carry any set that
+  // beat its stored target forward into the shared plan before the coach runs,
+  // so the next Log screen, the routine list, and the edit form all agree.
+  try{ carryPRsForward(day, completedSets); }catch(e){}
   state.pending.push({ id:"pend-"+uid(), sessionId: session.id, generatedAt: nowISO(), suggestions:[] });
   saveState();
   logCtx.session = session;
