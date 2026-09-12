@@ -1317,6 +1317,11 @@
   .pill.rest { color: var(--amber); background: var(--amber-soft); border-color: var(--amber-line); }
   .rest-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; }
   .rest-row .field { flex: 1 1 140px; margin: 0; }
+  /* ---------- Between-exercise rest gaps (routine editor) ---------- */
+  .rest-gap { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin: .45rem 0 .45rem 1.7rem; padding: .5rem .75rem; border: 1px dashed var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+  .rest-gap .micro { margin: 0; }
+  .rest-gap input[type=number] { width: 110px; font-family: var(--font-mono); }
+  .rest-gap-add { border-style: dashed; }
   /* ---------- Effort slider (0.5 steps) ---------- */
   .effort { margin: .8rem 0 .2rem; border: 1px dashed var(--line); border-radius: var(--r-md); padding: .8rem .9rem .7rem; background: var(--glass-faint); transition: border-color .25s, background .25s; }
   .effort.rated { border-style: solid; border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-soft), transparent); }
@@ -1913,8 +1918,10 @@ function effectiveRestSec(de, ex, day){
 function effectiveRestAfterSec(de, day){
   const a = de ? normRestSec(de.restAfterSec) : null;
   if (a != null) return a;
-  const c = day ? normRestSec(day.defaultRestSec) : null;
-  return c;
+  // no specific transition rest: inherit the previous exercise's own rest
+  // (its entry override, library default, then the routine default, in order)
+  const ex = de ? getEx(de.exId) : null;
+  return effectiveRestSec(de, ex, day);
 }
 function restSourceLabel(de, ex, day){
   if (de && normRestSec(de.restSec) != null) return "this routine";
@@ -3673,11 +3680,9 @@ function restPillsFor(de, dayId){
   const day = dayId ? getDay(dayId) : null;
   const ex = getEx(de.exId);
   const r = effectiveRestSec(de, ex, day);
-  const ra = day ? effectiveRestAfterSec(de, day) : null;
-  let out = "";
-  if (r != null) out += ' <span class="pill rest" title="Rest between sets · '+esc(restSourceLabel(de, ex, day))+'">rest '+esc(fmtRest(r))+'</span>';
-  if (ra != null && day && (day.exercises||[]).length > 1) out += ' <span class="pill time" title="Rest after this exercise, before the next one">after '+esc(fmtRest(ra))+'</span>';
-  return out;
+  // transition rests render as their own gap slots between rows, not as pills
+  if (r != null) return ' <span class="pill rest" title="Rest between sets · '+esc(restSourceLabel(de, ex, day))+'">rest '+esc(fmtRest(r))+'</span>';
+  return "";
 }
 function rowHtml(de, dayId){
   const it = exRowInnerHtml(de, dayId);
@@ -3711,7 +3716,69 @@ function supersetBandHtml(day, grp, members){
   '</div>';
 }
 function editorUnitsHtml(day){
-  return dayUnits(day).map(unit => unit.group ? supersetBandHtml(day, unit.group, unit.entries) : rowHtml(unit.entries[0], day.id)).join("");
+  const units = dayUnits(day);
+  return units.map((unit, i) => {
+    const html = unit.group ? supersetBandHtml(day, unit.group, unit.entries) : rowHtml(unit.entries[0], day.id);
+    const gap = (i < units.length - 1) ? restGapHtml(day, unit) : "";
+    return html + gap;
+  }).join("");
+}
+/* Transition rest slot between two routine units. Stored on the previous
+   unit's last entry (de.restAfterSec); when unset the gap inherits the
+   previous exercise's own rest. Rendered only in logging mode. */
+function restGapHtml(day, unit){
+  if (!state.profile.loggingMode) return "";
+  const prev = unit && unit.entries ? unit.entries[unit.entries.length - 1] : null;
+  if (!prev) return "";
+  const specific = normRestSec(prev.restAfterSec);
+  if (specific != null){
+    return '<div class="rest-gap" data-gap="'+prev.exId+'">'+
+      '<span class="pill rest">rest '+esc(fmtRest(specific))+'</span>'+
+      '<span class="micro">between exercises · specific</span>'+
+      '<button type="button" class="btn ghost small" data-gap-edit="'+prev.exId+'">edit</button>'+
+      '<button type="button" class="btn ghost small" data-gap-clear="'+prev.exId+'">clear</button>'+
+    '</div>';
+  }
+  const ex = getEx(prev.exId);
+  const fallback = effectiveRestSec(prev, ex, day);
+  const inh = fallback != null ? '<span class="micro">inherits '+esc(fmtRest(fallback))+' from '+esc(ex ? ex.name : "previous exercise")+'</span>' : "";
+  return '<div class="rest-gap" data-gap="'+prev.exId+'">'+
+    '<button type="button" class="btn ghost small rest-gap-add" data-gap-add="'+prev.exId+'">+ add specific rest time</button>'+
+    inh+
+  '</div>';
+}
+/* Swap one gap slot for an inline seconds editor. */
+function openGapEditor(dayId, prevExId){
+  const day = getDay(dayId);
+  const slot = document.querySelector('.rest-gap[data-gap="'+prevExId+'"]');
+  if (!day || !slot) return;
+  const de = day.exercises.find(x => x.exId === prevExId);
+  if (!de) return;
+  const cur = normRestSec(de.restAfterSec);
+  slot.innerHTML =
+    '<span class="micro">rest between exercises (sec)</span>'+
+    '<input type="number" min="0" max="3600" step="5" id="gap-in" value="'+(cur == null ? "" : cur)+'" placeholder="e.g. 150"/>'+
+    '<button type="button" class="btn primary small" id="gap-ok">Save</button>'+
+    '<button type="button" class="btn ghost small" id="gap-cancel">Cancel</button>';
+  const inp = $("#gap-in", slot);
+  if (inp && inp.focus) inp.focus();
+  const commit = ()=>{
+    const raw = inp ? inp.value.trim() : "";
+    if (raw === ""){ de.restAfterSec = null; }
+    else {
+      const v = normRestSec(+raw);
+      if (v == null){ toast("Enter rest in seconds, 0-3600"); return; }
+      de.restAfterSec = v;
+    }
+    saveState(); render();
+    toast(de.restAfterSec == null ? "Specific rest cleared — inherits the previous exercise" : "Rest between exercises: " + fmtRest(de.restAfterSec));
+  };
+  $("#gap-ok", slot).addEventListener("click", commit);
+  $("#gap-cancel", slot).addEventListener("click", ()=>render());
+  if (inp) inp.addEventListener("keydown", ev=>{
+    if (ev.key === "Enter") commit();
+    else if (ev.key === "Escape") render();
+  });
 }
 /* Equalize a superset's round count across every member: lengthen or trim the
    per-set target/type arrays, stamp the change, and propagate through the
@@ -3852,6 +3919,21 @@ function renderWorkoutEditor(){
   $$(".super-sets-in", s).forEach(inp=>inp.addEventListener("change", ev=>{
     if(!d) return;
     setSupersetRounds(d.id, inp.dataset.band, +inp.value);
+  }));
+  /* Between-exercise rest gaps: add / edit / clear a specific transition rest. */
+  $$("[data-gap-add]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openGapEditor(d.id, b.dataset.gapAdd);
+  }));
+  $$("[data-gap-edit]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openGapEditor(d.id, b.dataset.gapEdit);
+  }));
+  $$("[data-gap-clear]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    if(!d) return;
+    const de = d.exercises.find(x=>x.exId===b.dataset.gapClear);
+    if (de){ de.restAfterSec = null; saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
   }));
 }
 
@@ -4109,10 +4191,7 @@ function openAddEx(dayId, exId){
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
       (state.profile.loggingMode
-        ? '<div class="grid two" style="margin-top:.6rem">'+
-            '<label class="field"><span>Rest between sets (sec, blank = inherit)</span><input id="add-ex-rest" type="number" min="0" max="3600" step="5" placeholder="e.g. 120"/></label>'+
-            '<label class="field"><span>Rest after this exercise (sec, blank = routine default)</span><input id="add-ex-rest-after" type="number" min="0" max="3600" step="5" placeholder="e.g. 150"/></label>'+
-          '</div>'+
+        ? '<label class="field" style="margin-top:.6rem"><span>Rest between sets (sec, blank = inherit)</span><input id="add-ex-rest" type="number" min="0" max="3600" step="5" placeholder="e.g. 120"/></label>'+
           '<p class="micro" id="add-rest-hint" style="margin-top:.2rem"></p>'
         : "")+
       '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure). When the last session beat the stored target, inputs show that PR (beat-N), same as the Log tab.</p>'+
@@ -4234,8 +4313,7 @@ function openAddEx(dayId, exId){
     if (editing.focus && $("#add-ex-focus", host)) $("#add-ex-focus").value = editing.focus;
     const erEl = $("#add-ex-rest", host);
     if (erEl) erEl.value = (editing.restSec == null ? "" : editing.restSec);
-    const eraEl = $("#add-ex-rest-after", host);
-    if (eraEl) eraEl.value = (editing.restAfterSec == null ? "" : editing.restAfterSec);
+    // transition rests live in the gap slots between rows now — never touched here
   }
   updateFields(!editing);
   $("#add-ex-cancel").addEventListener("click", ()=>render());
@@ -4265,16 +4343,13 @@ function openAddEx(dayId, exId){
     if (!restIn){
       // rest editing hidden (logging mode off): keep whatever the entry had
       entry.restSec = editing ? (editing.restSec != null ? editing.restSec : null) : null;
-      entry.restAfterSec = editing ? (editing.restAfterSec != null ? editing.restAfterSec : null) : null;
     } else {
       const restRaw = restIn.value.trim();
       entry.restSec = restRaw === "" ? null : normRestSec(+restRaw);
       if (restRaw !== "" && entry.restSec == null){ toast("Enter rest in seconds, 0-3600"); return; }
-      const restAfterIn = $("#add-ex-rest-after", host);
-      const restAfterRaw = restAfterIn ? restAfterIn.value.trim() : "";
-      entry.restAfterSec = restAfterRaw === "" ? null : normRestSec(+restAfterRaw);
-      if (restAfterRaw !== "" && entry.restAfterSec == null){ toast("Enter rest-after in seconds, 0-3600"); return; }
     }
+    // transition rests are edited from the gap slots between rows — always preserve here
+    entry.restAfterSec = editing ? (editing.restAfterSec != null ? editing.restAfterSec : null) : null;
     const focusEl = $("#add-ex-focus", host);
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
     else delete entry.focus;
@@ -4738,7 +4813,9 @@ function renderLogExerciseStep(s, day, step, total){
   }).join("");
   const doneCount = logSetsDone(entry);
   const restBetween = effectiveRestSec(de, ex, day);
-  const restAfter = effectiveRestAfterSec(de, day);
+  // the transition line shows only a specifically-set gap rest; otherwise the
+  // gap simply inherits the rest above, so repeating it would be noise
+  const restAfter = normRestSec(de.restAfterSec);
   const isLastEx = logCtx.idx >= total - 1;
   s.innerHTML =
     '<div class="wrap"><div class="phase active">' +
