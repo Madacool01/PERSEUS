@@ -1934,10 +1934,25 @@ function restSourceLabel(de, ex, day){
 /* Rest countdown state. One global timer: starting a new rest replaces the
    old one, and navigation re-renders clear it. Pure countdown math lives in
    restTick() so jsdom tests can drive it without waiting. */
-var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false };
+var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false, started: false };
 function restClear(){
   if (restTimer.timer){ try{ clearInterval(restTimer.timer); }catch(e){} restTimer.timer = 0; }
+  restTimer.running = false; restTimer.started = false;
+}
+function restPause(){
+  if (!restTimer.running) return;
+  if (restTimer.timer){ try{ clearInterval(restTimer.timer); }catch(e){} restTimer.timer = 0; }
   restTimer.running = false;
+  restPaint();
+}
+function restResume(){
+  if (restTimer.running || restTimer.left <= 0) return false;
+  restTimer.running = true; restTimer.started = true;
+  restPaint();
+  try{
+    restTimer.timer = setInterval(restTick, 1000);
+  }catch(e){ restTimer.timer = 0; }
+  return true;
 }
 function restTick(){
   if (restTimer.left > 0) restTimer.left--;
@@ -1949,7 +1964,7 @@ function restStart(sec, label){
   const s = normRestSec(sec);
   if (s == null || s <= 0) return false;
   restTimer.total = s; restTimer.left = s; restTimer.label = label || "Rest";
-  restTimer.running = true;
+  restTimer.running = true; restTimer.started = true;
   restPaint();
   try{
     restTimer.timer = setInterval(restTick, 1000);
@@ -1966,7 +1981,10 @@ function restPaint(){
     el.style.width = Math.max(0, Math.min(100, p)) + "%";
   });
   $$(".rest-state").forEach(el=>{
-    el.textContent = !restTimer.running && restTimer.left <= 0 ? "done" : (restTimer.running ? "resting" : "paused");
+    el.textContent = restTimer.running ? "resting" : (restTimer.left <= 0 ? "done" : (restTimer.started ? "paused" : "ready"));
+  });
+  $$("[data-rest-pause]").forEach(el=>{
+    el.textContent = restTimer.running ? "Pause" : (restTimer.started ? "Resume" : "Pause");
   });
 }
 function restDone(){
@@ -4796,6 +4814,7 @@ function restBarHtml(betweenSec, afterSec, betweenSrc, isLast){
     '<div class="rest-track" aria-hidden="true"><div class="rest-fill"></div></div>' +
     '<div class="rest-btns">' +
       '<button type="button" class="btn primary" data-rest-start>Start rest</button>' +
+      '<button type="button" class="rest-chip" data-rest-pause>Pause</button>' +
       '<button type="button" class="rest-chip" data-rest-adj="-15">-15s</button>' +
       '<button type="button" class="rest-chip" data-rest-adj="15">+15s</button>' +
       '<button type="button" class="rest-chip" data-rest-skip>Skip</button>' +
@@ -4814,6 +4833,15 @@ function bindRestBar(s, fallbackSec){
     if (sec == null){ toast("No rest prescribed for this exercise"); return; }
     restStart(sec, "Rest");
     startBtn.textContent = "Restart";
+  });
+  const pauseBtn = $("[data-rest-pause]", bar);
+  if (pauseBtn) pauseBtn.addEventListener("click", ()=>{
+    if (restTimer.running) restPause();
+    else if (restTimer.left > 0) restResume();
+    else if (base != null){
+      restStart(base, "Rest");
+      if (startBtn) startBtn.textContent = "Restart";
+    }
   });
   $$("[data-rest-adj]", bar).forEach(b=>b.addEventListener("click", ()=>{
     const d = +b.dataset.restAdj || 0;
