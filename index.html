@@ -4862,6 +4862,13 @@ function bindRestBar(s, fallbackSec){
   if (base != null){ restTimer.total = base; restTimer.left = base; restPaint(); }
   const startBtn = $("[data-rest-start]", bar);
   if (startBtn) startBtn.addEventListener("click", ()=>{
+    // paused: reset the clock to the full rest but stay paused until play —
+    // resetting is not an instruction to start again
+    if (restTimer.started && !restTimer.running && restTimer.left > 0){
+      restTimer.left = restTimer.total > 0 ? restTimer.total : (base || 0);
+      restPaint();
+      return;
+    }
     const sec = restTimer.left > 0 && restTimer.left !== restTimer.total ? restTimer.left : base;
     if (sec == null){ toast("No rest prescribed for this exercise"); return; }
     restStart(sec, "Rest");
