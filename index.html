@@ -1314,6 +1314,32 @@
   .rest-chip { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .06em; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--ink-2); padding: .3rem .7rem; cursor: pointer; }
   .rest-chip:hover { border-color: var(--accent-line); color: var(--ink); }
   .rest-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+  /* ---------- Rest pause/play morphing icon button ---------- */
+  .rest-icon-btn {
+    width: 34px; height: 34px; flex: 0 0 auto;
+    display: inline-grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 50%;
+    background: var(--surface-2); color: var(--ink-2); cursor: pointer;
+    transition: border-color .2s, color .2s, background .2s, transform .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rest-icon-btn:hover { border-color: var(--accent-line); color: var(--accent-deep); background: var(--accent-soft); }
+  .rest-icon-btn:active { transform: scale(.9); }
+  /* True play-triangle / pause-bars morph: both glyphs live in one SVG and
+     cross-transform (scale + fade with a spring ease) when .playing toggles.
+     transform-box keeps the scaling centered on each glyph. */
+  .rest-icon-btn svg.pp { display: block; width: 14px; height: 14px; fill: currentColor; }
+  .rest-icon-btn .pp-play, .rest-icon-btn .pp-pause {
+    transform-box: fill-box; transform-origin: center;
+    transition: opacity .2s ease, transform .3s cubic-bezier(.22,1.4,.36,1);
+  }
+  .rest-icon-btn .pp-play { opacity: 0; transform: scale(.4); }
+  .rest-icon-btn .pp-pause { opacity: 1; transform: scale(1); }
+  .rest-icon-btn.playing .pp-play { opacity: 1; transform: scale(1); }
+  .rest-icon-btn.playing .pp-pause { opacity: 0; transform: scale(.4); }
+  @media (prefers-reduced-motion: reduce) {
+    .rest-icon-btn .pp-play, .rest-icon-btn .pp-pause { transition: none; }
+  }
   .pill.rest { color: var(--amber); background: var(--amber-soft); border-color: var(--amber-line); }
   .rest-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; }
   .rest-row .field { flex: 1 1 140px; margin: 0; }
@@ -1984,7 +2010,9 @@ function restPaint(){
     el.textContent = restTimer.running ? "resting" : (restTimer.left <= 0 ? "done" : (restTimer.started ? "paused" : "ready"));
   });
   $$("[data-rest-pause]").forEach(el=>{
-    el.textContent = restTimer.running ? "Pause" : (restTimer.started ? "Resume" : "Pause");
+    // running -> pause glyph; otherwise the bars fold into play (resume/start)
+    el.classList.toggle("playing", !restTimer.running);
+    el.setAttribute("aria-label", restTimer.running ? "Pause rest" : "Resume rest");
   });
 }
 function restDone(){
@@ -4814,7 +4842,7 @@ function restBarHtml(betweenSec, afterSec, betweenSrc, isLast){
     '<div class="rest-track" aria-hidden="true"><div class="rest-fill"></div></div>' +
     '<div class="rest-btns">' +
       '<button type="button" class="btn primary" data-rest-start>Start rest</button>' +
-      '<button type="button" class="rest-chip" data-rest-pause>Pause</button>' +
+      '<button type="button" class="rest-icon-btn" data-rest-pause aria-label="Pause rest"><svg class="pp" viewBox="0 0 16 16" aria-hidden="true"><polygon class="pp-play" points="4.5,2.5 13.5,8 4.5,13.5"/><g class="pp-pause"><rect x="3" y="2.5" width="3.4" height="11" rx="1.2"/><rect x="9.6" y="2.5" width="3.4" height="11" rx="1.2"/></g></svg></button>' +
       '<button type="button" class="rest-chip" data-rest-adj="-15">-15s</button>' +
       '<button type="button" class="rest-chip" data-rest-adj="15">+15s</button>' +
       '<button type="button" class="rest-chip" data-rest-skip>Skip</button>' +
