@@ -1252,6 +1252,11 @@
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
   .set-cell label.field { margin: .55rem 0; }
+  /* Per-set done checkbox: ticking it marks the set finished and auto-starts
+     the rest timer (logging mode only). */
+  .set-done { display: flex; align-items: center; gap: .45rem; margin: .7rem 0 0; font-size: .82rem; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+  .set-done input[type=checkbox] { width: 16px; height: 16px; flex: none; accent-color: var(--accent); cursor: pointer; }
+  .set-done small { font-weight: 400; color: var(--ink-3); }
   /* Superset round screen: one wide panel per movement, one set each */
   .round-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 1.4rem 0; }
   .round-cell { min-width: 0; }
@@ -4880,6 +4885,20 @@ function bindRestBar(s, fallbackSec){
   const skip = $("[data-rest-skip]", bar);
   if (skip) skip.addEventListener("click", ()=>{ restClear(); restTimer.left = 0; restPaint(); toast("Rest skipped"); });
 }
+/* Auto-start the rest countdown after a set is marked done (done checkbox or
+   first number entry). Never interrupts a running timer; a 0/unset rest is a
+   no-op. Last sets resolve through the transition chain: specific gap rest,
+   then the exercise's own rest, then the routine default. */
+function maybeAutoStartRest(sec, isLast){
+  if (!state.profile.loggingMode) return;
+  const s = normRestSec(sec);
+  if (s == null || s <= 0) return;
+  if (restTimer.running) return;
+  restStart(s, "Rest");
+  const sb = document.querySelector("[data-rest-start]");
+  if (sb) sb.textContent = "Restart";
+  toast(isLast ? "Last set — resting " + fmtRest(s) + " before the next exercise" : "Set done — resting " + fmtRest(s));
+}
 /* One screen per standalone exercise: every one of its sets as a cell. */
 function renderLogExerciseStep(s, day, step, total){
   const de = step.de;
@@ -4889,6 +4908,7 @@ function renderLogExerciseStep(s, day, step, total){
   const showTime = ex.mode==="time";
   const showWeight = ex.weightAvailable || ex.mode==="weight";
   const showReps = ex.mode!=="time";
+  const logMode = !!state.profile.loggingMode;
   const setCells = entry.sets.map((set,i)=>{
     const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
     const plan = de;
@@ -4904,6 +4924,7 @@ function renderLogExerciseStep(s, day, step, total){
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s) — beat '+beat+'s' : "Hold (s)"), i) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), i) : "") +
       effortSliderHtml(set, i)+
+      (logMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-i="'+i+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
   }).join("");
@@ -4925,7 +4946,7 @@ function renderLogExerciseStep(s, day, step, total){
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
       '<div class="log-count"><span>Exercise '+(logCtx.idx+1)+' of '+total+'</span><span><b>'+doneCount+'/'+entry.sets.length+'</b> sets logged</span></div>' +
       '<div class="log-step fx-in">' +
-        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+'</p>' +
+        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+(logMode && (restBetween!=null||restAfter!=null)?' Tick Done on a set — or just enter reps — to start the rest timer automatically.':'')+'</p>' +
         restBarHtml(restBetween, restAfter, restSourceLabel(de, ex, day), isLastEx) +
         '<div class="set-grid">'+setCells+'</div>' +
         '<div class="btn-row log-actions">' +
@@ -4949,6 +4970,26 @@ function renderLogExerciseStep(s, day, step, total){
   };
   $$(".s-reps,.s-time,.s-weight", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
   $$(".s-note", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
+  /* Done checkbox + first number entry auto-start the rest timer. The first
+     completion wins per set; re-edits never restart, and a running timer is
+     never interrupted. The last set resolves the transition rest. */
+  const markSetDone = (i)=>{
+    const set = entry.sets[i];
+    if (!set || set.done) return;
+    set.done = true;
+    const cb = s.querySelector('.s-done[data-i="'+i+'"]');
+    if (cb) cb.checked = true;
+    const isLast = i >= entry.sets.length - 1;
+    maybeAutoStartRest(isLast ? effectiveRestAfterSec(de, day) : effectiveRestSec(de, ex, day), isLast);
+  };
+  $$(".s-done", s).forEach(cb=>cb.addEventListener("change", ()=>{
+    const i = +cb.dataset.i;
+    if (cb.checked) markSetDone(i);
+    else if (entry.sets[i]) entry.sets[i].done = false;
+  }));
+  $$(".s-reps,.s-time", s).forEach(inp=>inp.addEventListener("input", ()=>{
+    if (inp.value !== "" && inp.value != null) markSetDone(+inp.dataset.i);
+  }));
   $$(".effort-range", s).forEach(inp=>{
     const i = +inp.dataset.i;
     inp.addEventListener("input", ()=>{
@@ -5015,6 +5056,7 @@ function renderLogRoundStep(s, day, step, total){
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
       effortSliderHtml(set, r)+
+      (roundLogMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-exid="'+de.exId+'" data-set="'+r+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
       '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
     '</div>';
   };
@@ -5029,6 +5071,7 @@ function renderLogRoundStep(s, day, step, total){
   const firstEx = getEx(members[0].exId);
   const roundDone = members.reduce((a,de)=>{ const e=logCtx.entries[de.exId]; return a + (e && e.sets[r] ? logSetsDone({sets:[e.sets[r]]}) : 0); }, 0);
   const roundRest = normRestSec(day.defaultRestSec);
+  const roundLogMode = !!state.profile.loggingMode;
   s.innerHTML =
     '<div class="wrap"><div class="phase active">' +
       '<div class="log-head fx-in">' +
@@ -5068,6 +5111,32 @@ function renderLogRoundStep(s, day, step, total){
     });
   };
   $$(".s-reps,.s-time,.s-weight,.s-note", s).forEach(inp=>inp.addEventListener("input", readPanels));
+  /* Done checkbox + first number entry auto-start the round rest. */
+  const markRoundSetDone = (exId, silent)=>{
+    const e2 = logCtx.entries[exId];
+    const set = e2 && e2.sets[r];
+    if (!set || set.done) return;
+    set.done = true;
+    if (!silent){
+      const cb = s.querySelector('.s-done[data-exid="'+exId+'"]');
+      if (cb) cb.checked = true;
+    }
+    maybeAutoStartRest(roundRest, false);
+  };
+  $$(".s-done", s).forEach(cb=>cb.addEventListener("change", ()=>{
+    if (!cb.checked){
+      const e2 = logCtx.entries[cb.dataset.exid];
+      if (e2 && e2.sets[+cb.dataset.set]) e2.sets[+cb.dataset.set].done = false;
+      return;
+    }
+    markRoundSetDone(cb.dataset.exid, true);
+  }));
+  $$(".round-cell .s-reps,.round-cell .s-time", s).forEach(inp=>inp.addEventListener("input", ()=>{
+    if (inp.value !== "" && inp.value != null){
+      const cell = inp.closest(".round-cell");
+      if (cell) markRoundSetDone(cell.dataset.exid, false);
+    }
+  }));
   $$(".effort-range", s).forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const cell = inp.closest(".round-cell");
