@@ -1318,9 +1318,11 @@
   .rest-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; }
   .rest-row .field { flex: 1 1 140px; margin: 0; }
   /* ---------- Between-exercise rest gaps (routine editor) ---------- */
-  .rest-gap { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin: .45rem 0 .45rem 1.7rem; padding: .5rem .75rem; border: 1px dashed var(--line); border-radius: var(--r-md); background: var(--surface-2); }
-  .rest-gap .micro { margin: 0; }
-  .rest-gap input[type=number] { width: 110px; font-family: var(--font-mono); }
+  .rest-gap { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin: .05rem 0 .05rem 2.1rem; padding: .1rem 0 .1rem .6rem; border: none; border-left: 2px dashed var(--line); border-radius: 0; background: transparent; }
+  .rest-gap .micro { margin: 0; font-size: 11px; }
+  .rest-gap .btn { padding: .22rem .6rem; font-size: .75rem; }
+  .rest-gap input[type=number] { width: 90px; padding: .35rem .5rem; font-size: .85rem; }
+  .rest-gap .pill { font-size: .58rem; padding: .18rem .5rem; }
   .rest-gap-add { border-style: dashed; }
   /* ---------- Effort slider (0.5 steps) ---------- */
   .effort { margin: .8rem 0 .2rem; border: 1px dashed var(--line); border-radius: var(--r-md); padding: .8rem .9rem .7rem; background: var(--glass-faint); transition: border-color .25s, background .25s; }
