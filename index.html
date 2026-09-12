@@ -2641,13 +2641,15 @@ function openExEditor(id){
       '<p class="micro" style="margin:.45rem 0 1.1rem">Anchors: 100% ≈ pull-ups &amp; hangs · ~67% ≈ push-ups · ~75% ≈ squats · 0% ≈ pure dumbbell lifts. Leave unset if unsure — the exercise stays out of Total volume until you set it here or estimate it with AI from the Exercise Library.</p>'+
 
       '<div class="field-head" style="margin-top:.6rem"><span>Rest between sets</span><span class="hint">used by logging mode timers · routine defaults win when set</span></div>'+
-      '<div class="lf-chips" role="group" aria-label="Rest between sets">'+restChipsHtml+'</div>'+
-      '<div class="lf-tools">'+
-        '<label>sec <input type="number" id="ex-rest-num" min="0" max="3600" step="5" value="'+(curRest==null?"":curRest)+'" placeholder="e.g. 90"/></label>'+
-        '<span class="lf-val" id="ex-rest-val">'+(curRest==null?"not set — falls back to routine default":fmtRest(curRest)+" between sets")+'</span>'+
-        '<button type="button" class="btn ghost small" id="ex-rest-clear" title="Remove the rest default">Unset</button>'+
-      '</div>'+
-      '<p class="micro" style="margin:.45rem 0 1.1rem">Leave unset to inherit the routine default rest. Set 0 for no rest (superset-style back to back).</p>'+
+      (state.profile.loggingMode
+        ? '<div class="lf-chips" role="group" aria-label="Rest between sets">'+restChipsHtml+'</div>'+
+          '<div class="lf-tools">'+
+            '<label>sec <input type="number" id="ex-rest-num" min="0" max="3600" step="5" value="'+(curRest==null?"":curRest)+'" placeholder="e.g. 90"/></label>'+
+            '<span class="lf-val" id="ex-rest-val">'+(curRest==null?"not set — falls back to routine default":fmtRest(curRest)+" between sets")+'</span>'+
+            '<button type="button" class="btn ghost small" id="ex-rest-clear" title="Remove the rest default">Unset</button>'+
+          '</div>'+
+          '<p class="micro" style="margin:.45rem 0 1.1rem">Leave unset to inherit the routine default rest. Set 0 for no rest (superset-style back to back).</p>'
+        : '<p class="micro" style="margin:.45rem 0 1.1rem">Rest times are set here when logging mode is on (Settings → Workout logging).</p>')+
 
       '<div class="field-head"><span>Equipment</span></div>'+
       '<div class="eq-cards">'+eqTags+'</div>'+
@@ -3667,6 +3669,7 @@ function exRowInnerHtml(de, dayId){
 }
 function restPillsFor(de, dayId){
   if (!de) return "";
+  if (!state.profile.loggingMode) return "";
   const day = dayId ? getDay(dayId) : null;
   const ex = getEx(de.exId);
   const r = effectiveRestSec(de, ex, day);
@@ -3776,14 +3779,16 @@ function renderWorkoutEditor(){
           '<div class="micro" id="day-type-desc" style="margin-top:.5rem">'+esc(SESSION_TYPES[dayType].desc)+'</div>'+
         '</label>'+
       '</div>'+
-      '<div class="day-head" style="border:none;margin:0 0 1rem;padding:0">'+
-        '<label class="field" style="margin:0;flex:1"><span>Default rest for this routine (sec)</span>'+
-          '<div class="rest-row"><input id="day-rest" type="number" min="0" max="3600" step="5" value="'+(normRestSec(d.defaultRestSec)==null?"":normRestSec(d.defaultRestSec))+'" placeholder="e.g. 90"/>'+
-          '<button type="button" class="btn small" id="day-rest-save">Save</button>'+
-          '<button type="button" class="btn ghost small" id="day-rest-clear">Clear</button></div>'+
-          '<div class="micro" style="margin-top:.5rem">Fallback between-sets rest when an exercise has none set. Also used as the rest after each exercise and each superset round unless overridden per exercise below.</div>'+
-        '</label>'+
-      '</div>'+      (exRows || '<div class="muted small">No exercises yet. Add one to get started.</div>') +
+      (state.profile.loggingMode
+        ? '<div class="day-head" style="border:none;margin:0 0 1rem;padding:0">'+
+          '<label class="field" style="margin:0;flex:1"><span>Default rest for this routine (sec)</span>'+
+            '<div class="rest-row"><input id="day-rest" type="number" min="0" max="3600" step="5" value="'+(normRestSec(d.defaultRestSec)==null?"":normRestSec(d.defaultRestSec))+'" placeholder="e.g. 90"/>'+
+            '<button type="button" class="btn small" id="day-rest-save">Save</button>'+
+            '<button type="button" class="btn ghost small" id="day-rest-clear">Clear</button></div>'+
+            '<div class="micro" style="margin-top:.5rem">Fallback between-sets rest when an exercise has none set. Also used as the rest after each exercise and each superset round unless overridden per exercise below.</div>'+
+          '</label>'+
+        '</div>'
+        : "")+      (exRows || '<div class="muted small">No exercises yet. Add one to get started.</div>') +
       '<div class="addhost" data-day="'+d.id+'"></div>' +
     '</div></div>';
   $$("[data-day-type]", s).forEach(b=>b.addEventListener("click", ()=>{
@@ -4103,11 +4108,13 @@ function openAddEx(dayId, exId){
         : '')+
       '<div id="add-per-set"></div>'+
       '<label class="field" id="add-field-weight" style="display:none"><span>Working weight</span><input id="add-ex-weight" type="number" min="0" step="0.5" value="0"/></label>'+
-      '<div class="grid two" style="margin-top:.6rem">'+
-        '<label class="field"><span>Rest between sets (sec, blank = inherit)</span><input id="add-ex-rest" type="number" min="0" max="3600" step="5" placeholder="e.g. 120"/></label>'+
-        '<label class="field"><span>Rest after this exercise (sec, blank = routine default)</span><input id="add-ex-rest-after" type="number" min="0" max="3600" step="5" placeholder="e.g. 150"/></label>'+
-      '</div>'+
-      '<p class="micro" id="add-rest-hint" style="margin-top:.2rem"></p>'+
+      (state.profile.loggingMode
+        ? '<div class="grid two" style="margin-top:.6rem">'+
+            '<label class="field"><span>Rest between sets (sec, blank = inherit)</span><input id="add-ex-rest" type="number" min="0" max="3600" step="5" placeholder="e.g. 120"/></label>'+
+            '<label class="field"><span>Rest after this exercise (sec, blank = routine default)</span><input id="add-ex-rest-after" type="number" min="0" max="3600" step="5" placeholder="e.g. 150"/></label>'+
+          '</div>'+
+          '<p class="micro" id="add-rest-hint" style="margin-top:.2rem"></p>'
+        : "")+
       '<p class="micro" style="margin-top:.4rem">Set types: Regular · Warm-up (prep, excluded from progression) · Drop set (to failure, drop load, continue) · Failure (AMRAP to muscular failure). When the last session beat the stored target, inputs show that PR (beat-N), same as the Log tab.</p>'+
       '<p class="micro" id="add-sync-note" style="margin-top:.4rem;color:var(--green)"></p>'+
       '<div class="btn-row"><button class="btn primary" id="add-ex-ok">'+(editing?'Save changes':'Add')+'</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
@@ -4255,13 +4262,19 @@ function openAddEx(dayId, exId){
     if (ex.weightAvailable||m==="weight") entry.weight = +$("#add-ex-weight").value||0;
     else delete entry.weight;
     const restIn = $("#add-ex-rest", host);
-    const restRaw = restIn ? restIn.value.trim() : "";
-    entry.restSec = restRaw === "" ? null : normRestSec(+restRaw);
-    if (restRaw !== "" && entry.restSec == null){ toast("Enter rest in seconds, 0-3600"); return; }
-    const restAfterIn = $("#add-ex-rest-after", host);
-    const restAfterRaw = restAfterIn ? restAfterIn.value.trim() : "";
-    entry.restAfterSec = restAfterRaw === "" ? null : normRestSec(+restAfterRaw);
-    if (restAfterRaw !== "" && entry.restAfterSec == null){ toast("Enter rest-after in seconds, 0-3600"); return; }
+    if (!restIn){
+      // rest editing hidden (logging mode off): keep whatever the entry had
+      entry.restSec = editing ? (editing.restSec != null ? editing.restSec : null) : null;
+      entry.restAfterSec = editing ? (editing.restAfterSec != null ? editing.restAfterSec : null) : null;
+    } else {
+      const restRaw = restIn.value.trim();
+      entry.restSec = restRaw === "" ? null : normRestSec(+restRaw);
+      if (restRaw !== "" && entry.restSec == null){ toast("Enter rest in seconds, 0-3600"); return; }
+      const restAfterIn = $("#add-ex-rest-after", host);
+      const restAfterRaw = restAfterIn ? restAfterIn.value.trim() : "";
+      entry.restAfterSec = restAfterRaw === "" ? null : normRestSec(+restAfterRaw);
+      if (restAfterRaw !== "" && entry.restAfterSec == null){ toast("Enter rest-after in seconds, 0-3600"); return; }
+    }
     const focusEl = $("#add-ex-focus", host);
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
     else delete entry.focus;
