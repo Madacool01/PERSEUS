@@ -3782,6 +3782,47 @@ function openGapEditor(dayId, prevExId){
     else if (ev.key === "Escape") render();
   });
 }
+/* Rebuild the between-exercise gap slots in place so each one sits directly
+   under its owner row. Used live during drag-to-reorder: commitRowMove only
+   moves .ex-row elements, so without this the gaps would stay frozen while
+   rows travel and end up detached (e.g. a rest stranded above the first
+   exercise). Skipped while a gap's inline editor is open to preserve typing. */
+function refreshRestGaps(scope, dayId){
+  const day = getDay(dayId);
+  if (!day || !scope || !state.profile.loggingMode) return;
+  if (scope.querySelector("#gap-in")) return; // inline gap editor open — leave it alone
+  const rows = Array.from(scope.querySelectorAll(".ex-row"));
+  if (!rows.length) return;
+  $$(".rest-gap", scope).forEach(g=>g.remove());
+  dayUnits(day).forEach((unit, i, units) => {
+    if (i >= units.length - 1) return;
+    let row = null;
+    if (unit.group) row = rows.find(r => r.dataset.band === unit.group.id) || null;
+    else if (unit.entries[0]) row = rows.find(r => !r.dataset.band && r.dataset.exid === unit.entries[0].exId) || null;
+    if (!row || !row.parentNode) return;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = restGapHtml(day, unit);
+    const gap = tmp.firstChild;
+    if (gap) row.parentNode.insertBefore(gap, row.nextSibling);
+  });
+}
+/* Attach the add / edit / clear actions to every gap slot in a scope. */
+function bindRestGaps(scope, day){
+  if (!scope || !day) return;
+  $$("[data-gap-add]", scope).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openGapEditor(day.id, b.dataset.gapAdd);
+  }));
+  $$("[data-gap-edit]", scope).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openGapEditor(day.id, b.dataset.gapEdit);
+  }));
+  $$("[data-gap-clear]", scope).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    const de = day.exercises.find(x=>x.exId===b.dataset.gapClear);
+    if (de){ de.restAfterSec = null; saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
+  }));
+}
 /* Equalize a superset's round count across every member: lengthen or trim the
    per-set target/type arrays, stamp the change, and propagate through the
    normal cross-routine plan sync. */
@@ -3923,20 +3964,7 @@ function renderWorkoutEditor(){
     setSupersetRounds(d.id, inp.dataset.band, +inp.value);
   }));
   /* Between-exercise rest gaps: add / edit / clear a specific transition rest. */
-  $$("[data-gap-add]", s).forEach(b=>b.addEventListener("click", ev=>{
-    ev.stopPropagation();
-    openGapEditor(d.id, b.dataset.gapAdd);
-  }));
-  $$("[data-gap-edit]", s).forEach(b=>b.addEventListener("click", ev=>{
-    ev.stopPropagation();
-    openGapEditor(d.id, b.dataset.gapEdit);
-  }));
-  $$("[data-gap-clear]", s).forEach(b=>b.addEventListener("click", ev=>{
-    ev.stopPropagation();
-    if(!d) return;
-    const de = d.exercises.find(x=>x.exId===b.dataset.gapClear);
-    if (de){ de.restAfterSec = null; saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
-  }));
+  bindRestGaps(s, d);
 }
 
 /* =========================================================================
@@ -4040,6 +4068,10 @@ function commitRowMove(d){
   const anchor = rows[rows.length - 1].nextSibling; // whatever follows the last row
   if (from < to) d.row.parentNode.insertBefore(d.row, rows[to].nextSibling || anchor);
   else d.row.parentNode.insertBefore(d.row, rows[to]);
+  d.moved = true;
+  // rest gap slots are not .ex-row elements, so the move above leaves them
+  // behind — rebuild them under their owner rows or they detach visually
+  refreshRestGaps(d.scope, d.dayId);
   d.comp += (d.row.offsetTop - beforeTop);
   const lo = Math.min(from, to), hi = Math.max(from, to);
   const anim = [];
@@ -4142,6 +4174,12 @@ function rowDragEnd(){
   }
   if (!motionOK()){ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }
   else setTimeout(()=>{ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }, 340);
+  if (d.moved){
+    // commits rebuilt the gap slots live (fresh elements, no listeners) —
+    // rebuild once more against the final order and rebind their buttons
+    refreshRestGaps(scope, d.dayId);
+    bindRestGaps(scope, getDay(d.dayId));
+  }
   saveState(); // final order persisted (each commit already saved too)
 }
 
