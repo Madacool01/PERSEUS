@@ -2656,9 +2656,6 @@ function openExEditor(id){
   const loadPresets = [0, 25, 50, 67, 75, 90, 100];
   const curLoad = (typeof e.loadFactor==="number") ? Math.max(0, Math.min(100, Math.round(e.loadFactor))) : null;
   const lfChipsHtml = loadPresets.map(p=>'<button type="button" class="lf-chip'+(curLoad===p?" on":"")+'" data-lf="'+p+'">'+(p+"%")+'</button>').join("");
-  const curRest = normRestSec(e.restSec);
-  const restPresets = [30, 60, 90, 120, 150, 180];
-  const restChipsHtml = restPresets.map(p=>'<button type="button" class="lf-chip rest-chip-pick'+(curRest===p?" on":"")+'" data-rest="'+p+'">'+fmtRest(p)+'</button>').join("");
   host.innerHTML =
     '<div class="card" role="dialog" aria-modal="true" aria-label="'+(isEdit?"Edit exercise":"New exercise")+'">'+
       '<div class="day-head" style="border:none;padding:0;margin:0 0 1.1rem">'+
@@ -2699,17 +2696,6 @@ function openExEditor(id){
         '<button type="button" class="btn ghost small" id="ex-load-clear" title="Remove the load factor">Unset</button>'+
       '</div>'+
       '<p class="micro" style="margin:.45rem 0 1.1rem">Anchors: 100% ≈ pull-ups &amp; hangs · ~67% ≈ push-ups · ~75% ≈ squats · 0% ≈ pure dumbbell lifts. Leave unset if unsure — the exercise stays out of Total volume until you set it here or estimate it with AI from the Exercise Library.</p>'+
-
-      '<div class="field-head" style="margin-top:.6rem"><span>Rest between sets</span><span class="hint">used by logging mode timers · routine defaults win when set</span></div>'+
-      (state.profile.loggingMode
-        ? '<div class="lf-chips" role="group" aria-label="Rest between sets">'+restChipsHtml+'</div>'+
-          '<div class="lf-tools">'+
-            '<label>sec <input type="number" id="ex-rest-num" min="0" max="3600" step="5" value="'+(curRest==null?"":curRest)+'" placeholder="e.g. 90"/></label>'+
-            '<span class="lf-val" id="ex-rest-val">'+(curRest==null?"not set — falls back to routine default":fmtRest(curRest)+" between sets")+'</span>'+
-            '<button type="button" class="btn ghost small" id="ex-rest-clear" title="Remove the rest default">Unset</button>'+
-          '</div>'+
-          '<p class="micro" style="margin:.45rem 0 1.1rem">Leave unset to inherit the routine default rest. Set 0 for no rest (superset-style back to back).</p>'
-        : '<p class="micro" style="margin:.45rem 0 1.1rem">Rest times are set here when logging mode is on (Settings → Workout logging).</p>')+
 
       '<div class="field-head"><span>Equipment</span></div>'+
       '<div class="eq-cards">'+eqTags+'</div>'+
@@ -2840,26 +2826,6 @@ function openExEditor(id){
   });
   const lfClear = $("#ex-load-clear", host);
   if (lfClear) lfClear.addEventListener("click", ()=>{ lfTouched = true; lfVal = null; lfSync(); });
-  /* ---- rest between sets: chips / seconds input / unset (falls back to routine default) ---- */
-  let restVal = curRest, restTouched = false;
-  function restSync(){
-    $$(".rest-chip-pick", host).forEach(c=>c.classList.toggle("on", restVal!=null && (+c.dataset.rest)===restVal));
-    const num = $("#ex-rest-num", host), val = $("#ex-rest-val", host);
-    if (num) num.value = (restVal==null ? "" : restVal);
-    if (val) val.textContent = (restVal==null ? "not set — falls back to routine default" : fmtRest(restVal)+" between sets");
-  }
-  $$(".rest-chip-pick", host).forEach(c=>c.addEventListener("click", ()=>{
-    restTouched = true; restVal = normRestSec(+c.dataset.rest); restSync();
-  }));
-  const restNum = $("#ex-rest-num", host);
-  if (restNum) restNum.addEventListener("change", ()=>{
-    const v = parseInt(restNum.value, 10);
-    restTouched = true;
-    restVal = isFinite(v) ? normRestSec(v) : null;
-    restSync();
-  });
-  const restClearBtn = $("#ex-rest-clear", host);
-  if (restClearBtn) restClearBtn.addEventListener("click", ()=>{ restTouched = true; restVal = null; restSync(); });
   /* ---- photo upload: downscaled JPEG data URL kept in this closure ---- */
   let pendingImage = null;
   const pThumb = $("#ex-photo-thumb", host);
@@ -2958,7 +2924,6 @@ function openExEditor(id){
       data.loadFactor = lfVal;
       data.loadSource = (lfVal==null ? null : "manual");
     }
-    if (restTouched || !ex){ data.restSec = restVal; }
     const progSel = $("#ex-progressions", host);
     const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
     if (ex){
@@ -6366,7 +6331,7 @@ function renderSettings(){
           '<input type="checkbox" id="set-logging"'+(prof.loggingMode?" checked":"")+'/>'+
           '<span>Logging mode: show rest timers while logging</span>'+
         '</label>'+
-        '<p class="micro">Rest times are set per exercise in the Exercise Library, overridden per routine in the routine editor, with a routine-wide default fallback. Timers appear only when logging mode is on.</p>'+
+        '<p class="micro">Rest times are set per routine in the routine editor, with a routine-wide default fallback. Timers appear only when logging mode is on.</p>'+
         '<button class="btn" id="set-logging-save">Save logging preference</button>'+
       '</div>'+
       '</div>'+
