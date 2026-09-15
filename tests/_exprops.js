@@ -59,7 +59,7 @@ function pick(field, names){
   ov.querySelector(".ex-pick-ok").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
   check(!$(".ex-pick-overlay"), field+" picker closed after OK");
 }
-pick("bodyParts", ["Chest","Arms"]);
+pick("bodyParts", ["Chest","Biceps"]);
 pick("primaryMuscles", ["Pectoralis major","Triceps brachii"]);
 pick("secondaryMuscles", ["Biceps brachii","Anterior deltoid"]);
 $("#ex-save").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
@@ -72,6 +72,8 @@ if (created){
   check(created.weightAvailable===true, "weight type forces weightAvailable");
   check(created.instructions.indexOf("press")!==-1, "instructions persisted");
   check(created.bodyParts.includes("Chest"), "body part Chest persisted");
+  check(created.bodyParts.includes("Biceps"), "body part Biceps persisted");
+check(E("BODY_PARTS.includes('Biceps')&&BODY_PARTS.includes('Triceps')&&!BODY_PARTS.includes('Arms')"), "picker offers Biceps/Triceps instead of Arms");
   check(created.primaryMuscles.includes("Pectoralis major"), "primary muscle persisted");
   check(created.secondaryMuscles.includes("Anterior deltoid"), "secondary muscle persisted");
 }

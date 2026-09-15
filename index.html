@@ -2645,7 +2645,7 @@ const EX_TYPES = {
   bodyweight: { label:"Bodyweight",    desc:"Rep-based calisthenics. Push-up, pull-up, dip, squat." },
   weight:     { label:"Weight & reps", desc:"Loaded lifts with dumbbells, barbells, or machines (load + reps)." }
 };
-const BODY_PARTS = ["Chest","Back","Shoulders","Arms","Forearms","Core","Hips","Glutes","Thighs","Calves","Neck"];
+const BODY_PARTS = ["Chest","Back","Shoulders","Biceps","Triceps","Forearms","Core","Hips","Glutes","Thighs","Calves","Neck"];
 const MUSCLES = [
   ["Chest","Pectoralis major"],
   ["Shoulders","Anterior deltoid"],["Shoulders","Lateral deltoid"],["Shoulders","Posterior deltoid"],
@@ -6574,7 +6574,7 @@ const RECOVERY_DETAIL_MAP = {
   "Gastrocnemius (calf)":"calves", "Soleus (calf)":"calves"
 };
 const RECOVERY_BODYPART_MAP = {
-  "Chest":["chest"], "Shoulders":["shoulders"], "Arms":["biceps","triceps"],
+  "Chest":["chest"], "Shoulders":["shoulders"], "Arms":["biceps","triceps"], "Biceps":["biceps"], "Triceps":["triceps"],
   "Forearms":["forearms"], "Back":["back"], "Traps":["back"], "Core":["abs"],
   "Hips":["hips"], "Glutes":["hips"], "Thighs":["quads","hamstrings"],
   "Legs":["quads","hamstrings"], "Calves":["calves"], "Neck":["neck"]
@@ -6707,7 +6707,7 @@ const DETAIL_TO_WMUSCLE = {
 };
 const BODYPART_TO_WMUSCLE = {
   "Chest":["chest-l","chest-r"], "Shoulders":["shoulder-l","shoulder-r"],
-  "Arms":["biceps-l","biceps-r","triceps-l","triceps-r"], "Forearms":["forearm-l","forearm-r"],
+  "Arms":["biceps-l","biceps-r","triceps-l","triceps-r"], "Biceps":["biceps-l","biceps-r"], "Triceps":["triceps-l","triceps-r"], "Forearms":["forearm-l","forearm-r"],
   "Back":["lat-l","lat-r"], "Traps":["trap-m"], "Core":["abs"],
   "Hips":["glute-l","glute-r"], "Glutes":["glute-l","glute-r"],
   "Thighs":["quad-l","quad-r","ham-l","ham-r"], "Legs":["quad-l","quad-r","ham-l","ham-r"],
@@ -6881,7 +6881,7 @@ const RADAR_DETAIL_MAP = {
   "Gastrocnemius (calf)":"calves", "Soleus (calf)":"calves"
 };
 const RADAR_BODYPART_MAP = {
-  "Chest":["chest"], "Shoulders":["shoulders","rear-delts"], "Arms":["biceps","triceps"],
+  "Chest":["chest"], "Shoulders":["shoulders","rear-delts"], "Arms":["biceps","triceps"], "Biceps":["biceps"], "Triceps":["triceps"],
   "Forearms":["forearms"], "Back":["lats","upper-mid-back"], "Traps":["upper-mid-back"], "Core":["core"],
   "Hips":["glutes"], "Glutes":["glutes"], "Thighs":["quads","hamstrings"],
   "Legs":["quads","hamstrings"], "Calves":["calves"], "Neck":["upper-mid-back"]
