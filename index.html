@@ -1637,6 +1637,26 @@
 
   /* ---------- Session detail ---------- */
   .sess-detail.card { background: var(--paper); }
+  /* Expanded History workout, reference-style: exercise header (thumb + name)
+     followed by zebra set rows. All colors are theme vars. */
+  .hist-exblock { border-top: 1px dashed var(--line); padding: .9rem 0 .5rem; }
+  .hist-exblock:first-of-type { border-top: 0; padding-top: .2rem; }
+  .hist-exhead { display: flex; align-items: center; gap: .8rem; margin-bottom: .45rem; min-width: 0; }
+  .hist-thumb { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 12px; background-size: cover; background-position: center; background-color: var(--surface-2); border: 1px solid var(--line); }
+  .hist-exhead b { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -.01em; color: var(--ink); min-width: 0; }
+  .hist-sets { display: flex; flex-direction: column; }
+  .hist-setrow { display: flex; align-items: center; gap: 1rem; padding: .55rem .6rem; border-radius: 10px; min-width: 0; }
+  .hist-setrow:nth-child(even) { background: var(--surface-2); }
+  .hist-setnum { flex: 0 0 1.6rem; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; line-height: 1; color: var(--accent); }
+  .hist-setnum.miss { color: var(--red); }
+  .hist-setval { font-size: 1.05rem; font-weight: 500; color: var(--ink); min-width: 0; }
+  .hist-setnote { font-size: .8rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 640px) {
+    .hist-thumb { width: 44px; height: 44px; border-radius: 10px; }
+    .hist-exhead b { font-size: 1.02rem; }
+    .hist-setval { font-size: .95rem; }
+    .hist-setnum { font-size: 1.15rem; }
+  }
 
   /* ---------- Sessions box header + close-all ---------- */
   .card-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
@@ -6341,12 +6361,25 @@ function renderHistory(){
   }
   function sessionDetail(ses){
   const day = getDay(ses.dayId);
-  const rows = ses.completedSets.map(c=>{
-    const ex = getEx(c.exId);
-    const nm = ex?ex.name:"?";
-    const valTxt = ex&&ex.mode==="time" ? (c.time+'s') : (ex&&ex.mode==="weight" ? (c.reps+'×'+(c.weight!=null?fmtWeight(c.weight):0)+weightUnit()) : (c.reps!=null?c.reps+' reps':''));
-    const st = c.type && c.type!=="regular" ? ' <span class="set-type-badge '+c.type+'">'+SET_TYPES[c.type].tag+'</span>' : '';
-    return '<tr><td>'+nm+'</td><td>S'+(c.setIndex+1)+st+'</td><td>'+valTxt+'</td><td>'+(c.rating?'★'+c.rating:'')+'</td><td>'+(c.hit?'<span class="st-kept">✓</span>':'<span class="st-rejected">miss</span>')+'</td><td class="small muted">'+(c.note?esc(c.note):'')+'</td></tr>';
+  const seen = {}, order = [];
+  (ses.completedSets || []).forEach(c=>{ if(!seen[c.exId]){ seen[c.exId] = []; order.push(c.exId); } seen[c.exId].push(c); });
+  const blocks = order.map(exId=>{
+    const ex = getEx(exId);
+    const nm = ex ? ex.name : "?";
+    const thumb = logThumbFor(ex);
+    const rows = seen[exId].map(c=>{
+      const num = c.hit ? (c.setIndex + 1) : "F";
+      const numCls = "hist-setnum" + (c.hit ? "" : " miss");
+      const numTitle = c.hit ? ("Set " + (c.setIndex + 1)) : "Set " + (c.setIndex + 1) + " · below target";
+      let valTxt;
+      if (ex && ex.mode === "time") valTxt = c.time + "s";
+      else if (ex && (ex.mode === "weight" || (c.weight != null && c.weight > 0))) valTxt = fmtWeight(c.weight != null ? c.weight : 0) + weightUnit() + " x " + c.reps + " reps";
+      else valTxt = (c.reps != null ? c.reps : "-") + " reps";
+      const st = c.type && c.type !== "regular" ? ' <span class="set-type-badge ' + c.type + '">' + SET_TYPES[c.type].tag + '</span>' : '';
+      const note = c.note ? '<span class="hist-setnote">' + esc(c.note) + '</span>' : '';
+      return '<div class="hist-setrow"><span class="' + numCls + '" title="' + numTitle + '">' + num + '</span><span class="hist-setval">' + valTxt + '</span>' + st + note + '</div>';
+    }).join("");
+    return '<div class="hist-exblock"><div class="hist-exhead"><span class="hist-thumb" style="background-image:url(\'' + thumb + '\')"></span><b>' + esc(nm) + '</b></div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
   const rec = ses.recovery||{};
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
@@ -6354,7 +6387,7 @@ function renderHistory(){
       '<div class="spacer"></div>'+
       '<button type="button" class="btn danger sess-del" data-del-sess="'+ses.id+'" title="Delete session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>'+
       '<button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
-    '<table class="striped"><tr><th>Exercise</th><th>Set</th><th>Done</th><th>Effort</th><th>Hit</th><th>Note</th></tr>'+rows+'</table>'+
+    '<div class="hist-detail">' + blocks + '</div>'+
     '<div class="small muted" style="margin-top:8px">Recovery '+(rec.recovery||'-')+' · sleep '+(rec.sleep||'-')+' · soreness '+(rec.soreness||'-')+(rec.pain?' · pain: "'+esc(rec.pain)+'"':'')+'</div>'+
     '<div class="small">'+(rec.note?esc(rec.note):'')+'</div>'+
     '</div>';
