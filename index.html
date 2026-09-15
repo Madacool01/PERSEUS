@@ -6366,7 +6366,8 @@ function renderHistory(){
   const blocks = order.map(exId=>{
     const ex = getEx(exId);
     const nm = ex ? ex.name : "?";
-    const thumb = logThumbFor(ex);
+    const thumb = ex && ex.image ? ex.image : null;
+    const thumbHtml = thumb ? '<span class="hist-thumb" style="background-image:url(\'' + thumb + '\')"></span>' : '';
     const rows = seen[exId].map(c=>{
       const num = c.hit ? (c.setIndex + 1) : "F";
       const numCls = "hist-setnum" + (c.hit ? "" : " miss");
@@ -6379,7 +6380,7 @@ function renderHistory(){
       const note = c.note ? '<span class="hist-setnote">' + esc(c.note) + '</span>' : '';
       return '<div class="hist-setrow"><span class="' + numCls + '" title="' + numTitle + '">' + num + '</span><span class="hist-setval">' + valTxt + '</span>' + st + note + '</div>';
     }).join("");
-    return '<div class="hist-exblock"><div class="hist-exhead"><span class="hist-thumb" style="background-image:url(\'' + thumb + '\')"></span><b>' + esc(nm) + '</b></div><div class="hist-sets">' + rows + '</div></div>';
+    return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b></div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
   const rec = ses.recovery||{};
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
