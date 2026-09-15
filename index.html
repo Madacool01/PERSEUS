@@ -913,6 +913,54 @@
     flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
     padding: 1.2rem 1.3rem 2.2rem; display: flex; flex-direction: column; gap: 1rem;
   }
+  /* ---------- You streak (bottom of overview + expanded calendar) ---------- */
+  #you-streak-section { cursor: pointer; transition: border-color .2s, box-shadow .25s, transform .2s; }
+  #you-streak-section:hover { border-color: var(--accent-line); box-shadow: var(--shadow-2); transform: translateY(-2px); }
+  .streak-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -.02em; margin: 0; color: var(--ink); }
+  .streak-stats { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; grid-auto-flow: dense; margin-top: 1rem; }
+  @media (max-width: 560px) { .streak-stats { grid-template-columns: 1fr 1fr; } }
+  .streak-stat { display: flex; align-items: flex-start; gap: .7rem; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-2); padding: .9rem 1rem; }
+  .streak-stat .n { font-family: var(--font-display); font-weight: 800; font-size: 1.7rem; line-height: 1; color: var(--ink); }
+  .streak-stat .l { font-size: .85rem; color: var(--ink-2); margin-top: .15rem; }
+  .streak-ico { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; }
+  .streak-ico svg { width: 26px; height: 26px; }
+  .streak-split { display: grid; grid-template-columns: minmax(0, 1fr) 54px; gap: .6rem; margin-top: 1.2rem; align-items: stretch; }
+  .streak-dow, .streak-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .streak-dow span { text-align: center; font-size: .8rem; font-weight: 600; color: var(--ink-3); padding: .35rem 0; }
+  .streak-cell { aspect-ratio: 1 / 1; display: grid; place-items: center; font-size: .95rem; font-weight: 500; color: var(--ink); border-radius: 50%; min-width: 0; }
+  .streak-cell.dim { color: var(--ink-3); opacity: .55; }
+  .streak-cell.today { border: 2px solid #2f63c9; font-weight: 700; }
+  .streak-cell.hit { background: #2f63c9; color: #fff; border-radius: 50%; width: 82%; aspect-ratio: 1 / 1; margin: auto; }
+  .streak-cell.hit svg { width: 55%; height: 55%; }
+  .streak-rail { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: .4rem 0 .6rem; min-height: 220px; }
+  .streak-rail::before { content: ""; position: absolute; top: 14px; bottom: 14px; width: 3px; border-radius: 999px; background: linear-gradient(180deg, var(--accent) 0 62%, var(--line-2) 62% 100%); }
+  .rail-node { position: relative; z-index: 1; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 2px solid var(--line-2); color: var(--ink-3); }
+  .rail-node.done { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+  .rail-node.done svg { width: 13px; height: 13px; }
+  .rail-flame { width: 44px; height: 52px; z-index: 1; display: grid; place-items: center; position: relative; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; }
+  .rail-flame svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .rail-flame b { position: relative; transform: translateY(6px); }
+  .rail-node.todo { background: var(--surface); }
+  .streak-open { margin-left: auto; }
+  .streak-hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .streak-big { font-family: var(--font-display); font-weight: 800; font-size: clamp(4.5rem, 14vw, 7rem); line-height: .9; letter-spacing: -.04em; color: var(--ink); }
+  .streak-big-sub { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; margin: .4rem 0 0; color: var(--ink); }
+  .streak-flame-lg { width: 120px; height: 140px; flex: 0 0 auto; }
+  .streak-flame-lg svg { width: 100%; height: 100%; display: block; }
+  .streak-note { display: flex; gap: .9rem; align-items: center; background: #f4f0fa; border-radius: 16px; padding: 1rem 1.1rem; color: var(--ink); font-size: .98rem; line-height: 1.5; }
+  html[data-theme="midnight"] .streak-note, html[data-theme="ocean"] .streak-note { background: var(--surface-2); }
+  .streak-note .streak-ico { width: 44px; height: 44px; }
+  .streak-note .streak-ico svg { width: 40px; height: 40px; }
+  .streak-cal { border: 1px solid var(--line); border-radius: 22px; padding: 1rem .9rem 1.2rem; background: var(--surface); }
+  .streak-cal-top { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .6rem; }
+  .streak-cal-top b { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+  .streak-cal-nav { width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; font-size: 1.4rem; line-height: 1; display: grid; place-items: center; }
+  .streak-cal-nav:hover { background: var(--surface-2); color: var(--ink); }
+  .streak-cal-dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: .85rem; font-weight: 600; color: var(--ink-2); padding: .3rem 0 .5rem; }
+  .streak-cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-radius: 999px; padding: .18rem .1rem; align-items: center; }
+  .streak-cal-week.lit { background: #fde6c2; }
+  .streak-cal-day { aspect-ratio: 1 / 1; display: grid; place-items: center; font-size: .92rem; color: var(--ink-2); border-radius: 50%; }
+  .streak-cal-day.hit { background: #f59e0b; color: #fff; font-weight: 700; width: 88%; margin: auto; }
   .ex-vis-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .ex-vis-inner { max-width: 660px; margin: 0 auto; padding: 1rem 1.1rem 4rem; display: flex; flex-direction: column; gap: .95rem; }
   .ex-vis-media {
@@ -7255,6 +7303,153 @@ function youNeedWeightHtml(){
   if (bodyWeightKg()!=null) return "";
   return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings — until then, the body-weight share of every movement stays out of Total volume.</p>';
 }
+/* =========================================================================
+   STREAK — weeks with at least one logged session, month calendar + rail.
+   Collapsed card lives at the very bottom of the You overview; clicking it
+   opens the expanded Streak screen (same you-modal-host pattern) with a
+   browsable month calendar. Pure + testable, derived from state.sessions.
+   ========================================================================= */
+const STREAK_ICO_FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f59e0b" d="M12 1.8c1.2 3.2 4.6 5.1 6.2 8.2 1.2 2.3 1.6 4.2 1.1 6.1-.5 2.1-2.2 3.9-4.3 4.7-2.5 1-5.6.7-7.7-1-2-1.6-2.9-4-2.4-6.5.4-2.1 1.9-3.9 3.3-5.5.9-1 2.5-2.7 2.6-4.2l1.2-1.8z"/><path fill="#fbbf24" d="M12 9.2c.6 1.6 2.3 2.6 3.1 4.1.6 1.2.8 2.1.5 3-.2 1.1-1.1 2-2.1 2.4-1.3.5-2.8.3-3.9-.5-1-1-1.4-2.2-1.2-3.4.2-1.1 1-2 1.7-2.8.4-.5 1.3-1.4 1.3-2.1l.6-.7z"/></svg>';
+const STREAK_ICO_FLAME_SM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f59e0b" d="M12 1.8c1.2 3.2 4.6 5.1 6.2 8.2 1.2 2.3 1.6 4.2 1.1 6.1-.5 2.1-2.2 3.9-4.3 4.7-2.5 1-5.6.7-7.7-1-2-1.6-2.9-4-2.4-6.5.4-2.1 1.9-3.9 3.3-5.5.9-1 2.5-2.7 2.6-4.2l1.2-1.8z"/><path fill="#ffd23e" d="M12 9.2c.6 1.6 2.3 2.6 3.1 4.1.6 1.2.8 2.1.5 3-.2 1.1-1.1 2-2.1 2.4-1.3.5-2.8.3-3.9-.5-1-1-1.4-2.2-1.2-3.4.2-1.1 1-2 1.7-2.8.4-.5 1.3-1.4 1.3-2.1l.6-.7z"/></svg>';
+const STREAK_ICO_DB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>';
+const STREAK_ICO_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 10 18 19.5 6.5"/></svg>';
+let youStreakMonthOffset = 0;
+function youStreakDayKey(d){ return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); }
+function youStreakDays(){
+  const map = {};
+  try{
+    ((state && state.sessions) || []).forEach(s=>{
+      const t = new Date(s.dateISO).getTime();
+      if (!isFinite(t)) return;
+      const d = new Date(t);
+      map[youStreakDayKey(d)] = (map[youStreakDayKey(d)] || 0) + 1;
+    });
+  }catch(e){}
+  return map;
+}
+function youStreakWeekHas(monMs){
+  const days = youStreakDays();
+  for (let i = 0; i < 7; i++){
+    const d = new Date(monMs + i * 86400000);
+    if (days[youStreakDayKey(d)]) return true;
+  }
+  return false;
+}
+function youWeeksStreak(nowMs){
+  const now = +nowMs || Date.now();
+  const curMon = youWeekStart(now);
+  const hasCur = youStreakWeekHas(curMon);
+  let streak = 0;
+  for (let i = (hasCur ? 0 : 1); ; i++){
+    if (youStreakWeekHas(curMon - i * 7 * 86400000)) streak++;
+    else break;
+  }
+  return streak;
+}
+function youStreakMonthTarget(){
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth() + youStreakMonthOffset, 1);
+}
+function youStreakMonthLabel(y, m){
+  return new Date(y, m, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+function youStreakMonthSessions(y, m){
+  let n = 0;
+  try{
+    ((state && state.sessions) || []).forEach(s=>{
+      const d = new Date(s.dateISO);
+      if (isFinite(d.getTime()) && d.getFullYear() === y && d.getMonth() === m) n++;
+    });
+  }catch(e){}
+  return n;
+}
+function youStreakMonthCells(y, m){
+  const days = youStreakDays();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const first = new Date(y, m, 1);
+  const startPad = first.getDay();
+  const dim = new Date(y, m + 1, 0).getDate();
+  const prevDim = new Date(y, m, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startPad; i++) cells.push({ d: prevDim - startPad + 1 + i, inMonth: false, date: new Date(y, m - 1, prevDim - startPad + 1 + i) });
+  for (let d = 1; d <= dim; d++) cells.push({ d, inMonth: true, date: new Date(y, m, d) });
+  while (cells.length % 7 !== 0){ const k = cells.length; cells.push({ d: k - (startPad + dim) + 1, inMonth: false, date: new Date(y, m + 1, k - (startPad + dim) + 1) }); }
+  return cells.map(c=>{
+    const t = new Date(c.date); t.setHours(0,0,0,0);
+    c.has = !!days[youStreakDayKey(t)];
+    c.today = t.getTime() === today.getTime();
+    c.future = t.getTime() > today.getTime();
+    return c;
+  });
+}
+function youStreakWeekLit(week){
+  return week.some(c=>c.inMonth && c.has) || week.some(c=>c.has);
+}
+function youStreakCollapsedHtml(){
+  const t = youStreakMonthTarget();
+  const y = t.getFullYear(), m = t.getMonth();
+  const streak = youWeeksStreak(Date.now());
+  const workouts = youStreakMonthSessions(y, m);
+  const cells = youStreakMonthCells(y, m);
+  const dow = ["S","M","T","W","T","F","S"].map(d=>'<span>' + d + '</span>').join("");
+  const grid = cells.map(c=>{
+    if (c.has && c.inMonth) return '<div class="streak-cell hit" title="Workout logged"><span style="display:contents;color:#fff">' + STREAK_ICO_DB + '</span></div>';
+    if (!c.inMonth) return '<div class="streak-cell dim">' + c.d + '</div>';
+    if (c.today) return '<div class="streak-cell today">' + c.d + '</div>';
+    return '<div class="streak-cell">' + c.d + '</div>';
+  }).join("");
+  const curMon = youWeekStart(Date.now());
+  const railWeeks = [-2,-1,0,1,2].map(off=>({ off, has: youStreakWeekHas(curMon + off * 7 * 86400000) }));
+  const rail = railWeeks.map(w=>{
+    if (w.off < 0) return '<div class="rail-node ' + (w.has ? 'done' : 'todo') + '">' + (w.has ? STREAK_ICO_CHECK : '') + '</div>';
+    if (w.off === 0) return '<div class="rail-flame" aria-label="' + streak + ' weeks streak">' + STREAK_ICO_FLAME + '<b>' + streak + '</b></div>';
+    return '<div class="rail-node todo"></div>';
+  }).join("");
+  return '<div class="you-page-head"><h3 class="streak-title" style="font-size:1.5rem">' + esc(youStreakMonthLabel(y, m)) + '</h3>' +
+    '<button type="button" class="btn ghost streak-open" data-you-streak-open>View calendar</button></div>' +
+    '<div class="streak-stats">' +
+      '<div class="streak-stat"><span class="streak-ico" style="color:#f59e0b">' + STREAK_ICO_FLAME_SM + '</span><span><span class="n">' + streak + '</span><div class="l">Weeks streak</div></span></div>' +
+      '<div class="streak-stat"><span class="streak-ico" style="color:#2f63c9">' + STREAK_ICO_DB + '</span><span><span class="n">' + workouts + '</span><div class="l">workouts</div></span></div>' +
+    '</div>' +
+    '<div class="streak-split"><div><div class="streak-dow">' + dow + '</div><div class="streak-row">' + grid + '</div></div>' +
+    '<div class="streak-rail" aria-hidden="true">' + rail + '</div></div>';
+}
+function youStreakExpandedHtml(){
+  const t = youStreakMonthTarget();
+  const y = t.getFullYear(), m = t.getMonth();
+  const streak = youWeeksStreak(Date.now());
+  const cells = youStreakMonthCells(y, m);
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  const cal = weeks.map(w=>{
+    const lit = youStreakWeekLit(w) ? " lit" : "";
+    const ds = w.map(c=>{
+      if (!c.inMonth) return '<div class="streak-cal-day"></div>';
+      if (c.has) return '<div class="streak-cal-day hit">' + c.d + '</div>';
+      return '<div class="streak-cal-day">' + c.d + '</div>';
+    }).join("");
+    return '<div class="streak-cal-week' + lit + '">' + ds + '</div>';
+  }).join("");
+  const msg = streak > 0
+    ? "You have kept your streak for " + streak + (streak === 1 ? " week" : " weeks") + " in a row. So strong!"
+    : "Log a workout every week to start your streak.";
+  return '<div class="streak-hero"><div><div class="streak-big">' + streak + '</div><p class="streak-big-sub">weeks streak!</p></div>' +
+    '<div class="streak-flame-lg">' + STREAK_ICO_FLAME + '</div></div>' +
+    '<div class="streak-note"><span class="streak-ico">' + STREAK_ICO_FLAME_SM + '</span><span>' + esc(msg) + '</span></div>' +
+    '<h3 style="margin:.6rem 0 0;font-family:var(--font-display);font-size:1.5rem">Streak Calendar</h3>' +
+    '<div class="streak-cal"><div class="streak-cal-top">' +
+      '<button type="button" class="streak-cal-nav" data-you-streak-month="prev" aria-label="Previous month">&#8249;</button>' +
+      '<b>' + esc(youStreakMonthLabel(y, m)) + '</b>' +
+      '<button type="button" class="streak-cal-nav" data-you-streak-month="next" aria-label="Next month">&#8250;</button>' +
+    '</div>' +
+    '<div class="streak-cal-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>' + cal + '</div>';
+}
+function renderYouStreakSection(){
+  const sec = document.getElementById("you-streak-section");
+  if (!sec) return;
+  sec.innerHTML = youStreakCollapsedHtml();
+  sec.onclick = ()=>openYouModal("streak");
+}
 /* Shared line-chart markup for the You overview: one point per data bar, a
    connecting line, a gradient area fill under it, and sparse x labels. Dots
    are drawn (with per-point tooltips) while there are few enough weeks to
@@ -7324,6 +7519,7 @@ function youOverviewHtml(){
       '<button type="button" class="you-dot" data-you-page="1" aria-label="Total volume"></button>'+
     '</div>'+
     '<div class="you-page" id="you-recovery-section" aria-label="Muscle recovery"></div>'+
+    '<div class="you-page fx-in" id="you-streak-section" aria-label="Training streak"></div>'+
   '</div>';
 }
 function youRecoveryHtml(nowMs){
@@ -7399,6 +7595,7 @@ function bindYouOverview(){
   renderYouPage(0);
   renderYouPage(1);
   renderYouRecoverySection();
+  renderYouStreakSection();
   const car = $("#you-carousel");
   const dots = $$(".you-dot");
   if (!car) return;
@@ -7473,10 +7670,10 @@ function renderYouPage(i){
   }
 }
 /* Expanded screen: the period selector appears here, one per chart type. */
-let youModalMode = "weeks"; // "weeks" | "volume" — which chart the expanded screen shows
+let youModalMode = "weeks"; // "weeks" | "volume" | "streak" — which chart the expanded screen shows
 function openYouModal(mode){
   if ($("#you-modal-host")) return;
-  youModalMode = (mode==="volume") ? "volume" : "weeks";
+  youModalMode = (mode==="volume") ? "volume" : (mode==="streak" ? "streak" : "weeks");
   const host = document.createElement("div");
   host.id = "you-modal-host";
   document.body.appendChild(host);
@@ -7485,7 +7682,7 @@ function openYouModal(mode){
       '<div class="you-modal-shell">'+
         '<div class="you-modal-top">'+
           '<button type="button" class="ex-vis-icon" data-you-back aria-label="Back">'+VIS_ICO_BACK+'</button>'+
-          '<h2>'+(youModalMode==="volume" ? "Total volume" : "Workouts")+'</h2>'+
+          '<h2>'+(youModalMode==="volume" ? "Total volume" : youModalMode==="streak" ? "Streak" : "Workouts")+'</h2>'+
         '</div>'+
         '<div class="you-modal-body"></div>'+
       '</div>'+
@@ -7493,7 +7690,11 @@ function openYouModal(mode){
   const close = ()=>{
     document.removeEventListener("keydown", onKey);
     if (host.parentNode) host.parentNode.removeChild(host);
-    if (currentView==="you") renderYouPage(youModalMode==="volume" ? 1 : 0);
+    if (currentView==="you"){
+      if (youModalMode==="volume") renderYouPage(1);
+      else if (youModalMode==="weeks") renderYouPage(0);
+      else renderYouStreakSection();
+    }
   };
   const onKey = ev=>{ if (ev.key==="Escape") close(); };
   document.addEventListener("keydown", onKey);
@@ -7508,6 +7709,15 @@ function openYouModal(mode){
 function renderYouModalBody(host){
   const body = $(".you-modal-body", host);
   if (!body) return;
+  if (youModalMode === "streak"){
+    body.innerHTML = youStreakExpandedHtml();
+    $$("[data-you-streak-month]", body).forEach(b=>b.addEventListener("click", ()=>{
+      if (b.dataset.youStreakMonth === "prev") youStreakMonthOffset--;
+      else youStreakMonthOffset++;
+      renderYouModalBody(host);
+    }));
+    return;
+  }
   if (youModalMode === "volume"){
     body.innerHTML =
       youPeriodBtns("modal-period", youVolPeriod)+
