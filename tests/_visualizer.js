@@ -73,9 +73,8 @@ E("state.exercises[0].image = 'data:image/jpeg;base64,AAAA'");
 click($("#view-library .exercise-item"));
 check(Boolean($("#ex-vis-host #ex-vis-img")), "uploaded photo renders in the media frame");
 check(!$("#ex-vis-host .ex-vis-media-empty"), "empty placeholder gone when photo present");
-check($$("#ex-vis-host [data-vis-oc]").length === 2, "pause/play + fullscreen overlay controls shown with a photo");
-click($("#ex-vis-host [data-vis-oc='play']"));
-check($("#ex-vis-host #ex-vis-img").classList.contains("play") === false, "play/pause toggle pauses the ken burns loop");
+check($$("#ex-vis-host [data-vis-oc]").length === 1, "only the fullscreen overlay control shown with a photo (no play button)");
+check($("#ex-vis-host [data-vis-oc='fs']"), "fullscreen control present");
 click($("#ex-vis-host [data-vis-back]"));
 E("state.exercises[0].image = ''");
 

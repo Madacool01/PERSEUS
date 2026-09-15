@@ -3348,8 +3348,7 @@ function openExVisualizer(id, opts){
         ? '<img id="ex-vis-img" class="vis-img'+(vis.playing?" play":"")+'" src="'+img+'" alt="'+esc(e.name)+'"/>'
         : '<div class="ex-vis-media-empty"><span class="vis-media-hint">No photo yet — add one when editing</span></div>')+
       (has
-        ? '<div class="ex-vis-oc tl"><button type="button" class="ex-vis-oc-btn" data-vis-oc="play" aria-label="'+(vis.playing?"Pause":"Play")+'">'+(vis.playing?VIS_ICO_PAUSE:VIS_ICO_PLAY)+'</button></div>'+
-          '<div class="ex-vis-oc br"><button type="button" class="ex-vis-oc-btn" data-vis-oc="fs" aria-label="Fullscreen">'+VIS_ICO_FS+'</button></div>'
+        ? '<div class="ex-vis-oc br"><button type="button" class="ex-vis-oc-btn" data-vis-oc="fs" aria-label="Fullscreen">'+VIS_ICO_FS+'</button></div>'
         : "")+
     '</div>';
   }
@@ -3600,13 +3599,7 @@ function openExVisualizer(id, opts){
   bindTabContent();
   $("[data-vis-back]", h).addEventListener("click", close);
   $$("[data-vis-oc]", h).forEach(b=>b.addEventListener("click", ()=>{
-    if (b.dataset.visOc==="play"){
-      vis.playing = !vis.playing;
-      const img = $("#ex-vis-img", h);
-      if (img) img.classList.toggle("play", vis.playing);
-      b.setAttribute("aria-label", vis.playing?"Pause":"Play");
-      b.innerHTML = vis.playing ? VIS_ICO_PAUSE : VIS_ICO_PLAY;
-    } else if (b.dataset.visOc==="fs"){
+    if (b.dataset.visOc==="fs"){
       const mediaEl = $("#ex-vis-media", h);
       if (mediaEl && mediaEl.requestFullscreen){
         if (document.fullscreenElement) document.exitFullscreen(); else mediaEl.requestFullscreen();
