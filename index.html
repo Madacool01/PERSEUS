@@ -2701,10 +2701,10 @@ function exerciseRow(e){
     '<button type="button" class="ex-edit-btn" data-edit="'+e.id+'" title="Edit '+esc(e.name)+'" aria-label="Edit '+esc(e.name)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>' +
     '<div class="name">'+esc(e.name)+modePill(e)+"</div>"+
     '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
-    '<div class="attr">defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
+    '<div class="attr">Defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
     (e.notes?'<div class="attr micro">'+"↳ "+esc(e.notes)+"</div>":"")+
-    ((e.bodyParts&&e.bodyParts.length)?'<div class="attr micro">body: <b>'+esc(e.bodyParts.join(", "))+"</b></div>":"")+
-    ((e.primaryMuscles&&e.primaryMuscles.length)?'<div class="attr micro">primary: <b>'+esc(e.primaryMuscles.join(", "))+"</b>"+((e.secondaryMuscles&&e.secondaryMuscles.length)?' · secondary: '+esc(e.secondaryMuscles.join(", ")):"")+"</div>":"")+
+    ((e.bodyParts&&e.bodyParts.length)?'<div class="attr micro">Body: <b>'+esc(e.bodyParts.join(", "))+"</b></div>":"")+
+    ((e.primaryMuscles&&e.primaryMuscles.length)?'<div class="attr micro">Primary: <b>'+esc(e.primaryMuscles.join(", "))+"</b>"+((e.secondaryMuscles&&e.secondaryMuscles.length)?' · Secondary: '+esc(e.secondaryMuscles.join(", ")):"")+"</div>":"")+
     '</div>';
 }
 /* Body part -> detailed muscles it covers (explicit splits first, then the
