@@ -580,6 +580,28 @@
   .search-ico { position: absolute; left: .95rem; top: 50%; transform: translateY(-50%); color: var(--ink-3); display: grid; place-items: center; }
   .search-ico svg { width: 16px; height: 16px; }
 
+  /* ---------- Library advanced filters ---------- */
+  .lib-fpanel { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .35s cubic-bezier(.22,1,.36,1), opacity .25s, margin .3s; margin: -1rem 0 0; }
+  .lib-fpanel.open { max-height: 640px; opacity: 1; margin: -0.6rem 0 1.2rem; overflow-y: auto; }
+  .lib-fcard { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); padding: 1rem 1.1rem; box-shadow: var(--shadow-1); }
+  .lib-frow { padding: .55rem 0; border-bottom: 1px dashed var(--line); }
+  .lib-frow:last-child { border-bottom: 0; }
+  .lib-frow-head { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-bottom: .45rem; }
+  .lib-frow-head b { font-family: var(--font-display); font-size: .92rem; color: var(--ink); }
+  .lib-frow-head span { font-size: .75rem; color: var(--ink-3); }
+  .lib-fchips { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .fchip { font-family: var(--font-body); font-size: .82rem; font-weight: 500; padding: .42rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); cursor: pointer; transition: border-color .15s, background .15s, color .15s, transform .1s; }
+  .fchip:hover { border-color: var(--accent-line); color: var(--ink); }
+  .fchip:active { transform: scale(.96); }
+  .fchip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .fchip.seg.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .lib-fmeta { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 0 0 1rem; font-size: .85rem; color: var(--ink-2); }
+  .lib-fmeta b { color: var(--ink); }
+  .lib-fclear { margin-left: auto; }
+  .fcount { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: .72rem; font-weight: 700; padding: 0 .3rem; }
+  .fcount.zero { display: none; }
+  @media (max-width: 768px) { .lib-fpanel.open { max-height: 80vh; } }
+
   /* ---------- Exercise library ---------- */
   .exercise-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; grid-auto-flow: dense; }
   .exercise-item {
@@ -2321,33 +2343,33 @@ function ensureBuiltinLoads(list){
 /* Seed a default program the first time; re-run if a future version upgrades the seed */
 function seedDefaultState() {
   const defaultExercises = [
-    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0 },
-    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
-    { name:"Ring Dip",                mode:"reps",   equipment:["rings"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt / ankle" },
-    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
-    { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
-    { name:"Pull-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
-    { name:"Chin-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt" },
-    { name:"Strict Pull-Up",          mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0 },
-    { name:"Weighted Pull-Up",        mode:"weight", equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:5 },
-    { name:"Ring Muscle-Up (DL)",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:3, defaultTime:30, defaultWeight:0, notes:"dead hang kip" },
-    { name:"Bar Muscle-Up",           mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:3, defaultTime:30, defaultWeight:0, notes:"kip" },
-    { name:"Ring L-Sit",              mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
-    { name:"Plank",                   mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:45, defaultWeight:0 },
-    { name:"Hollow-Body Hold",        mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
-    { name:"Ring Support Hold",       mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0 },
-    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
-    { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held" },
-    { name:"Hang (Dead Grip)",        mode:"time",   equipment:["pullup"], weightAvailable:false, defaultSets:2, defaultReps:5, defaultTime:30, defaultWeight:0 },
-    { name:"Hindu Squat",             mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0 },
-    { name:"Ring Rollout",            mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
-    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0 },
-    { name:"Ring False-Grip Row",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
-    { name:"Back Lever Hold",         mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:10, defaultWeight:0 },
-    { name:"Front Lever Hold",        mode:"time",   equipment:["rings","pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:8, defaultWeight:0 },
-    { name:"Renegade Push-Up",        mode:"reps",   equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0 },
-    { name:"Dumbbell Curl",           mode:"weight", equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:8 },
-    { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0 },
+    { name:"Push-Up",                 mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps"] },
+    { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Triceps","Shoulders"] },
+    { name:"Ring Dip",                mode:"reps",   equipment:["rings"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt / ankle", bodyParts:["Chest","Shoulders","Triceps"] },
+    { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
+    { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps"] },
+    { name:"Pull-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt", bodyParts:["Back","Biceps"] },
+    { name:"Chin-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt", bodyParts:["Back","Biceps"] },
+    { name:"Strict Pull-Up",          mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
+    { name:"Weighted Pull-Up",        mode:"weight", equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:5, bodyParts:["Back","Biceps"] },
+    { name:"Ring Muscle-Up (DL)",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:3, defaultTime:30, defaultWeight:0, notes:"dead hang kip", bodyParts:["Back","Shoulders","Chest","Triceps"] },
+    { name:"Bar Muscle-Up",           mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:3, defaultTime:30, defaultWeight:0, notes:"kip", bodyParts:["Back","Shoulders","Chest","Triceps"] },
+    { name:"Ring L-Sit",              mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0, bodyParts:["Core","Shoulders"] },
+    { name:"Plank",                   mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:45, defaultWeight:0, bodyParts:["Core","Shoulders"] },
+    { name:"Hollow-Body Hold",        mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0, bodyParts:["Core"] },
+    { name:"Ring Support Hold",       mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0, bodyParts:["Shoulders","Chest","Triceps"] },
+    { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, bodyParts:["Thighs","Glutes"] },
+    { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held", bodyParts:["Thighs","Glutes"] },
+    { name:"Hang (Dead Grip)",        mode:"time",   equipment:["pullup"], weightAvailable:false, defaultSets:2, defaultReps:5, defaultTime:30, defaultWeight:0, bodyParts:["Forearms","Back","Shoulders"] },
+    { name:"Hindu Squat",             mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, bodyParts:["Thighs","Glutes"] },
+    { name:"Ring Rollout",            mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Core","Shoulders"] },
+    { name:"Pull-Up Negative",        mode:"reps",   equipment:["pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
+    { name:"Ring False-Grip Row",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps","Forearms"] },
+    { name:"Back Lever Hold",         mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:10, defaultWeight:0, bodyParts:["Back","Shoulders","Core"] },
+    { name:"Front Lever Hold",        mode:"time",   equipment:["rings","pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:8, defaultWeight:0, bodyParts:["Back","Shoulders","Core"] },
+    { name:"Renegade Push-Up",        mode:"reps",   equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps","Core"] },
+    { name:"Dumbbell Curl",           mode:"weight", equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:8, bodyParts:["Biceps","Forearms"] },
+    { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
   ];
   const exercises = defaultExercises.map((e,i) => {
     e.id = "ex-"+(i+1);
@@ -2578,7 +2600,7 @@ let currentView = "workouts";
 let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" (routine editor)
 let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
-let libraryFilters = { eq:"", search:"" };
+let libraryFilters = { search:"", parts:[], muscles:[], muscleScope:"any", equip:[], type:"", load:"any", mode:"and", open:false };
 
 /* ==== APP CORE END ==== */
 /* =========================================================================
@@ -2681,11 +2703,36 @@ function exerciseRow(e){
     ((e.primaryMuscles&&e.primaryMuscles.length)?'<div class="attr micro">primary: <b>'+esc(e.primaryMuscles.join(", "))+"</b>"+((e.secondaryMuscles&&e.secondaryMuscles.length)?' · secondary: '+esc(e.secondaryMuscles.join(", ")):"")+"</div>":"")+
     '</div>';
 }
+/* Body part -> detailed muscles it covers (explicit splits first, then the
+   MUSCLES region table for parts that share its region name). */
+const PART_DETAILS = { Biceps:["Biceps brachii","Brachialis"], Triceps:["Triceps brachii"], Thighs:["Quadriceps","Hamstrings"], Hips:["Hip flexors","Glutes","Abductors"], Glutes:["Glutes","Abductors"] };
+MUSCLES.forEach(pair=>{ if (BODY_PARTS.includes(pair[0])){ (PART_DETAILS[pair[0]] = PART_DETAILS[pair[0]] || []).push(pair[1]); } });
+function libTypeOf(e){ return EX_TYPES.hasOwnProperty(e.type) ? e.type : (e.mode==="time" ? "duration" : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight")); }
+function libUsesWeight(e){ return !!(e.weightAvailable || e.mode==="weight"); }
+function libMatchParts(e, parts){
+  const det = (e.primaryMuscles || []).concat(e.secondaryMuscles || []);
+  return parts.some(p=> (e.bodyParts || []).includes(p) || det.some(m=> (PART_DETAILS[p] || []).includes(m)));
+}
+function libMatchMuscles(e, muscles, scope){
+  const pool = scope === "primary" ? (e.primaryMuscles || []) : scope === "secondary" ? (e.secondaryMuscles || []) : (e.primaryMuscles || []).concat(e.secondaryMuscles || []);
+  return muscles.some(m=>pool.includes(m));
+}
+function libActiveFilterCount(){
+  const f = libraryFilters;
+  return f.parts.length + f.muscles.length + f.equip.length + (f.type ? 1 : 0) + (f.load !== "any" ? 1 : 0);
+}
 function libraryMatches(){
-  const eq = libraryFilters.eq, q = libraryFilters.search.trim().toLowerCase();
-  return state.exercises.filter(e =>
-    (!eq || (e.equipment||[]).includes(eq)) &&
-    (!q || e.name.toLowerCase().includes(q))
+  const f = libraryFilters, q = f.search.trim().toLowerCase();
+  const groups = [];
+  if (f.parts.length) groups.push(e=>libMatchParts(e, f.parts));
+  if (f.muscles.length) groups.push(e=>libMatchMuscles(e, f.muscles, f.muscleScope));
+  if (f.equip.length) groups.push(e=>(e.equipment || []).some(k=>f.equip.includes(k)));
+  if (f.type) groups.push(e=>libTypeOf(e) === f.type);
+  if (f.load === "weighted") groups.push(libUsesWeight);
+  else if (f.load === "bodyonly") groups.push(e=>!libUsesWeight(e));
+  return state.exercises.filter(e=>
+    (!q || e.name.toLowerCase().includes(q)) &&
+    (!groups.length || (f.mode === "and" ? groups.every(t=>t(e)) : groups.some(t=>t(e))))
   );
 }
 /* Refresh ONLY the results container so the search input keeps focus/caret. */
@@ -2693,21 +2740,90 @@ function renderLibraryResults(){
   const s = $("#view-library");
   const list = libraryMatches();
   const host = $("#lib-results", s);
-  if (!host) return;
-  host.innerHTML = list.length
-    ? '<div class="exercise-list">'+list.map(exerciseRow).join("")+'</div>'
-    : LIB_EMPTY;
-  $$(".exercise-item[data-open]", s).forEach(el=>
-    el.addEventListener("click", ()=>openExVisualizer(el.dataset.open)));
-  $$(".exercise-item [data-edit]", s).forEach(btn=>
-    btn.addEventListener("click", ev=>{ ev.stopPropagation(); openExEditor(btn.dataset.edit); }));
+  if (host){
+    host.innerHTML = list.length
+      ? '<div class="exercise-list">'+list.map(exerciseRow).join("")+'</div>'
+      : LIB_EMPTY;
+    $$(".exercise-item[data-open]", s).forEach(el=>
+      el.addEventListener("click", ()=>openExVisualizer(el.dataset.open)));
+    $$(".exercise-item [data-edit]", s).forEach(btn=>
+      btn.addEventListener("click", ev=>{ ev.stopPropagation(); openExEditor(btn.dataset.edit); }));
+  }
+  const meta = $("#lib-results-meta", s);
+  if (meta) meta.innerHTML = "<b>" + list.length + "</b> of " + state.exercises.length + " exercises";
+  const badge = $("#lib-filter-count", s);
+  if (badge){
+    const n = libActiveFilterCount();
+    badge.textContent = n;
+    badge.classList.toggle("zero", n === 0);
+  }
+}
+function libChipRow(group, items, selected, label){
+  return items.map(v=>{
+    const name = label ? label(v) : v;
+    return '<button type="button" class="fchip' + (selected.includes(v) ? " on" : "") + '" data-fg="' + group + '" data-fv="' + esc(v) + '">' + esc(name) + "</button>";
+  }).join("");
+}
+function libSegRow(group, options, current){
+  return options.map(o=>
+    '<button type="button" class="fchip seg' + (current === o.v ? " on" : "") + '" data-fg="' + group + '" data-fv="' + esc(o.v) + '">' + esc(o.l) + "</button>"
+  ).join("");
+}
+function renderLibPanel(){
+  const s = $("#view-library");
+  const panel = $("#lib-filter-panel", s);
+  if (!panel) return;
+  const f = libraryFilters;
+  let lastG = null, muscleHtml = "";
+  MUSCLES.forEach(pair=>{
+    const g = pair[0], m = pair[1];
+    if (g !== lastG){ muscleHtml += (lastG ? "</div>" : "") + '<div class="mgroup"><div class="mgroup-lbl">' + esc(g) + "</div>"; lastG = g; }
+    muscleHtml += '<button type="button" class="fchip' + (f.muscles.includes(m) ? " on" : "") + '" data-fg="muscles" data-fv="' + esc(m) + '">' + esc(m) + "</button>";
+  });
+  muscleHtml += "</div>";
+  panel.innerHTML =
+    '<div class="lib-fcard">' +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Body parts</b><span>chest, back, biceps…</span></div>' +
+      '<div class="lib-fchips">' + libChipRow("parts", BODY_PARTS, f.parts) + "</div></div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Muscles</b><span>match ' +
+      libSegRow("muscleScope", [{ v:"any", l:"Any" }, { v:"primary", l:"Primary" }, { v:"secondary", l:"Secondary" }], f.muscleScope) +
+      "</span></div>" + muscleHtml + "</div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Equipment</b><span>gear involved, for any reason</span></div>' +
+      '<div class="lib-fchips">' + libChipRow("equip", ALL_EQUIP, f.equip, k=>EQUIP_FILTER_LABELS[k] || k) + "</div></div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Movement</b></div>' +
+      '<div class="lib-fchips">' + libSegRow("type", [{ v:"", l:"All" }, { v:"duration", l:"Duration" }, { v:"bodyweight", l:"Bodyweight" }, { v:"weight", l:"Weight & reps" }], f.type) + "</div></div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Load</b></div>' +
+      '<div class="lib-fchips">' + libSegRow("load", [{ v:"any", l:"Any" }, { v:"weighted", l:"Weighted" }, { v:"bodyonly", l:"Bodyweight only" }], f.load) + "</div></div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Combine filters</b><span>search always applies · Combined = every group must match · Broad = any group matches</span></div>' +
+      '<div class="lib-fchips">' + libSegRow("mode", [{ v:"and", l:"Combined" }, { v:"or", l:"Broad" }], f.mode) +
+      '<button type="button" class="fchip lib-fclear" data-fg="clear" data-fv="">Clear all</button></div></div>' +
+    "</div>";
+}
+function bindLibPanel(){
+  const s = $("#view-library");
+  const panel = $("#lib-filter-panel", s);
+  if (!panel || panel._bound) return;
+  panel._bound = true;
+  panel.addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-fg]");
+    if (!b || !panel.contains(b)) return;
+    const g = b.dataset.fg, v = b.dataset.fv, f = libraryFilters;
+    if (g === "clear"){
+      f.parts = []; f.muscles = []; f.equip = []; f.type = ""; f.load = "any"; f.muscleScope = "any"; f.mode = "and";
+    } else if (g === "muscleScope" || g === "load" || g === "mode" || g === "type"){
+      f[g] = v;
+    } else if (g === "parts" || g === "muscles" || g === "equip"){
+      const arr = f[g], i = arr.indexOf(v);
+      if (i === -1) arr.push(v); else arr.splice(i, 1);
+    } else return;
+    renderLibPanel();
+    renderLibraryResults();
+  });
 }
 function renderLibrary(){
   const s = $("#view-library");
-  const eq = libraryFilters.eq;
-  const equipOpts = ['<option value="">All equipment</option>'].concat(
-    ALL_EQUIP.map(e=>'<option value="'+e+'"'+(eq===e?" selected":"")+'>'+esc(EQUIP_FILTER_LABELS[e]||e)+"</option>")
-  ).join("");  s.innerHTML =
+  const n = libActiveFilterCount();
+  s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-library/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
@@ -2720,15 +2836,24 @@ function renderLibrary(){
       '<div class="search">' +
         '<span class="search-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>' +
         '<input type="text" id="lib-search" placeholder="Search exercises…" value="'+esc(libraryFilters.search)+'"/></div>' +
-      '<select id="lib-eq" class="eq-select">'+equipOpts+'</select>' +
+      '<button class="btn" id="lib-filter-toggle" aria-expanded="' + libraryFilters.open + '">Filters <span class="fcount' + (n === 0 ? " zero" : "") + '" id="lib-filter-count">' + n + "</span></button>" +
       '<button class="btn primary" id="add-exercise">+ New exercise</button>' +
-    '</div>' +    '<div id="lib-load-banner"></div>'+
+    '</div>' +
+    '<div class="lib-fpanel' + (libraryFilters.open ? " open" : "") + '" id="lib-filter-panel"></div>' +
+    '<div class="lib-fmeta" id="lib-results-meta"></div>' +
+    '<div id="lib-load-banner"></div>'+
     '<div id="lib-results"></div>'+
     '<div id="ex-editor-host"></div>' +
     '</div>';
   $("#lib-search").addEventListener("input", ev=>{ libraryFilters.search = ev.target.value; renderLibraryResults(); });
-  $("#lib-eq").addEventListener("change", ev=>{ libraryFilters.eq = ev.target.value; renderLibraryResults(); });
+  $("#lib-filter-toggle").addEventListener("click", ()=>{
+    libraryFilters.open = !libraryFilters.open;
+    $("#lib-filter-panel").classList.toggle("open", libraryFilters.open);
+    $("#lib-filter-toggle").setAttribute("aria-expanded", String(libraryFilters.open));
+  });
   $("#add-exercise").addEventListener("click", ()=>openExEditor(null));
+  renderLibPanel();
+  bindLibPanel();
   refreshLoadBanner(s);
   renderLibraryResults();
 }

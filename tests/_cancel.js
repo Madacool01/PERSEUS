@@ -25,13 +25,39 @@ const check=(c,m)=>{ if(c){pass++;console.log("  ✓ "+m);}else{fail++;console.l
 W.switchView("library");
 check(Boolean($("#view-library .exercise-item")), "library rendered");
 
-// Equipment filter options show capitalized display names (not raw keys)
-const eqLabels = $$("#lib-eq option").map(o=>o.textContent);
-check(eqLabels[0] === "All equipment", "filter starts with 'All equipment'");
+// Equipment filter chips show capitalized display names (not raw keys)
+const fToggle = $("#lib-filter-toggle");
+check(Boolean(fToggle), "Filters toggle exists");
+fToggle.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($("#lib-filter-panel").classList.contains("open"), "filter panel opens");
+const eqLabels = $$("#lib-filter-panel [data-fg='equip']").map(o=>o.textContent);
+check(eqLabels[0] === "Body Weight", "filter chips start with 'Body Weight'");
 ["Body Weight", "Rings", "Pull-up Bar", "Dumbbell", "Barbell", "Kettlebell", "EZ Bar", "Plates", "Machine", "Bands", "Trap Bar", "Suspension"].forEach((l,i)=>{
-  check(eqLabels[i+1] === l, "equipment option '" + l + "' is capitalized");
+  check(eqLabels[i] === l, "equipment chip '" + l + "' is capitalized");
 });
-check($$("#lib-eq option").map(o=>o.value).indexOf("bodyweight") !== -1, "option values still use raw keys for matching");
+check($$("#lib-filter-panel [data-fg='equip']").map(o=>o.getAttribute("data-fv")).indexOf("bodyweight") !== -1, "chip values still use raw keys for matching");
+check($$("#lib-filter-panel [data-fg='equip'].on").length === 0, "no equipment selected initially");
+// Body-part chips offer Biceps/Triceps
+const partVals = $$("#lib-filter-panel [data-fg='parts']").map(o=>o.getAttribute("data-fv"));
+check(partVals.includes("Biceps") && partVals.includes("Triceps"), "body-part chips offer Biceps/Triceps");
+// Toggling a body-part chip narrows the list; toggling off restores it
+const total = $$("#view-library .exercise-item").length;
+$("#lib-filter-panel [data-fg='parts'][data-fv='Biceps']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+const narrowed = $$("#view-library .exercise-item").length;
+check(narrowed < total && narrowed > 0, "Biceps chip narrows results ("+narrowed+" of "+total+")");
+check($("#lib-filter-count").textContent === "1", "filter badge counts 1 active filter");
+$("#lib-filter-panel [data-fg='parts'][data-fv='Biceps']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($$("#view-library .exercise-item").length === total, "toggling the chip off restores the full list");
+// Combined vs Broad: parts + equipment intersect vs union
+$("#lib-filter-panel [data-fg='parts'][data-fv='Biceps']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+$("#lib-filter-panel [data-fg='equip'][data-fv='dumbbell']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+const both = $$("#view-library .exercise-item").length;
+check($("#lib-filter-panel [data-fg='mode'][data-fv='or']").textContent === "Broad", "match-mode Broad option present");
+$("#lib-filter-panel [data-fg='mode'][data-fv='or']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+const broad = $$("#view-library .exercise-item").length;
+check(broad >= both, "Broad mode shows a union ("+broad+") vs Combined ("+both+")");
+$("#lib-filter-panel [data-fg='clear']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($$("#view-library .exercise-item").length === total, "Clear all restores the full list");
 
 // Count exercises before
 const before = E("state.exercises.length");
