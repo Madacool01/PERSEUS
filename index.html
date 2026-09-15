@@ -2604,7 +2604,7 @@ let currentView = "workouts";
 let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" (routine editor)
 let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
-let libraryFilters = { search:"", parts:[], muscles:[], muscleScope:"any", equip:[], type:"", load:"any", mode:"and", open:false };
+let libraryFilters = { search:"", parts:[], muscles:[], muscleScope:"any", equip:[], type:"", load:"any", fav:"all", mode:"and", open:false };
 
 /* ==== APP CORE END ==== */
 /* =========================================================================
@@ -2723,7 +2723,7 @@ function libMatchMuscles(e, muscles, scope){
 }
 function libActiveFilterCount(){
   const f = libraryFilters;
-  return f.parts.length + f.muscles.length + f.equip.length + (f.type ? 1 : 0) + (f.load !== "any" ? 1 : 0);
+  return f.parts.length + f.muscles.length + f.equip.length + (f.type ? 1 : 0) + (f.load !== "any" ? 1 : 0) + (f.fav !== "all" ? 1 : 0);
 }
 function libraryMatches(){
   const f = libraryFilters, q = f.search.trim().toLowerCase();
@@ -2734,6 +2734,8 @@ function libraryMatches(){
   if (f.type) groups.push(e=>libTypeOf(e) === f.type);
   if (f.load === "weighted") groups.push(libUsesWeight);
   else if (f.load === "bodyonly") groups.push(e=>!libUsesWeight(e));
+  if (f.fav === "only") groups.push(e=>!!e.favorite);
+  else if (f.fav === "excluded") groups.push(e=>!e.favorite);
   return state.exercises.filter(e=>
     (!q || e.name.toLowerCase().includes(q)) &&
     (!groups.length || (f.mode === "and" ? groups.every(t=>t(e)) : groups.some(t=>t(e))))
@@ -2800,6 +2802,8 @@ function renderLibPanel(){
       '<div class="lib-fchips">' + libSegRow("type", [{ v:"", l:"All" }, { v:"duration", l:"Duration" }, { v:"bodyweight", l:"Bodyweight" }, { v:"weight", l:"Weight & reps" }], f.type) + "</div></div>" +
     '<div class="lib-frow"><div class="lib-frow-head"><b>Load</b></div>' +
       '<div class="lib-fchips">' + libSegRow("load", [{ v:"any", l:"Any" }, { v:"weighted", l:"Weighted" }, { v:"bodyonly", l:"Bodyweight only" }], f.load) + "</div></div>" +
+    '<div class="lib-frow"><div class="lib-frow-head"><b>Favorites</b></div>' +
+      '<div class="lib-fchips">' + libSegRow("fav", [{ v:"all", l:"All" }, { v:"only", l:"Favorites" }, { v:"excluded", l:"Exclude favorites" }], f.fav) + "</div></div>" +
     '<div class="lib-frow"><div class="lib-frow-head"><b>Combine filters</b><span>search always applies · Combined = every group must match · Broad = any group matches</span></div>' +
       '<div class="lib-fchips">' + libSegRow("mode", [{ v:"and", l:"Combined" }, { v:"or", l:"Broad" }], f.mode) +
       '<button type="button" class="fchip lib-fclear" data-fg="clear" data-fv="">Clear all</button></div></div>' +
@@ -2830,8 +2834,8 @@ function bindLibPanel(){
     const g = b.dataset.fg, v = b.dataset.fv, f = libraryFilters;
     if (g === "close"){ closeLibPanel(); return; }
     if (g === "clear"){
-      f.parts = []; f.muscles = []; f.equip = []; f.type = ""; f.load = "any"; f.muscleScope = "any"; f.mode = "and";
-    } else if (g === "muscleScope" || g === "load" || g === "mode" || g === "type"){
+      f.parts = []; f.muscles = []; f.equip = []; f.type = ""; f.load = "any"; f.fav = "all"; f.muscleScope = "any"; f.mode = "and";
+    } else if (g === "muscleScope" || g === "load" || g === "fav" || g === "mode" || g === "type"){
       f[g] = v;
     } else if (g === "parts" || g === "muscles" || g === "equip"){
       const arr = f[g], i = arr.indexOf(v);

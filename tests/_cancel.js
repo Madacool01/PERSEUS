@@ -57,6 +57,16 @@ const broad = $$("#view-library .exercise-item").length;
 check(broad >= both, "Broad mode shows a union ("+broad+") vs Combined ("+both+")");
 $("#lib-filter-panel [data-fg='clear']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
 check($$("#view-library .exercise-item").length === total, "Clear all restores the full list");
+// Favorites filter: show only favorites, then exclude them
+E("state.exercises.find(e=>e.id==='ex-1').favorite = true");
+$("#lib-filter-panel [data-fg='fav'][data-fv='only']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+const favOnly = $$("#view-library .exercise-item").map(el=>el.textContent);
+check(favOnly.length === 1 && favOnly[0].indexOf("Push-Up") !== -1, "Favorites shows only the favourited exercise");
+$("#lib-filter-panel [data-fg='fav'][data-fv='excluded']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($$("#view-library .exercise-item").length === total - 1, "Exclude favorites hides the favourited exercise");
+E("state.exercises.find(e=>e.id==='ex-1').favorite = false");
+$("#lib-filter-panel [data-fg='clear']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($$("#view-library .exercise-item").length === total, "Clear all restores the full list after favorites test");
 // Glass popup dismissals: X button and backdrop click
 check(Boolean($("#lib-filter-panel .lib-fcard")), "filters render inside a popup card");
 $("#lib-filter-panel [data-fg='close']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
