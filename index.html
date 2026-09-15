@@ -581,9 +581,13 @@
   .search-ico svg { width: 16px; height: 16px; }
 
   /* ---------- Library advanced filters ---------- */
-  .lib-fpanel { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .35s cubic-bezier(.22,1,.36,1), opacity .25s, margin .3s; margin: -1rem 0 0; }
-  .lib-fpanel.open { max-height: 640px; opacity: 1; margin: -0.6rem 0 1.2rem; overflow-y: auto; }
-  .lib-fcard { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); padding: 1rem 1.1rem; box-shadow: var(--shadow-1); }
+  .lib-fpanel { display: none; }
+  .lib-fpanel.open { display: grid; place-items: center; position: fixed; inset: 0; z-index: 60; padding: 1.2rem; background: rgba(23,19,12,.55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: modalBack .2s ease; }
+  .lib-fcard { width: min(620px, 100%); max-height: 84vh; overflow-y: auto; background: var(--glass); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); padding: 1.1rem 1.2rem 1.2rem; animation: modalIn .28s cubic-bezier(.22,1,.36,1); }
+  .lib-fhead { display: flex; align-items: center; gap: .7rem; margin-bottom: .4rem; }
+  .lib-fhead b { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+  .lib-fhead .lib-fcount { font-size: .75rem; color: var(--ink-3); }
+  .lib-fhead .btn { margin-left: auto; }
   .lib-frow { padding: .55rem 0; border-bottom: 1px dashed var(--line); }
   .lib-frow:last-child { border-bottom: 0; }
   .lib-frow-head { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-bottom: .45rem; }
@@ -600,7 +604,7 @@
   .lib-fclear { margin-left: auto; }
   .fcount { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: .72rem; font-weight: 700; padding: 0 .3rem; }
   .fcount.zero { display: none; }
-  @media (max-width: 768px) { .lib-fpanel.open { max-height: 80vh; } }
+  @media (max-width: 768px) { .lib-fpanel.open { padding: .8rem; } .lib-fcard { max-height: 86dvh; } }
 
   /* ---------- Exercise library ---------- */
   .exercise-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; grid-auto-flow: dense; }
@@ -2782,7 +2786,9 @@ function renderLibPanel(){
   });
   muscleHtml += "</div>";
   panel.innerHTML =
-    '<div class="lib-fcard">' +
+    '<div class="lib-fcard" role="dialog" aria-modal="true" aria-label="Exercise filters">' +
+    '<div class="lib-fhead"><b>Filters</b><span class="lib-fcount">' + libActiveFilterCount() + ' active</span>' +
+      '<button type="button" class="btn ghost small" data-fg="close" data-fv="" aria-label="Close filters">✕</button></div>' +
     '<div class="lib-frow"><div class="lib-frow-head"><b>Body parts</b><span>chest, back, biceps…</span></div>' +
       '<div class="lib-fchips">' + libChipRow("parts", BODY_PARTS, f.parts) + "</div></div>" +
     '<div class="lib-frow"><div class="lib-frow-head"><b>Muscles</b><span>match ' +
@@ -2799,15 +2805,30 @@ function renderLibPanel(){
       '<button type="button" class="fchip lib-fclear" data-fg="clear" data-fv="">Clear all</button></div></div>' +
     "</div>";
 }
+function closeLibPanel(){
+  libraryFilters.open = false;
+  const panel = $("#lib-filter-panel");
+  if (panel) panel.classList.remove("open");
+  const t = $("#lib-filter-toggle");
+  if (t) t.setAttribute("aria-expanded", "false");
+}
 function bindLibPanel(){
   const s = $("#view-library");
   const panel = $("#lib-filter-panel", s);
   if (!panel || panel._bound) return;
   panel._bound = true;
+  if (!window._libFilterEsc){
+    window._libFilterEsc = true;
+    document.addEventListener("keydown", ev=>{
+      if (ev.key === "Escape" && libraryFilters.open) closeLibPanel();
+    });
+  }
   panel.addEventListener("click", ev=>{
+    if (ev.target === panel){ closeLibPanel(); return; }
     const b = ev.target.closest("[data-fg]");
     if (!b || !panel.contains(b)) return;
     const g = b.dataset.fg, v = b.dataset.fv, f = libraryFilters;
+    if (g === "close"){ closeLibPanel(); return; }
     if (g === "clear"){
       f.parts = []; f.muscles = []; f.equip = []; f.type = ""; f.load = "any"; f.muscleScope = "any"; f.mode = "and";
     } else if (g === "muscleScope" || g === "load" || g === "mode" || g === "type"){
@@ -2848,8 +2869,11 @@ function renderLibrary(){
   $("#lib-search").addEventListener("input", ev=>{ libraryFilters.search = ev.target.value; renderLibraryResults(); });
   $("#lib-filter-toggle").addEventListener("click", ()=>{
     libraryFilters.open = !libraryFilters.open;
-    $("#lib-filter-panel").classList.toggle("open", libraryFilters.open);
-    $("#lib-filter-toggle").setAttribute("aria-expanded", String(libraryFilters.open));
+    if (!libraryFilters.open) closeLibPanel();
+    else {
+      $("#lib-filter-panel").classList.add("open");
+      $("#lib-filter-toggle").setAttribute("aria-expanded", "true");
+    }
   });
   $("#add-exercise").addEventListener("click", ()=>openExEditor(null));
   renderLibPanel();

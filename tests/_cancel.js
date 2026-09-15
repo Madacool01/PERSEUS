@@ -29,8 +29,7 @@ check(Boolean($("#view-library .exercise-item")), "library rendered");
 const fToggle = $("#lib-filter-toggle");
 check(Boolean(fToggle), "Filters toggle exists");
 fToggle.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
-check($("#lib-filter-panel").classList.contains("open"), "filter panel opens");
-const eqLabels = $$("#lib-filter-panel [data-fg='equip']").map(o=>o.textContent);
+check($("#lib-filter-panel").classList.contains("open"), "filter panel opens");const eqLabels = $$("#lib-filter-panel [data-fg='equip']").map(o=>o.textContent);
 check(eqLabels[0] === "Body Weight", "filter chips start with 'Body Weight'");
 ["Body Weight", "Rings", "Pull-up Bar", "Dumbbell", "Barbell", "Kettlebell", "EZ Bar", "Plates", "Machine", "Bands", "Trap Bar", "Suspension"].forEach((l,i)=>{
   check(eqLabels[i] === l, "equipment chip '" + l + "' is capitalized");
@@ -58,6 +57,14 @@ const broad = $$("#view-library .exercise-item").length;
 check(broad >= both, "Broad mode shows a union ("+broad+") vs Combined ("+both+")");
 $("#lib-filter-panel [data-fg='clear']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
 check($$("#view-library .exercise-item").length === total, "Clear all restores the full list");
+// Glass popup dismissals: X button and backdrop click
+check(Boolean($("#lib-filter-panel .lib-fcard")), "filters render inside a popup card");
+$("#lib-filter-panel [data-fg='close']").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check(!$("#lib-filter-panel").classList.contains("open"), "X button closes the popup");
+fToggle.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check($("#lib-filter-panel").classList.contains("open"), "toggle reopens the popup");
+$("#lib-filter-panel").dispatchEvent(new W.MouseEvent("click",{bubbles:true}));
+check(!$("#lib-filter-panel").classList.contains("open"), "backdrop click closes the popup");
 
 // Count exercises before
 const before = E("state.exercises.length");
