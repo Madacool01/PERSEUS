@@ -879,6 +879,11 @@
     .wm-views--right { justify-content: center; padding-right: 0; flex-wrap: wrap; }
     .wm-views--right .wm-view { flex: 1 1 200px; max-width: 280px; }
   }
+  /* Phone only: shrink front/back figures so they fit next to each other.
+     Desktop untouched (base + 780px rules still apply above 640px). */
+  @media (max-width: 640px) {
+    #you-recovery-section .wm-views--right { flex-wrap: nowrap; gap: .5rem; justify-content: center; }
+    #you-recovery-section .wm-views--right .wm-view { flex: 1 1 0; min-width: 0; max-width: 180px; }
   .wm-week-nav { display: inline-flex; gap: .3rem; align-items: center; margin-left: auto; }
   .wm-week-btn {
     width: 30px; height: 30px; display: grid; place-items: center;
@@ -953,6 +958,38 @@
   .streak-mini .streak-ico { width: 22px; height: 22px; margin: 0 auto .25rem; }
   .streak-mini .streak-ico svg { width: 20px; height: 20px; }
   .streak-open { margin-left: auto; }
+  #you-streak-section .streak-collapsed-head { margin-bottom: .4rem; }
+  #you-streak-section .streak-collapsed-title { font-size: 1.05rem; }
+  #you-streak-section .streak-open { padding: .3rem .7rem; font-size: .78rem; }
+  /* Phone: match the streak-outside reference (stats on top, plain numbers,
+     blue dumbbell hits, blue today ring, tall rail). Desktop keeps compact. */
+  @media (max-width: 640px) {
+    #you-streak-section .streak-collapsed-head { margin-bottom: .9rem; }
+    #you-streak-section .streak-collapsed-title { font-size: 1.7rem; }
+    #you-streak-section .streak-open { display: none; }
+    #you-streak-section .streak-split { display: flex; flex-direction: column; margin-top: 1rem; gap: 0; }
+    #you-streak-section .streak-side { order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1.2rem; }
+    #you-streak-section .streak-mini { display: flex; align-items: flex-start; gap: .7rem; text-align: left; border-radius: 18px; padding: .9rem 1rem; }
+    #you-streak-section .streak-mini .n { font-size: 1.7rem; }
+    #you-streak-section .streak-mini .l { font-size: .85rem; margin-top: .15rem; }
+    #you-streak-section .streak-mini .streak-ico { width: 30px; height: 30px; margin: 0; flex: 0 0 auto; }
+    #you-streak-section .streak-mini .streak-ico svg { width: 26px; height: 26px; }
+    #you-streak-section .streak-compact-left { grid-template-columns: minmax(0, 1fr) 54px; gap: .6rem; }
+    #you-streak-section .streak-dow { gap: 0; }
+    #you-streak-section .streak-dow span { font-size: .8rem; padding: .35rem 0; }
+    #you-streak-section .streak-row { gap: 2px; }
+    #you-streak-section .streak-cell { font-size: .95rem; }
+    #you-streak-section .streak-cell.dim { opacity: .55; font-size: .95rem; }
+    #you-streak-section .streak-cell.miss { border: 0; font-size: 1.05rem; font-weight: 500; color: var(--ink); line-height: 1.2; }
+    #you-streak-section .streak-cell.miss.future { opacity: 1; }
+    #you-streak-section .streak-cell.hit { width: 82%; }
+    #you-streak-section .streak-rail { min-height: 220px; padding: .4rem 0 .6rem; }
+    #you-streak-section .streak-rail::before { top: 14px; bottom: 14px; width: 3px; }
+    #you-streak-section .rail-node { width: 26px; height: 26px; }
+    #you-streak-section .rail-node.done svg { width: 13px; height: 13px; }
+    #you-streak-section .rail-flame { width: 44px; height: 52px; font-size: 1.05rem; }
+    #you-streak-section .rail-flame b { transform: translateY(6px); }
+  }
   .streak-hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .streak-big { font-family: var(--font-display); font-weight: 800; font-size: clamp(4.5rem, 14vw, 7rem); line-height: .9; letter-spacing: -.04em; color: var(--ink); }
   .streak-big-sub { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; margin: .4rem 0 0; color: var(--ink); }
@@ -7419,13 +7456,13 @@ function youStreakCollapsedHtml(){
     if (w.off === 0) return '<div class="rail-flame" aria-label="' + streak + ' weeks streak">' + STREAK_ICO_FLAME + '<b>' + streak + '</b></div>';
     return '<div class="rail-node todo"></div>';
   }).join("");
-  return '<div class="you-page-head" style="margin-bottom:.4rem"><h3 class="streak-title" style="font-size:1.05rem">' + esc(youStreakMonthLabel(y, m)) + '</h3>' +
-    '<button type="button" class="btn ghost streak-open" data-you-streak-open style="padding:.3rem .7rem;font-size:.78rem">View calendar</button></div>' +
+  return '<div class="you-page-head streak-collapsed-head"><h3 class="streak-title streak-collapsed-title">' + esc(youStreakMonthLabel(y, m)) + '</h3>' +
+    '<button type="button" class="btn ghost streak-open" data-you-streak-open>View calendar</button></div>' +
     '<div class="streak-split"><div class="streak-compact-left"><div><div class="streak-dow">' + dow + '</div><div class="streak-row">' + grid + '</div></div>' +
     '<div class="streak-rail" aria-hidden="true">' + rail + '</div></div>' +
     '<div class="streak-side">' +
-      '<div class="streak-mini"><span class="streak-ico" style="color:#f59e0b">' + STREAK_ICO_FLAME_SM + '</span><span class="n">' + streak + '</span><div class="l">Weeks streak</div></div>' +
-      '<div class="streak-mini"><span class="streak-ico" style="color:#2f63c9">' + STREAK_ICO_DB + '</span><span class="n">' + workouts + '</span><div class="l">workouts</div></div>' +
+      '<div class="streak-mini"><span class="streak-ico" style="color:#f59e0b">' + STREAK_ICO_FLAME_SM + '</span><span><span class="n">' + streak + '</span><div class="l">Weeks streak</div></span></div>' +
+      '<div class="streak-mini"><span class="streak-ico" style="color:#2f63c9">' + STREAK_ICO_DB + '</span><span><span class="n">' + workouts + '</span><div class="l">workouts</div></span></div>' +
     '</div></div>';
 }
 function youStreakExpandedHtml(){
