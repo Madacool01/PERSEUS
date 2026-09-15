@@ -2816,6 +2816,17 @@ function closeLibPanel(){
   const t = $("#lib-filter-toggle");
   if (t) t.setAttribute("aria-expanded", "false");
 }
+const LIB_SEG_DEFAULTS = { muscleScope:"any", load:"any", fav:"all", mode:"and", type:"" };
+function syncLibPanel(panel){
+  const f = libraryFilters;
+  panel.querySelectorAll("[data-fg]").forEach(b=>{
+    const g = b.dataset.fg, v = b.dataset.fv;
+    if (g === "parts" || g === "muscles" || g === "equip") b.classList.toggle("on", f[g].includes(v));
+    else if (LIB_SEG_DEFAULTS.hasOwnProperty(g)) b.classList.toggle("on", f[g] === v);
+  });
+  const head = panel.querySelector(".lib-fhead .lib-fcount");
+  if (head) head.textContent = libActiveFilterCount() + " active";
+}
 function bindLibPanel(){
   const s = $("#view-library");
   const panel = $("#lib-filter-panel", s);
@@ -2841,7 +2852,7 @@ function bindLibPanel(){
       const arr = f[g], i = arr.indexOf(v);
       if (i === -1) arr.push(v); else arr.splice(i, 1);
     } else return;
-    renderLibPanel();
+    syncLibPanel(panel);
     renderLibraryResults();
   });
 }
