@@ -6636,9 +6636,14 @@ function renderHistory(){
     const day = getDay(ses.dayId);
     const n = ses.completedSets.filter(c=>c.hit).length;
     const tot = ses.completedSets.length;
+    let volTxt = "";
+    try{
+      const sv = sessionVolumeKg(ses);
+      volTxt = sv>0 ? ' · '+fmtVol(sv)+' '+weightUnit() : '';
+    }catch(e){}
     return '<div class="wo-card" data-sess="'+ses.id+'">'+
       '<div><div class="wo-name">'+esc(day?day.name:"Session")+'</div>'+
-      '<div class="date">'+fmtDate(ses.dateISO)+' · '+sessionTypeLabel(ses.type)+' · '+n+'/'+tot+' sets on target</div></div>'+
+      '<div class="date">'+fmtDate(ses.dateISO)+' · '+sessionTypeLabel(ses.type)+' · '+n+'/'+tot+' sets on target'+volTxt+'</div></div>'+
       '<span class="badge">view</span></div>';
   }).join("");
   // progression per exercise: collect across sessions chronologically
@@ -6745,17 +6750,31 @@ function renderHistory(){
       else valTxt = (c.reps != null ? c.reps : "-") + " reps";
       const st = c.type && c.type !== "regular" ? ' <span class="set-type-badge ' + c.type + '">' + SET_TYPES[c.type].tag + '</span>' : '';
       const note = c.note ? '<span class="hist-setnote">' + esc(c.note) + '</span>' : '';
-      return '<div class="hist-setrow"><span class="' + numCls + '" title="' + numTitle + '">' + num + '</span><span class="hist-setval">' + valTxt + '</span>' + st + note + '</div>';
+      let setVol = null;
+      try{ setVol = completedSetVolume(ex, c); }catch(e){ setVol = null; }
+      const volTxt = (setVol!=null && setVol>0) ? '<span class="hist-setvol mono">'+fmtVol(setVol)+' '+weightUnit()+'</span>' : '';
+      return '<div class="hist-setrow"><span class="' + numCls + '" title="' + numTitle + '">' + num + '</span><span class="hist-setval">' + valTxt + '</span>' + st + note + '<span class="spacer" style="flex:1"></span>' + volTxt + '</div>';
     }).join("");
-    return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b></div><div class="hist-sets">' + rows + '</div></div>';
+    let exVol = 0;
+    try{
+      (seen[exId]||[]).forEach(c=>{ const v = completedSetVolume(ex, c); if (v) exVol += v; });
+    }catch(e){ exVol = 0; }
+    const exVolTxt = exVol>0 ? '<span class="pill">'+fmtVol(exVol)+' '+weightUnit()+'</span>' : '<span class="pill" title="Timed holds, warm-ups, or sets with missing load are not counted">— volume</span>';
+    return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b><div class="spacer" style="flex:1"></div>' + exVolTxt + '</div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
   const rec = ses.recovery||{};
+  let totalVol = 0;
+  try{ totalVol = sessionVolumeKg(ses); }catch(e){ totalVol = 0; }
+  const totalVolHtml = totalVol>0
+    ? '<div class="day-head" style="margin-top:10px"><b>Total session volume</b><div class="spacer"></div><span class="pill">'+fmtVol(totalVol)+' '+weightUnit()+'</span></div>'
+    : '<div class="micro muted" style="margin-top:10px">No countable volume in this session — timed holds, warm-ups, and sets with missing load are not counted.</div>';
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
     '<div class="day-head"><b>'+esc(day?day.name:"Session")+'</b><span class="pill">'+sessionTypeLabel(ses.type)+'</span><span class="muted small">'+fmtDate(ses.dateISO)+'</span>'+
       '<div class="spacer"></div>'+
       '<button type="button" class="btn danger sess-del" data-del-sess="'+ses.id+'" title="Delete session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Delete</button>'+
       '<button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
     '<div class="hist-detail">' + blocks + '</div>'+
+    totalVolHtml+
     '<div class="small muted" style="margin-top:8px">Recovery '+(rec.recovery||'-')+' · sleep '+(rec.sleep||'-')+' · soreness '+(rec.soreness||'-')+(rec.pain?' · pain: "'+esc(rec.pain)+'"':'')+'</div>'+
     '<div class="small">'+(rec.note?esc(rec.note):'')+'</div>'+
     '</div>';
