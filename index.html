@@ -2190,6 +2190,12 @@ const SET_TYPES = {
   failure: { label:"Failure",  tag:"FAIL",  desc:"AMRAP. Go to complete muscular failure; no fixed rep target." },
 };
 function setTypeOf(de, i){ return (de && de.setTypes && de.setTypes[i]) || "regular"; }
+/* per-set working weight: falls back to the single entry weight when no per-set array exists */
+function setWeightOf(de, i){
+  if (de && Array.isArray(de.setWeights) && de.setWeights[i]!=null && de.setWeights[i]!=="") return +de.setWeights[i];
+  return (de && de.weight!=null && de.weight!=="") ? +de.weight : 0;
+}
+function usesWeightFor(ex){ return !!(ex && (ex.weightAvailable || ex.mode==="weight")); }
 /* compact ladder display: "8 / 8·DROP / 6·FAIL reps" */
 function setLadderTxt(de){
   const arr = de.setTimes || de.setReps;
@@ -2214,7 +2220,7 @@ function setLadderTxt(de){
 function normalizePlan(ex, de){
   const n = Math.max(1, de.targetSets || 1);
   const plan = { targetSets:n, reps:de.reps, time:de.time, weight:de.weight,
-    setReps:null, setTimes:null, setTypes:null,
+    setReps:null, setTimes:null, setTypes:null, setWeights:null,
     modifiedAt: (typeof de.modifiedAt === "number") ? de.modifiedAt : null };
   if (ex && ex.mode==="time"){
     plan.setTimes = Array.isArray(de.setTimes) ? de.setTimes.slice()
@@ -2225,6 +2231,12 @@ function normalizePlan(ex, de){
   }
   plan.setTypes = Array.isArray(de.setTypes) ? de.setTypes.slice()
     : Array.from({length:n}, () => "regular");
+  if (usesWeightFor(ex)){
+    const wFallback = (de.weight!=null && de.weight!=="") ? +de.weight : ((ex && ex.defaultWeight)||0);
+    plan.setWeights = Array.isArray(de.setWeights) && de.setWeights.length
+      ? Array.from({length:n}, (_,i)=> (de.setWeights[i]!=null && de.setWeights[i]!=="") ? +de.setWeights[i] : wFallback)
+      : Array.from({length:n}, () => wFallback);
+  }
   return plan;
 }
 /* The current shared plan for an exercise: the canonical copy if one has been
@@ -2251,6 +2263,8 @@ function applyPlanToEntry(de, ex, plan){
     de.setReps = (plan.setReps||[]).slice(); delete de.setTimes;
   }
   de.setTypes = (plan.setTypes||[]).slice();
+  if (Array.isArray(plan.setWeights)) { de.setWeights = plan.setWeights.slice(); de.weight = de.setWeights[0]!=null ? de.setWeights[0] : de.weight; }
+  else if (!usesWeightFor(ex)) { delete de.setWeights; }
   // Copies share the source's modification stamp so the group stays coherent.
   if (typeof plan.modifiedAt === "number") de.modifiedAt = plan.modifiedAt;
 }
@@ -2558,8 +2572,9 @@ function setPlanTxt(de, ex, i, dayId){
     return timed ? "hold to failure" : "AMRAP to failure";
   }
   if (st==="warmup") return "light warm-up";
+  const w = setWeightOf(de, i);
   const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
-    : (de.weight? (setTarget(de,"reps",i)+'×'+fmtWeight(de.weight)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
+    : (w ? (setTarget(de,"reps",i)+'×'+fmtWeight(w)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
   const baseTxt = st==="drop" ? base+" · drop" : base;
   // Any set type: when the last session on this routine beat the stored target,
   // show the PR to beat (same in the logger and the Workouts editor).
@@ -4138,6 +4153,13 @@ function setSupersetRounds(dayId, bandId, n){
     if (isTime){ de.setTimes = out; delete de.setReps; de.time = out[0]; }
     else { de.setReps = out; delete de.setTimes; de.reps = out[0]; }
     de.setTypes = tyOut;
+    if (usesWeightFor(ex)){
+      const wArr = Array.isArray(de.setWeights) ? de.setWeights : [];
+      const wFall = (de.weight!=null && de.weight!=="") ? +de.weight : ((ex && ex.defaultWeight)||0);
+      const wOut = [];
+      for (let i=0;i<n;i++) wOut[i] = (wArr[i]!=null && wArr[i]!=="") ? +wArr[i] : wFall;
+      de.setWeights = wOut; de.weight = wOut[0];
+    }
     de.targetSets = n;
     de.modifiedAt = Date.now();
     syncExercisePlan(de.exId, de);
@@ -4530,7 +4552,7 @@ function openAddEx(dayId, exId){
       '<p class="micro" id="add-sync-note" style="margin-top:.4rem;color:var(--green)"></p>'+
       '<div class="btn-row"><button class="btn primary" id="add-ex-ok">'+(editing?'Save changes':'Add')+'</button><button class="btn" id="add-ex-cancel">Cancel</button></div>'+
     '</div>';
-  let prevVals = null, prevTypes = null;
+  let prevVals = null, prevTypes = null, prevWeights = null;
   function readVals(){
     const vals = [];
     $$("#add-per-set .set-target-in", host).forEach(inp=>{ vals[+inp.dataset.i] = inp.value; });
@@ -4541,6 +4563,11 @@ function openAddEx(dayId, exId){
     $$("#add-per-set .set-type-in", host).forEach(sel=>{ tys[+sel.dataset.i] = sel.value; });
     return tys;
   }
+  function readWeights(){
+    const ws = [];
+    $$("#add-per-set .set-weight-in", host).forEach(inp=>{ ws[+inp.dataset.i] = inp.value; });
+    return ws;
+  }
   function buildPerSet(){
     const ex = getEx($("#add-ex-select").value);
     if (!ex) return;
@@ -4548,7 +4575,14 @@ function openAddEx(dayId, exId){
     const n = ssGroup ? Math.max(1, ssRounds) : Math.max(1, +(setsEl?setsEl.value:3) || 1);
     const isTime = ex.mode==="time";
     const fallback = isTime ? (ex.defaultTime||30) : (ex.defaultReps||8);
+    const wFallback = (function(){
+      const wEl = $("#add-ex-weight", host);
+      const single = wEl ? +wEl.value : NaN;
+      if (isFinite(single)) return single;
+      return ex.defaultWeight||0;
+    })();
     const typeOpts = Object.keys(SET_TYPES).map(t=>'<option value="'+t+'">'+SET_TYPES[t].label+'</option>').join("");
+    const showW = usesWeightFor(ex);
     let html = '<label class="field" style="margin-top:.4rem"><span>Target '+ (isTime?"hold":"reps") +' and set type, per set</span><div class="set-targets">';
     for (let i=0;i<n;i++){
       const v = (prevVals && prevVals[i]!=null && prevVals[i]!=="") ? prevVals[i] : fallback;
@@ -4558,8 +4592,17 @@ function openAddEx(dayId, exId){
         '<select class="set-type-in" data-i="'+i+'">'+typeOpts.replace('value="'+t+'"', 'value="'+t+'" selected')+'</select></label>';
     }
     html += '</div></label>';
+    if (showW){
+      html += '<label class="field" style="margin-top:.4rem"><span>Weight per set ('+weightUnit()+') — e.g. warm-up light, work heavy, drop lighter</span><div class="set-targets">';
+      for (let i=0;i<n;i++){
+        const w = (prevWeights && prevWeights[i]!=null && prevWeights[i]!=="") ? prevWeights[i] : wFallback;
+        html += '<label class="set-target"><span>Set '+(i+1)+'</span>'+
+          '<input type="number" min="0" step="0.5" class="set-weight-in" data-i="'+i+'" value="'+w+'"/></label>';
+      }
+      html += '</div></label>';
+    }
     $("#add-per-set", host).innerHTML = html;
-    prevVals = null; prevTypes = null;
+    prevVals = null; prevTypes = null; prevWeights = null;
   }
   /* Prefill a NEW entry from the exercise's shared plan (the prescription it
      already carries in other routines) instead of library defaults. */
@@ -4570,6 +4613,8 @@ function openAddEx(dayId, exId){
     if (setsEl) setsEl.value = shared.targetSets||3;
     prevVals = (ex.mode==="time" ? shared.setTimes : shared.setReps) || [];
     prevTypes = shared.setTypes ? shared.setTypes.slice() : [];
+    prevWeights = Array.isArray(shared.setWeights) ? shared.setWeights.slice()
+      : ((shared.weight!=null) ? Array.from({length:(shared.targetSets||3)}, ()=>shared.weight) : []);
     const wEl = $("#add-ex-weight", host);
     if (wEl && shared.weight!=null) wEl.value = shared.weight;
     return true;
@@ -4602,12 +4647,15 @@ function openAddEx(dayId, exId){
   function updateFields(resetWeight){
     const vals = readVals(); if (vals.length) prevVals = vals;
     const tys = readTypes(); if (tys.length) prevTypes = tys;
+    const ws = readWeights(); if (ws.length) prevWeights = ws;
     const ex = getEx($("#add-ex-select").value);
     if (!ex) return;
     $("#add-field-weight").style.display = (ex.weightAvailable||ex.mode==="weight") ? "block" : "none";
+    const wLabel = $("#add-field-weight span", host);
+    if (wLabel) wLabel.textContent = "Working weight (applies to all sets — or fine-tune per set below)";
     if (resetWeight){
       if (!editing && prefillShared(ex)){ /* shared plan already set the fields */ }
-      else $("#add-ex-weight").value = ex.defaultWeight||0;
+      else { $("#add-ex-weight").value = ex.defaultWeight||0; prevWeights = null; }
     }
     updateSyncNote(ex);
     updateRestHint(ex);
@@ -4635,6 +4683,8 @@ function openAddEx(dayId, exId){
     if (baseSetsEl) baseSetsEl.value = base.targetSets || 3;
     prevVals = ((ex && ex.mode==="time" ? base.setTimes : base.setReps) || []).slice();
     prevTypes = base.setTypes ? base.setTypes.slice() : [];
+    prevWeights = Array.isArray(base.setWeights) ? base.setWeights.slice()
+      : ((base.weight!=null) ? Array.from({length:(base.targetSets||prevVals.length||3)}, ()=>base.weight) : []);
     for (let i=0;i<prevTypes.length;i++){
       if (prevTypes[i]!=="warmup" && ex){
         const beat = prevSetActual(dayId, editing.exId, i, ex.mode==="time"?"time":"reps");
@@ -4648,6 +4698,13 @@ function openAddEx(dayId, exId){
     // transition rests live in the gap slots between rows now — never touched here
   }
   updateFields(!editing);
+  host.addEventListener("input", (ev)=>{
+    if (ev.target && ev.target.id === "add-ex-weight"){
+      const v = ev.target.value;
+      $$("#add-per-set .set-weight-in", host).forEach(inp=>{ inp.value = v; });
+      prevWeights = readWeights();
+    }
+  });
   $("#add-ex-cancel").addEventListener("click", ()=>render());
   $("#add-ex-ok").addEventListener("click", ()=>{
     const ex = getEx($("#add-ex-select").value); if(!ex){ toast("Pick an exercise"); return; }
@@ -4657,6 +4714,7 @@ function openAddEx(dayId, exId){
     const n = ssGroup ? Math.max(1, ssRounds) : Math.max(1, +(setsIn?setsIn.value:3)||3);
     const vals = readVals();
     const tys = readTypes();
+    const wVals = readWeights();
     const types = []; for (let i=0;i<n;i++) types[i] = tys[i] || "regular";
     const entry = editing || { exId: ex.id, targetSets: n, reps: 0, time: 0, weight: 0 };
     entry.exId = ex.id; entry.targetSets = n; entry.setTypes = types;
@@ -4669,8 +4727,17 @@ function openAddEx(dayId, exId){
       for (let i=0;i<n;i++){ const v = +(vals[i]); reps.push(v>0 ? v : (ex.defaultReps||8)); }
       entry.reps = reps[0]||0; entry.setReps = reps; delete entry.setTimes;
     }
-    if (ex.weightAvailable||m==="weight") entry.weight = +$("#add-ex-weight").value||0;
-    else delete entry.weight;
+    if (ex.weightAvailable||m==="weight"){
+      const single = +$("#add-ex-weight").value||0;
+      const weights = [];
+      for (let i=0;i<n;i++){
+        const raw = (wVals[i]!=null && wVals[i]!=="") ? +wVals[i] : NaN;
+        weights.push(isFinite(raw) && raw>=0 ? raw : single);
+      }
+      entry.weight = weights[0]!=null ? weights[0] : single;
+      entry.setWeights = weights;
+    }
+    else { delete entry.weight; delete entry.setWeights; }
     const restIn = $("#add-ex-rest", host);
     if (!restIn){
       // rest editing hidden (logging mode off): keep whatever the entry had
@@ -4727,8 +4794,8 @@ function openAddSuperset(dayId){
   /* Values an exercise already carries (its shared plan, else library defaults). */
   function planBase(ex){
     const shared = exercisePlan(ex.id);
-    if (shared) return { repVals: (ex.mode==="time" ? shared.setTimes : shared.setReps) || [], weight: shared.weight != null ? shared.weight : ex.defaultWeight || 0, typeVals: shared.setTypes || [] };
-    return { repVals: [], weight: ex.defaultWeight || 0, typeVals: [] };
+    if (shared) return { repVals: (ex.mode==="time" ? shared.setTimes : shared.setReps) || [], weight: shared.weight != null ? shared.weight : ex.defaultWeight || 0, weightVals: Array.isArray(shared.setWeights) ? shared.setWeights.slice() : [], typeVals: shared.setTypes || [] };
+    return { repVals: [], weight: ex.defaultWeight || 0, weightVals: [], typeVals: [] };
   }
   function roundsEl(){ return $("#ss-sets", host); }
   function roundsVal(){ return Math.max(1, ssRounds); }
@@ -4742,7 +4809,13 @@ function openAddSuperset(dayId){
     });
     $$(".ss-weight-in", host).forEach(inp => {
       const k = +inp.dataset.k;
-      if (picks[k]) picks[k].w = inp.value;
+      if (!picks[k]) return;
+      if (inp.dataset.i!=null && inp.dataset.i!==""){
+        const i = +inp.dataset.i;
+        if (!picks[k].ws) picks[k].ws = {};
+        picks[k].ws[i] = inp.value;
+        if (i===0) picks[k].w = inp.value;
+      } else if (picks[k]) picks[k].w = inp.value;
     });
     $$(".ss-focus-in", host).forEach(sel => {
       const k = +sel.dataset.k;
@@ -4770,9 +4843,17 @@ function openAddSuperset(dayId){
         '<em class="set-unit mono">'+unit+'</em></label>');
     }
     const showW = ex.weightAvailable || ex.mode==="weight";
-    const wVal = (pick.w != null && pick.w !== "") ? pick.w : base.weight;
+    const wCells = [];
+    for (let i=0;i<n;i++){
+      const cachedW = pick.ws && pick.ws[i]!=null && pick.ws[i]!=="";
+      const bv = (base.weightVals && base.weightVals[i]!=null && base.weightVals[i]!=="") ? base.weightVals[i] : base.weight;
+      const wv = cachedW ? pick.ws[i] : (((pick.w!=null && pick.w!=="") && i===0) ? pick.w : bv);
+      wCells.push('<label class="set-target"><span>Set '+(i+1)+'</span>'+
+        '<input type="number" min="0" step="0.5" class="ss-weight-in" data-k="'+k+'" data-i="'+i+'" value="'+wv+'"/>'+
+        '<em class="set-unit mono">'+weightUnit()+'</em></label>');
+    }
     const w = showW
-      ? '<label class="field ss-weight"><span>Working weight '+weightUnit()+'</span><input type="number" min="0" step="0.5" class="ss-weight-in" data-k="'+k+'" value="'+wVal+'"/></label>'
+      ? '<label class="field ss-weight"><span>Weight per set '+weightUnit()+'</span><div class="set-targets">'+wCells.join("")+'</div></label>'
       : "";
     /* Hybrid days let each member declare its own training type (hypertrophy /
        strength) — same per-entry `focus` the add-exercise flow uses, so the
@@ -4879,9 +4960,21 @@ function openAddSuperset(dayId){
       if (isTime){ entry.time = arr[0]; entry.setTimes = arr; delete entry.setReps; }
       else { entry.reps = arr[0]; entry.setReps = arr; delete entry.setTimes; }
       entry.setTypes = Array.from({length:n}, (_,i) => base.typeVals[i] || "regular");
-      const wEl = $('.ss-weight-in[data-k="'+k+'"]', host);
-      const wRaw = (wEl && wEl.value != null && wEl.value !== "") ? wEl.value : picks[k].w;
-      if (ex.weightAvailable || ex.mode==="weight") entry.weight = (wRaw != null && wRaw !== "") ? +wRaw : (base.weight || 0);
+      if (ex.weightAvailable || ex.mode==="weight"){
+        const wMap = {};
+        $$('.ss-weight-in[data-k="'+k+'"]', host).forEach(inp => { wMap[+inp.dataset.i] = inp.value; });
+        const wCache = picks[k].ws || {};
+        const weights = [];
+        for (let i=0;i<n;i++){
+          const raw = (wMap[i]!=null) ? wMap[i] : wCache[i];
+          const typed = (raw!=null && raw!=="") ? +raw : NaN;
+          const baseV = (base.weightVals && base.weightVals[i]!=null) ? +base.weightVals[i] : NaN;
+          const v = (isFinite(typed) && typed>=0) ? typed : ((isFinite(baseV)) ? baseV : (base.weight||0));
+          weights.push(v);
+        }
+        entry.weight = weights[0]!=null ? weights[0] : (base.weight||0);
+        entry.setWeights = weights;
+      }
       const focEl = $('.ss-focus-in[data-k="'+k+'"]', host);
       if (day.type==="hybrid"){ if (focEl && focEl.value) entry.focus = focEl.value; else delete entry.focus; }
       else delete entry.focus;
@@ -4970,7 +5063,7 @@ function startLog(dayId){
     logCtx.entries[de.exId] = {
       plan: de,
       sets: Array.from({length: de.targetSets||1}, (_,i)=>({
-        reps: "", time:"", weight: de.weight||"", rating:0, note:"", type: setTypeOf(de, i)
+        reps: "", time:"", weight: setWeightOf(de, i)!=null ? setWeightOf(de, i) : (de.weight||""), rating:0, note:"", type: setTypeOf(de, i)
       }))
     };
   });
@@ -5703,6 +5796,7 @@ function planSnapshot(de){
     setReps: Array.isArray(de.setReps) ? de.setReps.slice() : null,
     setTimes: Array.isArray(de.setTimes) ? de.setTimes.slice() : null,
     setTypes: Array.isArray(de.setTypes) ? de.setTypes.slice() : null,
+    setWeights: Array.isArray(de.setWeights) ? de.setWeights.slice() : null,
     modifiedAt: (typeof de.modifiedAt === "number") ? de.modifiedAt : null };
 }
 function applyPlanSnapshot(de, snap){
@@ -5712,6 +5806,7 @@ function applyPlanSnapshot(de, snap){
   if (snap.setReps==null) delete de.setReps; else de.setReps = snap.setReps.slice();
   if (snap.setTimes==null) delete de.setTimes; else de.setTimes = snap.setTimes.slice();
   if (snap.setTypes==null) delete de.setTypes; else de.setTypes = snap.setTypes.slice();
+  if (snap.setWeights==null) delete de.setWeights; else de.setWeights = snap.setWeights.slice();
   de.modifiedAt = snap.modifiedAt;
 }
 function planFieldsEqual(a, b){
@@ -5719,7 +5814,7 @@ function planFieldsEqual(a, b){
   const arr = (x)=> (Array.isArray(x) ? x.join(",") : "");
   return a.exId===b.exId && (+a.targetSets||0)===(+b.targetSets||0) &&
     (+a.reps||0)===(+b.reps||0) && (+a.time||0)===(+b.time||0) && (+a.weight||0)===(+b.weight||0) &&
-    arr(a.setReps)===arr(b.setReps) && arr(a.setTimes)===arr(b.setTimes) && arr(a.setTypes)===arr(b.setTypes);
+    arr(a.setReps)===arr(b.setReps) && arr(a.setTimes)===arr(b.setTimes) && arr(a.setTypes)===arr(b.setTypes) && arr(a.setWeights)===arr(b.setWeights);
 }
 function deepCopyPlan(p){ return (p==null) ? null : JSON.parse(JSON.stringify(p)); }
 /* Revert every plan change recorded on ses.planUndo. Returns the number of
