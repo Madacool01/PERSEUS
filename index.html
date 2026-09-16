@@ -2033,8 +2033,13 @@ const SESSION_TYPES = {
 /* User-customizable rep zones (Settings → Rep zones). Defaults above are the
    evidence-based starting point; a user who caps hypertrophy at 8 reps instead
    of 12 stores { hypertrophy:[6,8] } on the profile and every judge — rules
-   engine, UI text, and AI prompt — follows it. null/legacy = defaults. */
-const DEFAULT_REP_ZONES = { hypertrophy:[6,12], strength:[3,6], hybrid:[4,10], endurance:[15,25] };
+   engine, UI text, and AI prompt — follows it. null/legacy = defaults.
+   Hybrid has no own range: every hybrid exercise carries a hypertrophy or
+   strength focus and is judged against that focus's zone. */
+const DEFAULT_REP_ZONES = { hypertrophy:[6,12], strength:[3,6], endurance:[15,25] };
+/* Internal fallback for legacy hybrid entries without a focus (all new hybrid
+   work assigns a focus). Not user-configurable, never stored. */
+const HYBRID_ZONE_FALLBACK = [4,10];
 function sanitizeZone(v, fb){
   let a = v && isFinite(+v[0]) ? Math.round(+v[0]) : fb[0];
   let b = v && isFinite(+v[1]) ? Math.round(+v[1]) : fb[1];
@@ -2051,14 +2056,18 @@ function getRepZones(){
   return out;
 }
 function sessionTypeLabel(t){ return (SESSION_TYPES[t]||SESSION_TYPES.hypertrophy).label; }
-function sessionZone(t){ return getRepZones()[t] || getRepZones().hypertrophy; }
+function sessionZone(t){
+  if (t==="hybrid") return HYBRID_ZONE_FALLBACK.slice();
+  const zones = getRepZones();
+  return zones[t] || zones.hypertrophy;
+}
 /* Human-readable description for a session type, rebuilt from the user's
    current zone so Settings/routine editor never contradict custom ranges. */
 function sessionTypeDesc(t){
   const z = sessionZone(t);
   if (t==="hypertrophy") return z[0]+"-"+z[1]+" reps at moderate load (60-80% 1RM), 1-3 reps in reserve. Your growth zone. When reps drift past "+z[1]+", add load or a harder variation instead of chasing reps.";
   if (t==="strength") return z[0]+"-"+z[1]+" reps per set at heavy load (≥80% 1RM), long rests. Maximal strength through neural drive. Progress with weight or harder progressions, not endless reps.";
-  if (t==="hybrid") return z[0]+"-"+z[1]+" reps, blending strength and hypertrophy blocks. Heavier low-rep work with moderate higher-rep sets.";
+  if (t==="hybrid") return "Hybrid has no own range — each exercise follows its hypertrophy ("+sessionZone("hypertrophy")[0]+"-"+sessionZone("hypertrophy")[1]+") or strength ("+sessionZone("strength")[0]+"-"+sessionZone("strength")[1]+") focus zone.";
   return z[0]+"+ reps at light load with short rests. Muscular endurance. Progress by adding reps or shortening rest; load matters less.";
 }
 /* Effective training zone for one exercise in a day. In hybrid sessions each
@@ -6198,7 +6207,7 @@ function systemPrompt(){
       "  Maximal strength: progress with weight or harder progressions, small rep bumps.",
       "- hypertrophy: "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+" reps at moderate load (60-80% 1RM), 1-3 reps in reserve,",
       "  30-90s rest. The user's growth zone.",
-      "- hybrid: "+z.hybrid[0]+"-"+z.hybrid[1]+" reps, blending strength and hypertrophy blocks.",
+      "- hybrid: no own range — each exercise is judged against its focus zone (hypertrophy "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+" or strength "+z.strength[0]+"-"+z.strength[1]+").",
       "- endurance: "+z.endurance[0]+"+"+" reps at light load, short rest. Muscular endurance.",
       "Zone rule: if the athlete cruises past the top of THEIR zone (e.g. hypertrophy work",
       "hitting "+(z.hypertrophy[1]+2)+"+ reps when their zone tops at "+z.hypertrophy[1]+"), prefer adding weight",
@@ -6206,7 +6215,7 @@ function systemPrompt(){
       "the user to chase a generic textbook range when their repZones say otherwise.",
       "In 'hybrid' sessions each exercise may carry a 'focus' of 'hypertrophy' or 'strength':",
       "judge that exercise against that focus's rep zone (hypertrophy "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+", strength "+z.strength[0]+"-"+z.strength[1]+")",
-      "instead of the blended hybrid zone. Every plan entry also carries its effective",
+      "— hybrid itself has no range. Every plan entry also carries its effective",
       "'type' (the zone it is judged against: strength|hypertrophy|hybrid|endurance).",
       "Exercises in a superset carry a 'superset' field with the group id, and the payload",
       "lists every group under 'supersets'. Superset members are logged as paired rounds",
@@ -6799,8 +6808,8 @@ function renderSettings(){
       '</div>'+
       '</div>'+
       '<div class="cell s5"><div class="card"><h3>Rep zones</h3>'+
-        '<p class="micro">Your optimal rep range per training style. The rules engine and the AI judge every set against these — e.g. set Hypertrophy to 6–8 if you prefer adding weight over chasing 12 reps.</p>'+
-        ['hypertrophy','strength','hybrid','endurance'].map(function(t){
+        '<p class="micro">Your optimal rep range per training style. The rules engine and the AI judge every set against these — e.g. set Hypertrophy to 6–8 if you prefer adding weight over chasing 12 reps. Hybrid has no own range: each hybrid exercise follows its hypertrophy or strength focus.</p>'+
+        ['hypertrophy','strength','endurance'].map(function(t){
           const z = (function(){ try{ return sessionZone(t); }catch(e){ return DEFAULT_REP_ZONES[t]; } })();
           const d = DEFAULT_REP_ZONES[t];
           return '<div class="grid two" style="align-items:end;margin-bottom:.4rem">'+
@@ -6808,7 +6817,7 @@ function renderSettings(){
             '<label class="field" style="margin:0"><span>'+esc((SESSION_TYPES[t]||{}).label||t)+' max</span><input id="set-zone-'+t+'-max" type="number" min="1" max="50" step="1" value="'+z[1]+'"/></label>'+
           '</div>';
         }).join("")+
-        '<p class="micro" id="set-zone-hint">Defaults: Hypertrophy 6–12 · Strength 3–6 · Hybrid 4–10 · Endurance 15–25.</p>'+
+        '<p class="micro" id="set-zone-hint">Defaults: Hypertrophy 6–12 · Strength 3–6 · Endurance 15–25.</p>'+
         '<div class="btn-row"><button class="btn primary" id="set-zones-save">Save rep zones</button><button class="btn ghost" id="set-zones-reset">Reset to defaults</button></div>'+
       '</div>'+
       '</div>'+
