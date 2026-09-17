@@ -6207,6 +6207,11 @@ async function produceCoach(sessionId){
   final.forEach(s=>{
     const ex = getEx(s.exId);
     if (!s.reason){ s.reason = templateReason(s, ex); }
+    // Offline/rules path: surface the user's own words so notes visibly matter.
+    if (!aiUsed){
+      const notes = sessionNotesFor(session, s.exId);
+      if (notes.length && !/note/i.test(s.reason||"")) s.reason += " Your note: “"+notes[0]+"”.";
+    }
   });
   if (pend){ pend.suggestions = final; pend.raw = base; pend.aiUsed = aiUsed; }
   session.coachSource = aiUsed ? "ai" : "rules";
@@ -6250,6 +6255,16 @@ function dayToEntries(day){
 function templateReason(s, ex){
   const f = s.from, t = s.to, nm = ex?ex.name:"";
   return "Coach suggests "+nm+" "+shortRepr(s.field, t)+" (from "+shortRepr(s.field, f)+").";
+}
+/* Collect the user's free-text set notes for one exercise in a session. */
+function sessionNotesFor(session, exId){
+  try{
+    const out = [];
+    (session.completedSets||[]).forEach(c=>{
+      if (c.exId===exId && c.note && String(c.note).trim()) out.push(String(c.note).trim());
+    });
+    return out.slice(0, 3);
+  }catch(e){ return []; }
 }function renderLogDone(s){
   let recSets = 0, recTotal = 0, recMoves = 0;
   const recRates = [];
@@ -6342,6 +6357,11 @@ const SYSTEM_PROMPT = [
   "(one set of every member back to back before a single rest) and share one set count:",
   "judge each member against its own zone, keep suggestions conservative and",
   "independent, and never change set counts or reorder members.",
+  "Each performed set may carry a user 'note' (free text: pain, form, equipment,",
+  "fatigue, pump). Read every note as coaching signal: a pain/form/equipment note",
+  "means hold or reduce, never increase, on that exercise; quote the relevant note",
+  "in your reason so the user sees it mattered. Session 'recovery.note' is the same:",
+  "poor sleep, soreness, or pain there means stay conservative.",
   "Rules you MUST respect:",
   "- NEVER change number of sets; only reps, hold-time, or weight.",
   "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -6391,6 +6411,10 @@ function systemPrompt(){
       "(one set of every member back to back before a single rest) and share one set count:",
       "judge each member against its own zone, keep suggestions conservative and",
       "independent, and never change set counts or reorder members.",
+      "Each performed set may carry a user 'note' (pain, form, equipment, fatigue).",
+      "Read every note: a pain/form/equipment note means hold or reduce, never increase,",
+      "on that exercise; quote the relevant note in your reason. Session 'recovery.note'",
+      "counts the same — poor sleep, soreness, or pain there means stay conservative.",
       "Rules you MUST respect:",
       "- NEVER change number of sets; only reps, hold-time, or weight.",
       "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -6422,7 +6446,7 @@ function buildAIPayload({ session, day, entries, base }){
   }));
   const candidates = base.map(s=>({ exId:s.exId, field:s.field, before:s.from, after:s.to, reason:s.reason }));
   return {
-    instruction:"Given the plan, the performed sets, recovery, custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative — never override them with generic ranges.",
+    instruction:"Given the plan, the performed sets (each may carry a user note — treat pain/form/equipment notes as hold/reduce signals and quote them in reasons), recovery incl. recovery.note, custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative — never override them with generic ranges.",
     sessionType: session.type || "hypertrophy",
     repZones: getRepZones(),
     supersets: (day.supersets||[]).map(g=>({ id:g.id, exIds:(g.exIds||[]).slice() })),
