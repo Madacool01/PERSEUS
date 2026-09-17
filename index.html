@@ -2545,6 +2545,173 @@ function uid() {
   saveState();
   return "id-"+n;
 }
+
+/* =========================================================================
+   FOLDER AUTO-BACKUP (user picks a folder once; app writes daily JSON)
+   -------------------------------------------------------------------------
+   Browser security: no background writes while closed. So we back up when
+   the app is open (startup), after a workout is saved, and on demand.
+   The directory handle (non-serializable) lives in IndexedDB; small meta
+   (folder name, last backup day, auto flag) lives in localStorage.
+   Every failure path is silent except manual clicks, which toast.
+   ========================================================================= */
+const BACKUP_META_KEY = "perseus-backup-meta";
+function getBackupMeta(){
+  try{
+    const raw = (typeof localStorage!=="undefined") ? localStorage.getItem(BACKUP_META_KEY) : null;
+    if (!raw) return { folderName:"", lastBackupISO:"", auto:true };
+    const m = JSON.parse(raw);
+    return { folderName: m.folderName||"", lastBackupISO: m.lastBackupISO||"", auto: m.auto!==false };
+  }catch(e){ return { folderName:"", lastBackupISO:"", auto:true }; }
+}
+function setBackupMeta(meta){
+  try{ if (typeof localStorage!=="undefined") localStorage.setItem(BACKUP_META_KEY, JSON.stringify(meta)); }catch(e){}
+}
+function backupFileName(d){
+  const dt = (d instanceof Date) ? d : new Date(d||Date.now());
+  return "perseus-backup-"+dt.toISOString().slice(0,10)+".json";
+}
+function shouldFolderBackup(lastISO, now){
+  if (!lastISO) return true;
+  try{
+    const a = String(lastISO).slice(0,10);
+    const b = (now instanceof Date ? now : new Date(now||Date.now())).toISOString().slice(0,10);
+    return a !== b;
+  }catch(e){ return true; }
+}
+function buildBackupJSON(){
+  return JSON.stringify(state, null, 2);
+}
+function idbOpen(){
+  return new Promise((res, rej)=>{
+    try{
+      if (typeof indexedDB==="undefined") return rej(new Error("no indexedDB"));
+      const req = indexedDB.open("perseus-backup", 1);
+      req.onupgradeneeded = ()=>{ try{ req.result.createObjectStore("handles"); }catch(e){} };
+      req.onsuccess = ()=>res(req.result);
+      req.onerror = ()=>rej(req.error||new Error("idb open failed"));
+    }catch(e){ rej(e); }
+  });
+}
+function idbSetHandle(handle){
+  return idbOpen().then(db=>new Promise((res, rej)=>{
+    try{
+      const tx = db.transaction("handles", "readwrite");
+      tx.objectStore("handles").put(handle, "folder");
+      tx.oncomplete = ()=>{ try{db.close();}catch(e){} res(true); };
+      tx.onerror = ()=>rej(tx.error||new Error("idb put failed"));
+    }catch(e){ rej(e); }
+  }));
+}
+function idbGetHandle(){
+  return idbOpen().then(db=>new Promise((res, rej)=>{
+    try{
+      const tx = db.transaction("handles", "readonly");
+      const rq = tx.objectStore("handles").get("folder");
+      rq.onsuccess = ()=>{ try{db.close();}catch(e){} res(rq.result||null); };
+      rq.onerror = ()=>rej(rq.error||new Error("idb get failed"));
+    }catch(e){ rej(e); }
+  }));
+}
+function idbClearHandle(){
+  return idbOpen().then(db=>new Promise((res)=>{
+    try{
+      const tx = db.transaction("handles", "readwrite");
+      tx.objectStore("handles").delete("folder");
+      tx.oncomplete = ()=>{ try{db.close();}catch(e){} res(true); };
+      tx.onerror = ()=>{ try{db.close();}catch(e){} res(false); };
+    }catch(e){ res(false); }
+  })).catch(()=>false);
+}
+async function ensureFolderPermission(handle, ask){
+  try{
+    if (!handle) return false;
+    if (handle.queryPermission){
+      const q = await handle.queryPermission({ mode:"readwrite" });
+      if (q === "granted") return true;
+    }
+    if (ask && handle.requestPermission){
+      const r = await handle.requestPermission({ mode:"readwrite" });
+      return r === "granted";
+    }
+    return !handle.queryPermission;
+  }catch(e){ return false; }
+}
+let folderBackupBusy = false;
+async function writeBackupToFolder(opts){
+  const manual = Boolean(opts && opts.manual);
+  const force = Boolean(opts && opts.force);
+  try{
+    if (typeof window!=="undefined" && !window.showDirectoryPicker && !manual){
+      // No folder API (Firefox/Safari): stay quiet unless user clicked.
+      return false;
+    }
+    const meta = getBackupMeta();
+    if (!meta.auto && !manual && !force) return false;
+    if (!force && !manual && !shouldFolderBackup(meta.lastBackupISO, new Date())) return false;
+    const handle = await idbGetHandle().catch(()=>null);
+    if (!handle){
+      if (manual && typeof toast==="function") toast("Pick a backup folder first");
+      return false;
+    }
+    const ok = await ensureFolderPermission(handle, true);
+    if (!ok){
+      if (manual && typeof toast==="function") toast("Folder permission denied");
+      return false;
+    }
+    const name = backupFileName(new Date());
+    const fileHandle = await handle.getFileHandle(name, { create:true });
+    const w = await fileHandle.createWritable();
+    await w.write(buildBackupJSON());
+    await w.close();
+    meta.lastBackupISO = new Date().toISOString();
+    setBackupMeta(meta);
+    if (manual && typeof toast==="function") toast("Backup saved: "+name);
+    else if (typeof renderSettings!=="undefined" && typeof currentView!=="undefined" && currentView==="settings"){
+      try{ renderSettings(); }catch(e){}
+    }
+    return true;
+  }catch(e){
+    if (manual && typeof toast==="function") toast("Backup failed: "+(e && e.message || e));
+    return false;
+  }
+}
+function queueFolderBackup(){
+  if (folderBackupBusy) return;
+  folderBackupBusy = true;
+  // Fire-and-forget: never block saving or rendering on disk I/O.
+  Promise.resolve(writeBackupToFolder({})).catch(()=>{}).then(()=>{ folderBackupBusy = false; });
+}
+async function pickBackupFolder(){
+  try{
+    if (!window.showDirectoryPicker){
+      if (typeof toast==="function") toast("Folder backup needs Chrome/Edge — use Export JSON on this browser");
+      return;
+    }
+    const dir = await window.showDirectoryPicker({ mode:"readwrite" });
+    const ok = await ensureFolderPermission(dir, true);
+    if (!ok){ if (typeof toast==="function") toast("Folder permission denied"); return; }
+    await idbSetHandle(dir);
+    const meta = getBackupMeta();
+    meta.folderName = dir.name || "backup folder";
+    meta.auto = true;
+    setBackupMeta(meta);
+    if (typeof toast==="function") toast("Backup folder set: "+meta.folderName);
+    try{ renderSettings(); }catch(e){}
+    writeBackupToFolder({ manual:true, force:true });
+  }catch(e){
+    if (e && e.name === "AbortError") return;
+    if (typeof toast==="function") toast("Could not set folder");
+  }
+}
+async function forgetBackupFolder(){
+  await idbClearHandle();
+  const meta = getBackupMeta();
+  meta.folderName = "";
+  setBackupMeta(meta);
+  if (typeof toast==="function") toast("Backup folder disconnected");
+  try{ renderSettings(); }catch(e){}
+}
 const uidPure = () => {
   const n = state.counts.nextId++;
   saveState();
@@ -5989,6 +6156,7 @@ function saveLogSession(){
   try{ carryPRsForward(day, completedSets, session); }catch(e){}
   state.pending.push({ id:"pend-"+uid(), sessionId: session.id, generatedAt: nowISO(), suggestions:[] });
   saveState();
+  try{ queueFolderBackup(); }catch(e){}
   logCtx.session = session;
   logCtx.saved = true;
   logCtx.finished = true;
@@ -6044,6 +6212,7 @@ async function produceCoach(sessionId){
   session.coachSource = aiUsed ? "ai" : "rules";
   session.finalized = true;
   saveState();
+  try{ queueFolderBackup(); }catch(e){}
   render();
   toast("Coach suggestions are ready. Review them.");
 }
@@ -6870,6 +7039,9 @@ function renderSettings(){
       '</div>'+
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
+        '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
+          '<p class="micro" id="set-folder-status">Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
+          '<div class="btn-row"><button class="btn" id="set-folder-pick">Pick backup folder</button><button class="btn" id="set-folder-now">Backup now</button><button class="btn ghost" id="set-folder-forget">Disconnect</button></div></div>' +
         '<button class="btn danger" id="set-clear" style="margin-top:12px">Reset all data</button>' +
       '</div>' +
       '</div>' +
@@ -6931,11 +7103,21 @@ function renderSettings(){
     toast("Theme: "+THEMES[prof.theme].label);
   }));
   $("#set-export", s).addEventListener("click", ()=>{
-    const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const blob = new Blob([buildBackupJSON()],{type:"application/json"});
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download="perseus-backup-"+new Date().toISOString().slice(0,10)+".json";
+    a.href = URL.createObjectURL(blob); a.download=backupFileName(new Date());
     a.click(); URL.revokeObjectURL(a.href);
   });
+  try{
+    const bm = getBackupMeta();
+    const st = $("#set-folder-status", s);
+    if (st) st.textContent = bm.folderName
+      ? ("Backing up to “"+bm.folderName+"” — daily "+backupFileName(new Date())+(bm.lastBackupISO ? " · last saved "+String(bm.lastBackupISO).slice(0,10) : " · not saved yet today")+".")
+      : "Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.";
+  }catch(e){}
+  $("#set-folder-pick", s).addEventListener("click", ()=>pickBackupFolder());
+  $("#set-folder-now", s).addEventListener("click", ()=>writeBackupToFolder({ manual:true, force:true }));
+  $("#set-folder-forget", s).addEventListener("click", ()=>forgetBackupFolder());
   $("#set-import", s).addEventListener("click", ()=>$("#import-file", s).click());
   $("#import-file", s).addEventListener("change", ev=>{
     const f = ev.target.files[0]; if(!f) return;
@@ -8376,6 +8558,7 @@ restoreView();
 function init(){
   $$(".tab-btn").forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.view)));
   render();
+  try{ setTimeout(()=>queueFolderBackup(), 1500); }catch(e){}
 }
 init();
 </script>
