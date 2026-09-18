@@ -1666,6 +1666,17 @@
   .prog-step + .prog-step { margin-top: .6rem; }
   .prog-cta-band { text-align: center; padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1.2rem, 4vw, 3rem); }
   .prog-cta-band .big { font-family: var(--font-display); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; font-size: clamp(2rem, 4.4vw, 3.4rem); color: var(--ink); max-width: 22ch; margin: 0 auto; }
+  .prog-overlay { position: fixed; inset: 0; z-index: 70; background: rgba(18,15,11,.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.6rem); animation: modalBack .25s ease; }
+  .prog-sheet { width: min(680px, 100%); max-height: 86vh; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); }
+  .prog-sheet-media { height: 170px; background-size: cover; background-position: center; filter: grayscale(.7) contrast(1.08) brightness(.8); border-radius: var(--r-xl) var(--r-xl) 0 0; }
+  .prog-sheet-body { padding: 1.4rem 1.5rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; }
+  .prog-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+  .prog-fact { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); padding: .6rem .7rem; }
+  .prog-fact .k { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .prog-fact .v { font-weight: 700; margin-top: .15rem; }
+  .prog-dayrow { display: grid; grid-template-columns: 52px 92px minmax(0, 1fr); gap: .7rem; align-items: baseline; padding: .6rem 0; border-bottom: 1px dashed var(--line); font-size: .9rem; }
+  .prog-dayrow:last-child { border-bottom: none; }
+  @media (max-width: 560px) { .prog-facts { grid-template-columns: 1fr; } .prog-dayrow { grid-template-columns: 44px minmax(0, 1fr); } .prog-dayrow .moves { grid-column: 2; } }
   @media (max-width: 900px) { .prog-split { grid-template-columns: 1fr; } .prog-sticky { position: static; } }
   @media (max-width: 720px) { .prog-acc { flex-direction: column; } .prog-slice { min-height: 0; } }
 
@@ -7956,14 +7967,43 @@ function renderPrograms(){
   const draft = progDraft();
   const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
   const shells = [
-    { span: "span-7", seed: "perseus-push", name: "Push Pull Legs", blurb: "Three lifting days that rotate across the week. A calm default when you train most days.", week: ["Push","Pull","Legs","Rest","Push","Pull","Rest"] },
+    { id: "ppl", span: "span-7", seed: "perseus-push", name: "Push Pull Legs", blurb: "Bodyweight pushing, pulling, and legs in rotation. Rings and bars welcome, dumbbells optional.",
+      goal: "Balanced upper and lower strength", daysPerWeek: "5 days per week", level: "Intermediate",
+      split: [
+        { focus: "Push", moves: "Dips, pike push-ups, diamond push-ups" },
+        { focus: "Pull", moves: "Pull-ups, Australian rows, dead hangs" },
+        { focus: "Legs", moves: "Bulgarian split squats, glute bridges, calf raises" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Push", moves: "Dips, pike push-ups, diamond push-ups" },
+        { focus: "Pull", moves: "Pull-ups, Australian rows, dead hangs" },
+        { focus: "Rest", moves: "Walk, mobility flow" } ] },
     { span: "span-5", seed: "perseus-custom-week", name: "Your custom week", blurb: "Seven slots filled with your saved routines. Draft it below, then start it.", live: true },
-    { span: "span-5", seed: "perseus-upper", name: "Upper Lower", blurb: "Four days, alternating halves. Roomy rest days between efforts.", week: ["Upper","Lower","Rest","Upper","Lower","Rest","Rest"] },
-    { span: "span-7", seed: "perseus-fullbody", name: "Full body", blurb: "Three whole-body sessions with full rest between. Short weeks, dense work.", week: ["Full","Rest","Full","Rest","Full","Rest","Rest"] }
+    { id: "upper-lower", span: "span-5", seed: "perseus-upper", name: "Upper Lower", blurb: "Half-body calisthenics days with full rest between. Weighted vest optional, never required.",
+      goal: "Strength with roomy recovery", daysPerWeek: "4 days per week", level: "Beginner friendly",
+      split: [
+        { focus: "Upper", moves: "Pull-ups, dips, inverted rows" },
+        { focus: "Lower", moves: "Split squats, Nordic negatives, calf raises" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Upper", moves: "Pull-ups, dips, inverted rows" },
+        { focus: "Lower", moves: "Split squats, Nordic negatives, calf raises" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Rest", moves: "Walk, mobility flow" } ] },
+    { id: "full-body", span: "span-7", seed: "perseus-fullbody", name: "Full body", blurb: "Three whole-body hybrid sessions. Rings, bars, and light dumbbells mix freely.",
+      goal: "Whole-body base fitness", daysPerWeek: "3 days per week", level: "Beginner friendly",
+      split: [
+        { focus: "Full body", moves: "Pull-ups, dips, goblet squats" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Full body", moves: "Rows, push-ups, Romanian deadlifts" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Full body", moves: "Chin-ups, pike push-ups, lunges" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
+        { focus: "Rest", moves: "Walk, mobility flow" } ] }
   ];
+  const dotsFor = c=>'<div class="prog-week" aria-hidden="true">' + c.split.map((w, i)=>'<span class="prog-dot' + (w.focus === "Rest" ? '' : ' on') + '" title="' + esc(PROG_DAYS[i] + ": " + w.focus) + '">' + PROG_DAYS[i][0] + '</span>').join("") + '</div>';
   const cards = shells.map(c=>{
-    const dots = c.live ? progWeekDots(draft.slots) : '<div class="prog-week" aria-hidden="true">' + c.week.map(w=>'<span class="prog-dot' + (w === "Rest" ? '' : ' on') + '" title="' + esc(w) + '">' + esc(w[0]) + '</span>').join("") + '</div>';
-    return '<article class="prog-card ' + c.span + ' fx-in" data-prog-goto="' + (c.live ? "prog-builder" : "prog-builder") + '" tabindex="0" role="button" aria-label="' + esc(c.name) + '">' +
+    const dots = c.live ? progWeekDots(draft.slots) : dotsFor(c);
+    const attr = c.live ? 'data-prog-goto="prog-builder"' : 'data-prog-open="' + c.id + '"';
+    return '<article class="prog-card ' + c.span + ' fx-in" ' + attr + ' tabindex="0" role="button" aria-label="' + esc(c.name) + '">' +
       '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + c.seed + '/1200/800)"></span></div>' +
       '<div class="prog-body"><div class="prog-name">' + esc(c.name) + '</div><p class="prog-blurb">' + esc(c.blurb) + '</p>' + dots +
       '<span class="routine-open">Open <span class="btn-arrow">→</span></span></div></article>';
@@ -8006,6 +8046,32 @@ function renderPrograms(){
   $$("[data-prog-scroll]", s).forEach(b=>b.addEventListener("click", ()=>go(b.dataset.progScroll)));
   $$("[data-prog-goto]", s).forEach(c=>{
     const h = ()=>go(c.dataset.progGoto);
+    c.addEventListener("click", h);
+    c.addEventListener("keydown", e=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); h(); } });
+  });
+  const progOpen = id=>{
+    const c = shells.find(x=>x.id === id);
+    if (!c) return;
+    const rows = c.split.map((w, i)=>'<div class="prog-dayrow"><span class="mono" style="color:var(--ink-3)">' + PROG_DAYS[i] + '</span><span style="font-weight:700">' + esc(w.focus) + '</span><span class="moves" style="color:var(--ink-2)">' + esc(w.moves) + '</span></div>').join("");
+    const ov = document.createElement("div");
+    ov.className = "prog-overlay";
+    ov.innerHTML = '<div class="prog-sheet" role="dialog" aria-label="' + esc(c.name) + '">' +
+      '<div class="prog-sheet-media" style="background-image:url(https://picsum.photos/seed/' + c.seed + '/1200/800)"></div>' +
+      '<div class="prog-sheet-body"><div class="prog-name" style="font-size:clamp(1.6rem,3vw,2.2rem)">' + esc(c.name) + '</div>' +
+      '<p class="prog-blurb">' + esc(c.blurb) + '</p>' +
+      '<div class="prog-facts"><div class="prog-fact"><div class="k">Good for</div><div class="v">' + esc(c.goal) + '</div></div>' +
+      '<div class="prog-fact"><div class="k">Training days</div><div class="v">' + esc(c.daysPerWeek) + '</div></div>' +
+      '<div class="prog-fact"><div class="k">Level</div><div class="v">' + esc(c.level) + '</div></div></div>' +
+      '<div><h2 class="section">The week</h2><p class="micro">Template preview. Your seven-day draft below stays untouched.</p>' + rows + '</div>' +
+      '<div class="btn-row"><button class="btn ghost" data-prog-back>Back</button></div></div></div>';
+    s.appendChild(ov);
+    const close = ()=>ov.remove();
+    ov.addEventListener("click", e=>{ if (e.target === ov) close(); });
+    ov.querySelector("[data-prog-back]").addEventListener("click", close);
+    ov.querySelector(".prog-sheet").addEventListener("click", e=>e.stopPropagation());
+  };
+  $$("[data-prog-open]", s).forEach(c=>{
+    const h = ()=>progOpen(c.dataset.progOpen);
     c.addEventListener("click", h);
     c.addEventListener("keydown", e=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); h(); } });
   });
