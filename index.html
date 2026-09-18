@@ -8081,29 +8081,12 @@ function progExitDelete(){
   renderPrograms();
   toast("Program exited. Template workouts deleted");
 }
-/* Second-day suggestion: three rest days between sessions. With one training
-   day picked, suggest the day 3 later; with two or more, check the gaps. */
-function progSuggestRoutine(x){
-  const d = progDraft();
-  const cur = d.slots[x];
-  if (d.pair){
-    if (cur === d.pair.a && getDay(d.pair.b)) return d.pair.b;
-    if (cur === d.pair.b && getDay(d.pair.a)) return d.pair.a;
-  }
-  return cur;
-}
+/* Week spacing feedback: with two or more training days, check the gaps. */
 function progSuggestHtml(){
   const d = progDraft();
   const idx = [];
   d.slots.forEach((id, i)=>{ if (id) idx.push(i); });
-  if (!idx.length) return '<span class="micro">Pick a training day below. The second session lands 3 days later.</span>';
-  if (idx.length === 1){
-    const x = idx[0], y = (x + 3) % 7;
-    const r = progSuggestRoutine(x);
-    if (d.slots[y] || !r || !getDay(r)) return '<span class="micro">Second session suggested: ' + PROG_DAYS[y] + ' (3 days after ' + PROG_DAYS[x] + ').</span>';
-    return '<span class="micro">Second session suggested: ' + PROG_DAYS[y] + ' (3 days after ' + PROG_DAYS[x] + ').</span>' +
-      '<button class="btn small primary" data-prog-apply="' + y + '" data-prog-routine="' + r + '">Add ' + esc(progRoutineName(r)) + ' on ' + PROG_DAYS[y] + '</button>';
-  }
+  if (idx.length < 2) return "";
   const gaps = idx.map((v, i)=>{
     const nxt = idx[(i + 1) % idx.length];
     return { from: v, to: nxt, n: (nxt - v + 7) % 7 };
@@ -8116,15 +8099,6 @@ function progBindSuggest(s){
   const box = s.querySelector("[data-prog-suggest]");
   if (!box) return;
   box.innerHTML = progSuggestHtml();
-  const b = box.querySelector("[data-prog-apply]");
-  if (b) b.addEventListener("click", ()=>{
-    const dd = progDraft();
-    dd.slots[+b.dataset.progApply] = b.dataset.progRoutine;
-    progSaveDraft(dd);
-    renderPrograms();
-    progAskExit(s);
-    toast(progRoutineName(b.dataset.progRoutine) + " drafted on " + PROG_DAYS[+b.dataset.progApply]);
-  });
 }
 function renderPrograms(){
   const s = $("#view-programs");

@@ -71,14 +71,12 @@ check(JSON.parse(upperA).every(e=>e.targetSets===2), "low-volume: 2 sets per exe
 const draftIds = E("JSON.stringify(progDraft().slots)");
 check(JSON.parse(draftIds)[0] && JSON.parse(draftIds)[3], "template drafted Mon + Thu");
 check(E("JSON.stringify(progDraft().pair)") !== "undefined", "pair tracked for suggestions");
-// dynamic suggestion: single Tuesday session suggests Friday
+// no routine recommendation: single Tuesday session suggests nothing
 E("progSaveDraft({slots:[null,state.days.find(d=>d.name==='Upper A').id,null,null,null,null,null],pair:progDraft().pair}); renderPrograms();");
-const sugTxt = $("[data-prog-suggest]").textContent;
-check(/Fri/.test(sugTxt) && /Tue/.test(sugTxt), "single Tuesday session suggests Friday (" + sugTxt.trim().slice(0, 80) + ")");
-const applyBtn = $("[data-prog-apply]");
-check(!!applyBtn, "suggestion offers one-click apply");
-if (applyBtn) applyBtn.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
-check(E("JSON.stringify(progDraft().slots[4])") !== "null", "apply drafts second session on Friday");
+check(!/Second session suggested/.test($("[data-prog-suggest]").textContent), "no second-session routine recommendation");
+check(!$("[data-prog-apply]"), "no one-click apply button");
+// spacing feedback still works once two sessions exist
+E("const dd2=progDraft(); dd2.slots[4]=state.days.find(d=>d.name==='Upper B').id; progSaveDraft(dd2); renderPrograms();");
 check(/Spacing looks right/.test($("[data-prog-suggest]").textContent), "two sessions 3 apart confirm spacing");
 // reusing template does not duplicate routines
 const daysMid = E("state.days.length");
