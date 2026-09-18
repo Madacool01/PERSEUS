@@ -41,6 +41,9 @@ const before = $("[data-prog-flow='1']").textContent;
 E("document.querySelector('[data-prog-slot=\"1\"]').value = (typeof state!=='undefined' && state.days[0] ? state.days[0].id : ''); document.querySelector('[data-prog-slot=\"1\"]').dispatchEvent(new Event('change', {bubbles:true}))");
 const after = $("[data-prog-flow='1']").textContent;
 check(before !== after || after !== "Rest", "slot change updates pinned flow (" + before + " -> " + after + ")");
+const liveOn = $$("#view-programs [data-prog-goto] .prog-dot.on").length;
+const trained = JSON.parse(E("JSON.stringify(progDraft().slots)")).filter(Boolean).length;
+check(liveOn === trained, "custom-week dots update on the spot (" + liveOn + " lit for " + trained + " sessions)");
 E("document.querySelector('[data-prog-save]').click()");
 check(W.document.querySelector("#toast").classList.contains("show"), "save shows toast");
 // detail overlay: Open on a template must not touch the seven-day draft

@@ -8229,7 +8229,7 @@ function renderPrograms(){
     if (f) f.textContent = progRoutineName(d.slots[i]);
     const fs = s.querySelector('[data-prog-flow-sets="' + i + '"]');
     if (fs) fs.textContent = d.slots[i] ? progRoutineSets(d.slots[i]) + " sets" : "recover";
-    const live = s.querySelector('.prog-card .prog-week');
+    const live = s.querySelector('[data-prog-goto] .prog-week');
     if (live) live.innerHTML = progWeekDots(d.slots);
     const micro = sel.parentElement.querySelector(".micro");
     if (micro) micro.textContent = progRoutineSets(d.slots[i]) + " sets planned";
