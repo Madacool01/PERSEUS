@@ -56,6 +56,32 @@ check(E("JSON.stringify(progDraft().slots)") === slotsBefore, "opening detail le
 E("document.querySelector('[data-prog-back]').dispatchEvent(new window.MouseEvent('click', {bubbles:true}))");
 check(!$("#view-programs .prog-overlay"), "Back closes the detail overlay");
 check(E("JSON.stringify(progDraft().slots)") === slotsBefore, "draft still untouched after closing detail");
+// use template: creates the two routines in Workouts and drafts Mon + Thu
+const daysBefore = E("state.days.length");
+E("document.querySelector('[data-prog-open]').dispatchEvent(new window.MouseEvent('click', {bubbles:true}))");
+E("document.querySelector('[data-prog-use]').dispatchEvent(new window.MouseEvent('click', {bubbles:true}))");
+check(!$("#view-programs .prog-overlay"), "using template closes the detail");
+check(E("state.days.length") === daysBefore + 2, "two routines created in Workouts");
+const upperA = E("JSON.stringify((state.days.find(d=>d.name==='Upper A')||{}).exercises||[])");
+const upperB = E("JSON.stringify((state.days.find(d=>d.name==='Upper B')||{}).exercises||[])");
+check(JSON.parse(upperA).length === 3 && JSON.parse(upperB).length === 3, "Upper A and B hold 3 minimalist exercises each");
+check(JSON.parse(upperA).every(e=>e.targetSets===2), "low-volume: 2 sets per exercise");
+const draftIds = E("JSON.stringify(progDraft().slots)");
+check(JSON.parse(draftIds)[0] && JSON.parse(draftIds)[3], "template drafted Mon + Thu");
+check(E("JSON.stringify(progDraft().pair)") !== "undefined", "pair tracked for suggestions");
+// dynamic suggestion: single Tuesday session suggests Friday
+E("progSaveDraft({slots:[null,state.days.find(d=>d.name==='Upper A').id,null,null,null,null,null],pair:progDraft().pair}); renderPrograms();");
+const sugTxt = $("[data-prog-suggest]").textContent;
+check(/Fri/.test(sugTxt) && /Tue/.test(sugTxt), "single Tuesday session suggests Friday (" + sugTxt.trim().slice(0, 80) + ")");
+const applyBtn = $("[data-prog-apply]");
+check(!!applyBtn, "suggestion offers one-click apply");
+if (applyBtn) applyBtn.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(E("JSON.stringify(progDraft().slots[4])") !== "null", "apply drafts second session on Friday");
+check(/Spacing looks right/.test($("[data-prog-suggest]").textContent), "two sessions 3 apart confirm spacing");
+// reusing template does not duplicate routines
+const daysMid = E("state.days.length");
+E("progUseTemplate('upper-upper')");
+check(E("state.days.length") === daysMid, "reusing template does not duplicate routines");
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

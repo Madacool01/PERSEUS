@@ -7961,6 +7961,89 @@ function progWeekDots(slots){
     return '<span class="prog-dot' + (on ? ' on' : '') + '" title="' + esc(PROG_DAYS[i] + ": " + progRoutineName(id)) + '">' + PROG_DAYS[i][0] + '</span>';
   }).join("");
 }
+/* Upper-Upper Minimalist, decided with the user: two high-intensity low-volume
+   upper days, three rest days between. Names resolve against the exercise
+   library at runtime so custom libraries keep working. */
+var PROG_TEMPLATES = {
+  "upper-upper": {
+    routines: [
+      { name: "Upper A", type: "strength", moves: ["Ring Dip", "Pull-Up", "Archer Push-Up"] },
+      { name: "Upper B", type: "strength", moves: ["Chin-Up", "Diamond Push-Up", "Ring Row"] }
+    ],
+    days: [0, 3]
+  }
+};
+function progExEntry(name){
+  const ex = (state.exercises || []).find(e=>e.name === name);
+  if (!ex) return null;
+  return { exId: ex.id, targetSets: 2, reps: (ex.defaultReps || 6), time: (ex.defaultTime || 30), weight: 0 };
+}
+function progFindOrCreateRoutine(r){
+  const found = (state.days || []).find(x=>x.name === r.name);
+  if (found) return found;
+  const d = { id: "day-" + uid(), name: r.name, type: r.type || "strength", exercises: r.moves.map(progExEntry).filter(Boolean) };
+  state.days.push(d);
+  saveState();
+  return d;
+}
+/* Explicit "Use this template": creates the two routines in Workouts (reuses
+   them if already there) and drafts them onto the template days. */
+function progUseTemplate(id){
+  const t = PROG_TEMPLATES[id];
+  if (!t) return;
+  const made = t.routines.map(progFindOrCreateRoutine);
+  const d = progDraft();
+  t.days.forEach((slot, i)=>{ if (i < made.length) d.slots[slot] = made[i].id; });
+  d.pair = { a: made[0].id, b: made[1].id };
+  progSaveDraft(d);
+  saveState();
+  renderPrograms();
+  toast(made[0].name + " + " + made[1].name + " added to Workouts, drafted " + t.days.map(x=>PROG_DAYS[x]).join(" + "));
+}
+/* Second-day suggestion: three rest days between sessions. With one training
+   day picked, suggest the day 3 later; with two or more, check the gaps. */
+function progSuggestRoutine(x){
+  const d = progDraft();
+  const cur = d.slots[x];
+  if (d.pair){
+    if (cur === d.pair.a && getDay(d.pair.b)) return d.pair.b;
+    if (cur === d.pair.b && getDay(d.pair.a)) return d.pair.a;
+  }
+  return cur;
+}
+function progSuggestHtml(){
+  const d = progDraft();
+  const idx = [];
+  d.slots.forEach((id, i)=>{ if (id) idx.push(i); });
+  if (!idx.length) return '<span class="micro">Pick a training day below. The second session lands 3 days later.</span>';
+  if (idx.length === 1){
+    const x = idx[0], y = (x + 3) % 7;
+    const r = progSuggestRoutine(x);
+    if (d.slots[y] || !r || !getDay(r)) return '<span class="micro">Second session suggested: ' + PROG_DAYS[y] + ' (3 days after ' + PROG_DAYS[x] + ').</span>';
+    return '<span class="micro">Second session suggested: ' + PROG_DAYS[y] + ' (3 days after ' + PROG_DAYS[x] + ').</span>' +
+      '<button class="btn small primary" data-prog-apply="' + y + '" data-prog-routine="' + r + '">Add ' + esc(progRoutineName(r)) + ' on ' + PROG_DAYS[y] + '</button>';
+  }
+  const gaps = idx.map((v, i)=>{
+    const nxt = idx[(i + 1) % idx.length];
+    return { from: v, to: nxt, n: (nxt - v + 7) % 7 };
+  });
+  const tight = gaps.filter(g=>g.n < 3).sort((a, b)=>a.n - b.n)[0];
+  if (tight) return '<span class="micro">Tight gap: ' + PROG_DAYS[tight.from] + ' and ' + PROG_DAYS[tight.to] + ' are ' + (tight.n === 1 ? 'a day' : tight.n + ' days') + ' apart. Three rest days recover best.</span>';
+  return '<span class="micro">Spacing looks right: ' + idx.map(i=>PROG_DAYS[i]).join(" + ") + '.</span>';
+}
+function progBindSuggest(s){
+  const box = s.querySelector("[data-prog-suggest]");
+  if (!box) return;
+  box.innerHTML = progSuggestHtml();
+  const b = box.querySelector("[data-prog-apply]");
+  if (b) b.addEventListener("click", ()=>{
+    const dd = progDraft();
+    dd.slots[+b.dataset.progApply] = b.dataset.progRoutine;
+    progSaveDraft(dd);
+    renderPrograms();
+    toast(progRoutineName(b.dataset.progRoutine) + " drafted on " + PROG_DAYS[+b.dataset.progApply]);
+  });
+}
 function renderPrograms(){
   const s = $("#view-programs");
   if (!s) return;
@@ -7970,10 +8053,10 @@ function renderPrograms(){
     { id: "upper-upper", span: "span-7", seed: "perseus-upper-a", name: "Upper Upper Minimalist", blurb: "Two brutal upper-body days with three rest days between. High intensity, low volume, taken close to failure.",
       goal: "Maximal upper-body strength", daysPerWeek: "2 days per week", level: "Intermediate",
       split: [
-        { focus: "Upper A", moves: "Weighted dips, weighted pull-ups, overhead press" },
+        { focus: "Upper A", moves: "Ring dips, pull-ups, archer push-ups (2 sets each, near failure)" },
         { focus: "Rest", moves: "Walk, mobility flow" },
         { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Upper B", moves: "Weighted chin-ups, incline push-ups, rows" },
+        { focus: "Upper B", moves: "Chin-ups, diamond push-ups, ring rows (2 sets each, near failure)" },
         { focus: "Rest", moves: "Walk, mobility flow" },
         { focus: "Rest", moves: "Walk, mobility flow" },
         { focus: "Rest", moves: "Walk, mobility flow" } ] },
@@ -8014,6 +8097,7 @@ function renderPrograms(){
       '<div class="bento">' + cards + '</div></div>' +
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
       '<div class="prog-acc" role="list">' + acc + '</div>' +
+      '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
       '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
       '<div>' + flow + '</div></div></div>' +
@@ -8043,11 +8127,12 @@ function renderPrograms(){
       '<div class="prog-fact"><div class="k">Training days</div><div class="v">' + esc(c.daysPerWeek) + '</div></div>' +
       '<div class="prog-fact"><div class="k">Level</div><div class="v">' + esc(c.level) + '</div></div></div>' +
       '<div><h2 class="section">The week</h2><p class="micro">Template preview. Your seven-day draft below stays untouched.</p>' + rows + '</div>' +
-      '<div class="btn-row"><button class="btn ghost" data-prog-back>Back</button></div></div></div>';
+      '<div class="btn-row"><button class="btn ghost" data-prog-back>Back</button><button class="btn primary" data-prog-use="' + c.id + '">Use this template</button></div></div></div>';
     s.appendChild(ov);
     const close = ()=>ov.remove();
     ov.addEventListener("click", e=>{ if (e.target === ov) close(); });
     ov.querySelector("[data-prog-back]").addEventListener("click", close);
+    ov.querySelector("[data-prog-use]").addEventListener("click", ()=>{ close(); progUseTemplate(c.id); });
     ov.querySelector(".prog-sheet").addEventListener("click", e=>e.stopPropagation());
   };
   $$("[data-prog-open]", s).forEach(c=>{
@@ -8079,7 +8164,9 @@ function renderPrograms(){
     if (live) live.innerHTML = progWeekDots(d.slots);
     const micro = sel.parentElement.querySelector(".micro");
     if (micro) micro.textContent = progRoutineSets(d.slots[i]) + " sets planned";
+    progBindSuggest(s);
   }));
+  progBindSuggest(s);
   const saveB = $("[data-prog-save]", s);
   if (saveB) saveB.addEventListener("click", ()=>{ progSaveDraft(progDraft()); toast("Custom week saved in this browser"); });
   const startB = $("[data-prog-start]", s);
