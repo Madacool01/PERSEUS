@@ -7967,37 +7967,17 @@ function renderPrograms(){
   const draft = progDraft();
   const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
   const shells = [
-    { id: "ppl", span: "span-7", seed: "perseus-push", name: "Push Pull Legs", blurb: "Bodyweight pushing, pulling, and legs in rotation. Rings and bars welcome, dumbbells optional.",
-      goal: "Balanced upper and lower strength", daysPerWeek: "5 days per week", level: "Intermediate",
+    { id: "upper-upper", span: "span-7", seed: "perseus-upper-a", name: "Upper Upper Minimalist", blurb: "Two brutal upper-body days with three rest days between. High intensity, low volume, taken close to failure.",
+      goal: "Maximal upper-body strength", daysPerWeek: "2 days per week", level: "Intermediate",
       split: [
-        { focus: "Push", moves: "Dips, pike push-ups, diamond push-ups" },
-        { focus: "Pull", moves: "Pull-ups, Australian rows, dead hangs" },
-        { focus: "Legs", moves: "Bulgarian split squats, glute bridges, calf raises" },
+        { focus: "Upper A", moves: "Weighted dips, weighted pull-ups, overhead press" },
         { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Push", moves: "Dips, pike push-ups, diamond push-ups" },
-        { focus: "Pull", moves: "Pull-ups, Australian rows, dead hangs" },
-        { focus: "Rest", moves: "Walk, mobility flow" } ] },
-    { span: "span-5", seed: "perseus-custom-week", name: "Your custom week", blurb: "Seven slots filled with your saved routines. Draft it below, then start it.", live: true },
-    { id: "upper-lower", span: "span-5", seed: "perseus-upper", name: "Upper Lower", blurb: "Half-body calisthenics days with full rest between. Weighted vest optional, never required.",
-      goal: "Strength with roomy recovery", daysPerWeek: "4 days per week", level: "Beginner friendly",
-      split: [
-        { focus: "Upper", moves: "Pull-ups, dips, inverted rows" },
-        { focus: "Lower", moves: "Split squats, Nordic negatives, calf raises" },
         { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Upper", moves: "Pull-ups, dips, inverted rows" },
-        { focus: "Lower", moves: "Split squats, Nordic negatives, calf raises" },
+        { focus: "Upper B", moves: "Weighted chin-ups, incline push-ups, rows" },
+        { focus: "Rest", moves: "Walk, mobility flow" },
         { focus: "Rest", moves: "Walk, mobility flow" },
         { focus: "Rest", moves: "Walk, mobility flow" } ] },
-    { id: "full-body", span: "span-7", seed: "perseus-fullbody", name: "Full body", blurb: "Three whole-body hybrid sessions. Rings, bars, and light dumbbells mix freely.",
-      goal: "Whole-body base fitness", daysPerWeek: "3 days per week", level: "Beginner friendly",
-      split: [
-        { focus: "Full body", moves: "Pull-ups, dips, goblet squats" },
-        { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Full body", moves: "Rows, push-ups, Romanian deadlifts" },
-        { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Full body", moves: "Chin-ups, pike push-ups, lunges" },
-        { focus: "Rest", moves: "Walk, mobility flow" },
-        { focus: "Rest", moves: "Walk, mobility flow" } ] }
+    { span: "span-5", seed: "perseus-custom-week", name: "Your custom week", blurb: "Seven slots filled with your saved routines. Pick your own training days below, then start it.", live: true }
   ];
   const dotsFor = c=>'<div class="prog-week" aria-hidden="true">' + c.split.map((w, i)=>'<span class="prog-dot' + (w.focus === "Rest" ? '' : ' on') + '" title="' + esc(PROG_DAYS[i] + ": " + w.focus) + '">' + PROG_DAYS[i][0] + '</span>').join("") + '</div>';
   const cards = shells.map(c=>{
@@ -8017,7 +7997,7 @@ function renderPrograms(){
       '</select><span class="micro">' + progRoutineSets(draft.slots[i]) + ' sets planned</span></div></div>';
   }).join("");
   const flow = PROG_DAYS.map((d, i)=>'<div class="prog-step fx-in"><span class="day-num mono">' + String(i + 1).padStart(2, "0") + '</span><span style="min-width:44px;font-weight:700">' + d + '</span><span data-prog-flow="' + i + '">' + esc(progRoutineName(draft.slots[i])) + '</span><span class="micro" style="margin-left:auto" data-prog-flow-sets="' + i + '">' + (draft.slots[i] ? progRoutineSets(draft.slots[i]) + " sets" : "recover") + '</span></div>').join("");
-  const marq = ["Push","Pull","Legs","Upper","Lower","Full body","Rest","Repeat"];
+  const marq = ["Upper A", "Rest", "Rest", "Upper B", "Rest", "Rest", "Repeat"];
   const half = marq.map(w=>'<span>' + w + '</span><i>·</i>').join("");
   s.innerHTML =
     '<div class="view-hero slim">' +
@@ -8030,9 +8010,9 @@ function renderPrograms(){
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
-      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Proven weekly shapes next to your own draft. Nothing here is final until you start it.</p>' +
+      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">One proven template next to your own draft. Nothing here is final until you start it.</p>' +
       '<div class="bento">' + cards + '</div></div>' +
-      '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day, assign one of your saved routines or leave it to rest. The dots above follow along.</p>' +
+      '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
       '<div class="prog-acc" role="list">' + acc + '</div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
       '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
