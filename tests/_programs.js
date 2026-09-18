@@ -82,6 +82,35 @@ check(/Spacing looks right/.test($("[data-prog-suggest]").textContent), "two ses
 const daysMid = E("state.days.length");
 E("progUseTemplate('upper-upper')");
 check(E("state.days.length") === daysMid, "reusing template does not duplicate routines");
+// enroll with Tuesday start: preview promises Friday, accept drafts Tue + Fri
+E("document.querySelector('[data-prog-open]').dispatchEvent(new window.MouseEvent('click', {bubbles:true}))");
+$("[data-prog-first='1']").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(/First: Tue\. Second session: Fri\./.test($("[data-prog-second-preview]").textContent), "day picker previews Fri for Tue start");
+$("[data-prog-use]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(E("JSON.stringify(progDraft().active.days)") === "[1,4]", "enrolled Tue + Fri");
+check(!!$("[data-prog-active-banner]"), "active banner shown while following");
+// diverge from plan: change Friday to rest -> exit confirm, draft untouched until choice
+E("document.querySelector('[data-prog-slot=\"4\"]').value=''; document.querySelector('[data-prog-slot=\"4\"]').dispatchEvent(new Event('change', {bubbles:true}))");
+check(/Exit this program\?/.test($("#view-programs").textContent), "diverging asks to exit the program");
+$("[data-prog-keep]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(!$("#view-programs .prog-overlay"), "keep closes the confirm");
+check(E("JSON.stringify(progDraft().active.days)") === "[1,4]", "keep restores the planned days");
+// diverge again, exit, delete template workouts
+E("document.querySelector('[data-prog-slot=\"4\"]').value=''; document.querySelector('[data-prog-slot=\"4\"]').dispatchEvent(new Event('change', {bubbles:true}))");
+$("[data-prog-exit2]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(/Keep the workouts\?/.test($("#view-programs").textContent), "exit asks delete or keep");
+const daysPreDel = E("state.days.length");
+$("[data-prog-delw]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(E("state.days.length") === daysPreDel - 2, "delete removes the two template workouts");
+check(E("progDraft().active") === null, "program no longer active after delete");
+check(!E("state.days.some(d=>d.name==='Upper A')"), "Upper A gone from Workouts");
+// re-enroll, diverge, exit, keep workouts
+E("progEnroll('upper-upper', 0)");
+E("document.querySelector('[data-prog-slot=\"3\"]').value=''; document.querySelector('[data-prog-slot=\"3\"]').dispatchEvent(new Event('change', {bubbles:true}))");
+$("[data-prog-exit2]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+$("[data-prog-keepw]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(E("state.days.some(d=>d.name==='Upper A')"), "keep preserves template workouts");
+check(E("progDraft().active") === null, "program inactive, now a custom week");
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

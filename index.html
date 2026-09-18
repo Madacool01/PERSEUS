@@ -7966,6 +7966,7 @@ function progWeekDots(slots){
    library at runtime so custom libraries keep working. */
 var PROG_TEMPLATES = {
   "upper-upper": {
+    name: "Upper Upper Minimalist",
     routines: [
       { name: "Upper A", type: "strength", moves: ["Ring Dip", "Pull-Up", "Archer Push-Up"] },
       { name: "Upper B", type: "strength", moves: ["Chin-Up", "Diamond Push-Up", "Ring Row"] }
@@ -7986,19 +7987,99 @@ function progFindOrCreateRoutine(r){
   saveState();
   return d;
 }
-/* Explicit "Use this template": creates the two routines in Workouts (reuses
-   them if already there) and drafts them onto the template days. */
-function progUseTemplate(id){
+/* Explicit enrollment: creates the two routines in Workouts (reuses them if
+   already there), drafts them onto firstDay and firstDay+3, and marks the
+   program active. progUseTemplate keeps the old default (Monday start). */
+function progEnroll(id, firstDay){
   const t = PROG_TEMPLATES[id];
   if (!t) return;
+  const first = ((+firstDay) % 7 + 7) % 7;
+  const second = (first + 3) % 7;
   const made = t.routines.map(progFindOrCreateRoutine);
   const d = progDraft();
-  t.days.forEach((slot, i)=>{ if (i < made.length) d.slots[slot] = made[i].id; });
+  d.slots = [null, null, null, null, null, null, null];
+  d.slots[first] = made[0].id;
+  d.slots[second] = made[1].id;
   d.pair = { a: made[0].id, b: made[1].id };
+  d.active = { templateId: id, days: [first, second], routineIds: [made[0].id, made[1].id] };
   progSaveDraft(d);
   saveState();
   renderPrograms();
-  toast(made[0].name + " + " + made[1].name + " added to Workouts, drafted " + t.days.map(x=>PROG_DAYS[x]).join(" + "));
+  toast("Following " + t.name + " · " + PROG_DAYS[first] + " + " + PROG_DAYS[second]);
+}
+function progUseTemplate(id){
+  progEnroll(id, 0);
+}
+/* Active-program tracking: the plan is two routine ids on two days. Any draft
+   that no longer matches means the user is going custom. */
+function progActivePlan(){
+  const d = progDraft();
+  if (!d.active || !Array.isArray(d.active.days) || !Array.isArray(d.active.routineIds)) return null;
+  const t = PROG_TEMPLATES[d.active.templateId];
+  if (!t) return null;
+  return { name: t.name, days: d.active.days, routineIds: d.active.routineIds };
+}
+function progExpectedSlots(){
+  const d = progDraft();
+  const exp = [null, null, null, null, null, null, null];
+  if (d.active && Array.isArray(d.active.days)){
+    d.active.days.forEach((slot, i)=>{ exp[slot] = (d.active.routineIds || [])[i] || null; });
+  }
+  return exp;
+}
+function progDiverged(){
+  const d = progDraft();
+  if (!d.active) return false;
+  return JSON.stringify(d.slots) !== JSON.stringify(progExpectedSlots());
+}
+function progAskExit(s){
+  if (!progDiverged() || s.querySelector(".prog-overlay")) return;
+  const plan = progActivePlan();
+  const ov = document.createElement("div");
+  ov.className = "prog-overlay";
+  const names = (plan.routineIds || []).map(progRoutineName).join(" + ");
+  ov.innerHTML = '<div class="prog-sheet" role="dialog" aria-label="Exit program">' +
+    '<div class="prog-sheet-body"><div class="prog-name">Exit this program?</div>' +
+    '<p class="prog-blurb">This no longer matches ' + esc(plan.name) + ' (' + plan.days.map(x=>PROG_DAYS[x]).join(" + ") + '). Are you sure you want to exit this program and go custom?</p>' +
+    '<div class="btn-row"><button class="btn ghost" data-prog-keep>Keep program</button><button class="btn primary" data-prog-exit2>Exit program</button></div></div></div>';
+  s.appendChild(ov);
+  const close = ()=>ov.remove();
+  ov.addEventListener("click", e=>{ if (e.target === ov){ progKeepProgram(); close(); } });
+  ov.querySelector("[data-prog-keep]").addEventListener("click", ()=>{ progKeepProgram(); close(); });
+  ov.querySelector("[data-prog-exit2]").addEventListener("click", ()=>{
+    ov.innerHTML = '<div class="prog-sheet" role="dialog" aria-label="Keep or delete workouts">' +
+      '<div class="prog-sheet-body"><div class="prog-name">Keep the workouts?</div>' +
+      '<p class="prog-blurb">' + esc(names) + ' came with this program. Do you want us to delete them, or keep them for your custom week?</p>' +
+      '<div class="btn-row"><button class="btn primary" data-prog-keepw>Keep workouts</button><button class="btn ghost" data-prog-delw>Delete workouts</button></div></div></div>';
+    ov.querySelector("[data-prog-keepw]").addEventListener("click", ()=>{ progExitKeep(); close(); });
+    ov.querySelector("[data-prog-delw]").addEventListener("click", ()=>{ progExitDelete(); close(); });
+  });
+}
+function progKeepProgram(){
+  const d = progDraft();
+  d.slots = progExpectedSlots();
+  progSaveDraft(d);
+  renderPrograms();
+  toast("Kept following the program");
+}
+function progExitKeep(){
+  const d = progDraft();
+  d.active = null;
+  progSaveDraft(d);
+  renderPrograms();
+  toast("Custom week. Program workouts kept in Workouts");
+}
+function progExitDelete(){
+  const d = progDraft();
+  const gone = ((d.active || {}).routineIds || []);
+  state.days = (state.days || []).filter(x=>gone.indexOf(x.id) === -1);
+  d.slots = (d.slots || []).map(id=>(gone.indexOf(id) === -1 ? id : null));
+  d.active = null;
+  d.pair = null;
+  progSaveDraft(d);
+  saveState();
+  renderPrograms();
+  toast("Program exited. Template workouts deleted");
 }
 /* Second-day suggestion: three rest days between sessions. With one training
    day picked, suggest the day 3 later; with two or more, check the gaps. */
@@ -8041,6 +8122,7 @@ function progBindSuggest(s){
     dd.slots[+b.dataset.progApply] = b.dataset.progRoutine;
     progSaveDraft(dd);
     renderPrograms();
+    progAskExit(s);
     toast(progRoutineName(b.dataset.progRoutine) + " drafted on " + PROG_DAYS[+b.dataset.progApply]);
   });
 }
@@ -8096,6 +8178,7 @@ function renderPrograms(){
       '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">One proven template next to your own draft. Nothing here is final until you start it.</p>' +
       '<div class="bento">' + cards + '</div></div>' +
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
+      (draft.active && progActivePlan() ? '<div class="card" data-prog-active-banner style="margin-bottom:.9rem"><span class="micro">Following</span> <b>' + esc(progActivePlan().name) + '</b> <span class="micro">· ' + progActivePlan().days.map(x=>PROG_DAYS[x]).join(" + ") + '</span> <span style="margin-left:auto"></span><button class="btn small ghost" data-prog-exit>Exit program</button></div>' : '') +
       '<div class="prog-acc" role="list">' + acc + '</div>' +
       '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
@@ -8127,12 +8210,24 @@ function renderPrograms(){
       '<div class="prog-fact"><div class="k">Training days</div><div class="v">' + esc(c.daysPerWeek) + '</div></div>' +
       '<div class="prog-fact"><div class="k">Level</div><div class="v">' + esc(c.level) + '</div></div></div>' +
       '<div><h2 class="section">The week</h2><p class="micro">Template preview. Your seven-day draft below stays untouched.</p>' + rows + '</div>' +
-      '<div class="btn-row"><button class="btn ghost" data-prog-back>Back</button><button class="btn primary" data-prog-use="' + c.id + '">Use this template</button></div></div></div>';
+      '<div><h2 class="section">Pick your days</h2><p class="micro">Choose your first workout day. The second lands 3 days later.</p>' +
+      '<div class="btn-row" data-prog-first-row>' + PROG_DAYS.map((dd, i)=>'<button class="btn small' + (i === 0 ? ' primary' : '') + '" data-prog-first="' + i + '">' + dd + '</button>').join("") + '</div>' +
+      '<p class="micro" data-prog-second-preview>First: Mon. Second session: Thu.</p></div>' +
+      '<div class="btn-row"><button class="btn ghost" data-prog-back>Back</button><button class="btn primary" data-prog-use="' + c.id + '">Start program</button></div></div></div>';
     s.appendChild(ov);
+    let firstDay = 0;
+    const paint = ()=>{
+      ov.querySelectorAll("[data-prog-first]").forEach(b=>{
+        const on = +b.dataset.progFirst === firstDay;
+        b.classList.toggle("primary", on);
+      });
+      ov.querySelector("[data-prog-second-preview]").textContent = "First: " + PROG_DAYS[firstDay] + ". Second session: " + PROG_DAYS[(firstDay + 3) % 7] + ".";
+    };
+    ov.querySelectorAll("[data-prog-first]").forEach(b=>b.addEventListener("click", ()=>{ firstDay = +b.dataset.progFirst; paint(); }));
     const close = ()=>ov.remove();
     ov.addEventListener("click", e=>{ if (e.target === ov) close(); });
     ov.querySelector("[data-prog-back]").addEventListener("click", close);
-    ov.querySelector("[data-prog-use]").addEventListener("click", ()=>{ close(); progUseTemplate(c.id); });
+    ov.querySelector("[data-prog-use]").addEventListener("click", ()=>{ close(); progEnroll(c.id, firstDay); });
     ov.querySelector(".prog-sheet").addEventListener("click", e=>e.stopPropagation());
   };
   $$("[data-prog-open]", s).forEach(c=>{
@@ -8165,8 +8260,17 @@ function renderPrograms(){
     const micro = sel.parentElement.querySelector(".micro");
     if (micro) micro.textContent = progRoutineSets(d.slots[i]) + " sets planned";
     progBindSuggest(s);
+    progAskExit(s);
   }));
   progBindSuggest(s);
+  const exitB = $("[data-prog-exit]", s);
+  if (exitB) exitB.addEventListener("click", ()=>{
+    const d = progDraft();
+    d.slots = [null, null, null, null, null, null, null];
+    progSaveDraft(d);
+    renderPrograms();
+    progAskExit($("#view-programs"));
+  });
   const saveB = $("[data-prog-save]", s);
   if (saveB) saveB.addEventListener("click", ()=>{ progSaveDraft(progDraft()); toast("Custom week saved in this browser"); });
   const startB = $("[data-prog-start]", s);
