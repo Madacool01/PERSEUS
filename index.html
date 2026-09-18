@@ -1039,6 +1039,8 @@
   .streak-cal-dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: .85rem; font-weight: 600; color: var(--ink-2); padding: .3rem 0 .5rem; }
   .streak-cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-radius: 999px; padding: .18rem .1rem; align-items: center; gap: 5px; }
   .streak-cal-week.lit { background: #fde6c2; }
+  html[data-theme="midnight"] .streak-cal-week.lit .streak-cal-day:not(.hit),
+  html[data-theme="ocean"] .streak-cal-week.lit .streak-cal-day:not(.hit) { color: #000; }
   .streak-cal-week + .streak-cal-week { margin-top: 5px; }
   .streak-cal-day { aspect-ratio: 1 / 1; display: grid; place-items: center; font-size: 1.2rem; font-weight: 600; line-height: 1; color: var(--ink-2); border-radius: 50%; width: 100%; box-sizing: border-box; }
   .streak-cal-day.hit { background: #f59e0b; color: #fff; font-weight: 700; width: 100%; margin: auto; box-sizing: border-box; }
