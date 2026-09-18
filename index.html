@@ -1639,6 +1639,36 @@
     .settings-grid .cell, .settings-grid .cell.s7, .settings-grid .cell.s5, .settings-grid .cell.s12 { grid-column: span 12; }
   }
 
+  /* ---------- Programs prototype (gapless bento 7+5 / 5+7, accordion, pinned flow) ---------- */
+  .prog-card { position: relative; overflow: hidden; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-1); cursor: pointer; display: flex; flex-direction: column; transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .25s; }
+  .prog-card:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: var(--shadow-2); }
+  .prog-media { height: 190px; overflow: hidden; position: relative; background: var(--dark-2); }
+  .prog-media > span { display: block; width: 100%; height: 100%; background-size: cover; background-position: center; filter: grayscale(.9) contrast(1.1) brightness(.82); transition: transform .7s ease-out, filter .3s; }
+  .prog-card:hover .prog-media > span { transform: scale(1.05); filter: grayscale(.4) contrast(1.08) brightness(.9); }
+  .prog-body { padding: 1.3rem 1.4rem 1.4rem; display: flex; flex-direction: column; gap: .6rem; }
+  .prog-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.25rem, 2vw, 1.6rem); letter-spacing: -.01em; color: var(--ink); }
+  .prog-blurb { color: var(--ink-2); font-size: .92rem; line-height: 1.55; margin: 0; }
+  .prog-week { display: flex; gap: .32rem; margin-top: .2rem; }
+  .prog-dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; border: 1px solid var(--line); color: var(--ink-3); background: var(--surface-2); }
+  .prog-dot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .prog-acc { display: flex; gap: .6rem; }
+  .prog-slice { flex: 1 1 0; min-width: 0; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: .9rem .8rem; cursor: pointer; min-height: 210px; display: flex; flex-direction: column; gap: .6rem; transition: flex .35s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .25s; overflow: hidden; }
+  .prog-slice:hover { border-color: var(--accent-line); }
+  .prog-slice.open { flex: 3 1 0; box-shadow: var(--shadow-1); border-color: var(--accent-line); }
+  .prog-slice .dow { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  .prog-slice.open .dow { color: var(--accent); }
+  .prog-slice .pick { display: none; flex-direction: column; gap: .5rem; }
+  .prog-slice.open .pick { display: flex; }
+  .prog-slice select { width: 100%; font: inherit; font-size: .85rem; padding: .5rem .6rem; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+  .prog-split { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+  .prog-sticky { position: sticky; top: 84px; }
+  .prog-step { border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: .9rem 1.1rem; display: flex; align-items: center; gap: .9rem; }
+  .prog-step + .prog-step { margin-top: .6rem; }
+  .prog-cta-band { text-align: center; padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1.2rem, 4vw, 3rem); }
+  .prog-cta-band .big { font-family: var(--font-display); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; font-size: clamp(2rem, 4.4vw, 3.4rem); color: var(--ink); max-width: 22ch; margin: 0 auto; }
+  @media (max-width: 900px) { .prog-split { grid-template-columns: 1fr; } .prog-sticky { position: static; } }
+  @media (max-width: 720px) { .prog-acc { flex-direction: column; } .prog-slice { min-height: 0; } }
+
   /* ---------- Settings misc ---------- */
   .kv { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
   .kv:last-child { border-bottom: none; }
@@ -7884,19 +7914,130 @@ function youSplitHtml(nowMs){
 }
 
 /* =========================================================================
-   PROGRAMS — TRAINING PROGRAMS (placeholder shell; programs come later)
+   PROGRAMS — prototype: shelf bento, 7-day builder, pinned flow, action band
    ========================================================================= */
+var PROG_KEY = "perseus-programs-v1";
+var PROG_DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+function progDraft(){
+  try{
+    const raw = (hasStorage() ? localStorage.getItem(PROG_KEY) : null) || memStore[PROG_KEY];
+    const p = raw ? JSON.parse(raw) : null;
+    if (p && Array.isArray(p.slots) && p.slots.length === 7) return p;
+  }catch(e){}
+  const first = (state.days && state.days[0]) ? state.days[0].id : null;
+  return { slots: [first, null, first, null, first, null, null] };
+}
+function progSaveDraft(d){
+  try{
+    const raw = JSON.stringify(d);
+    if (hasStorage()){ try{ localStorage.setItem(PROG_KEY, raw); return; }catch(e){} }
+    memStore[PROG_KEY] = raw;
+  }catch(e){}
+}
+function progRoutineName(id){
+  if (!id) return "Rest";
+  const d = getDay(id);
+  return d ? d.name : "Rest";
+}
+function progRoutineSets(id){
+  const d = id && getDay(id);
+  if (!d) return 0;
+  return (d.exercises || []).reduce((n, e)=>n + (+e.targetSets || 0), 0);
+}
+function progWeekDots(slots){
+  return slots.map((id, i)=>{
+    const on = !!id;
+    return '<span class="prog-dot' + (on ? ' on' : '') + '" title="' + esc(PROG_DAYS[i] + ": " + progRoutineName(id)) + '">' + PROG_DAYS[i][0] + '</span>';
+  }).join("");
+}
 function renderPrograms(){
   const s = $("#view-programs");
   if (!s) return;
+  const draft = progDraft();
+  const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
+  const shells = [
+    { span: "span-7", seed: "perseus-push", name: "Push Pull Legs", blurb: "Three lifting days that rotate across the week. A calm default when you train most days.", week: ["Push","Pull","Legs","Rest","Push","Pull","Rest"] },
+    { span: "span-5", seed: "perseus-custom-week", name: "Your custom week", blurb: "Seven slots filled with your saved routines. Draft it below, then start it.", live: true },
+    { span: "span-5", seed: "perseus-upper", name: "Upper Lower", blurb: "Four days, alternating halves. Roomy rest days between efforts.", week: ["Upper","Lower","Rest","Upper","Lower","Rest","Rest"] },
+    { span: "span-7", seed: "perseus-fullbody", name: "Full body", blurb: "Three whole-body sessions with full rest between. Short weeks, dense work.", week: ["Full","Rest","Full","Rest","Full","Rest","Rest"] }
+  ];
+  const cards = shells.map(c=>{
+    const dots = c.live ? progWeekDots(draft.slots) : '<div class="prog-week" aria-hidden="true">' + c.week.map(w=>'<span class="prog-dot' + (w === "Rest" ? '' : ' on') + '" title="' + esc(w) + '">' + esc(w[0]) + '</span>').join("") + '</div>';
+    return '<article class="prog-card ' + c.span + ' fx-in" data-prog-goto="' + (c.live ? "prog-builder" : "prog-builder") + '" tabindex="0" role="button" aria-label="' + esc(c.name) + '">' +
+      '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + c.seed + '/1200/800)"></span></div>' +
+      '<div class="prog-body"><div class="prog-name">' + esc(c.name) + '</div><p class="prog-blurb">' + esc(c.blurb) + '</p>' + dots +
+      '<span class="routine-open">Open <span class="btn-arrow">→</span></span></div></article>';
+  }).join("");
+  const acc = PROG_DAYS.map((d, i)=>{
+    const sel = draft.slots[i] || "";
+    return '<div class="prog-slice' + (i === 0 ? ' open' : '') + '" data-prog-day="' + i + '" tabindex="0" role="button" aria-label="' + d + '">' +
+      '<span class="dow">' + d + '</span><span class="prog-pick-name" style="font-weight:700">' + esc(progRoutineName(draft.slots[i])) + '</span>' +
+      '<div class="pick"><select data-prog-slot="' + i + '" aria-label="Routine for ' + d + '">' +
+      dayOpts.replace('value="' + sel + '"', 'value="' + sel + '" selected') +
+      '</select><span class="micro">' + progRoutineSets(draft.slots[i]) + ' sets planned</span></div></div>';
+  }).join("");
+  const flow = PROG_DAYS.map((d, i)=>'<div class="prog-step fx-in"><span class="day-num mono">' + String(i + 1).padStart(2, "0") + '</span><span style="min-width:44px;font-weight:700">' + d + '</span><span data-prog-flow="' + i + '">' + esc(progRoutineName(draft.slots[i])) + '</span><span class="micro" style="margin-left:auto" data-prog-flow-sets="' + i + '">' + (draft.slots[i] ? progRoutineSets(draft.slots[i]) + " sets" : "recover") + '</span></div>').join("");
+  const marq = ["Push","Pull","Legs","Upper","Lower","Full body","Rest","Repeat"];
+  const half = marq.map(w=>'<span>' + w + '</span><i>·</i>').join("");
   s.innerHTML =
     '<div class="view-hero slim">' +
+      '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-programs/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
-        '<h2 class="view-title">Training <em class="serif-i">programs</em></h2>' +
-        '<p class="view-sub">Prebuilt and custom programs will live here.</p>' +
+        '<h2 class="view-title">Train in <span class="img-chip" aria-hidden="true"><span style="background-image:url(https://picsum.photos/seed/perseus-cycle/400/200)"></span></span> cycles,<br>not single workouts</h2>' +
+        '<p class="view-sub fx-scrub">Follow a repeating week built from your saved routines. Browse the shelf, shape your own seven days, start when ready.</p>' +
+        '<div class="hero-cta"><button class="btn btn-xl primary" data-prog-scroll="prog-library">Browse programs <span class="btn-arrow">→</span></button>' +
+        '<button class="btn btn-xl ghost-dark" data-prog-scroll="prog-builder">Create custom <span class="btn-arrow">→</span></button></div>' +
       '</div>' +
     '</div>' +
-    '<div class="wrap"><p class="micro">Programs are coming soon.</p></div>';
+    '<div class="wrap">' +
+      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Proven weekly shapes next to your own draft. Nothing here is final until you start it.</p>' +
+      '<div class="bento">' + cards + '</div></div>' +
+      '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day, assign one of your saved routines or leave it to rest. The dots above follow along.</p>' +
+      '<div class="prog-acc" role="list">' + acc + '</div>' +
+      '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
+      '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
+      '<div>' + flow + '</div></div></div>' +
+      '<div class="section-block"><div class="card prog-cta-band fx-in"><div class="big">Ready when your week <em class="serif-i">reads right</em></div>' +
+      '<p class="subtitle" style="margin:1rem auto 0">Starting is a prototype for now. Your draft is saved in this browser.</p>' +
+      '<div class="hero-cta"><button class="btn btn-xl primary" data-prog-start>Start this week <span class="btn-arrow">→</span></button>' +
+      '<button class="btn btn-xl" data-prog-save>Save custom</button></div></div></div>' +
+    '</div>';
+  const go = id=>{ const el = document.getElementById(id); if (el){ try{ el.scrollIntoView({ behavior: "smooth", block: "start" }); }catch(e){ el.scrollIntoView(); } } };
+  $$("[data-prog-scroll]", s).forEach(b=>b.addEventListener("click", ()=>go(b.dataset.progScroll)));
+  $$("[data-prog-goto]", s).forEach(c=>{
+    const h = ()=>go(c.dataset.progGoto);
+    c.addEventListener("click", h);
+    c.addEventListener("keydown", e=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); h(); } });
+  });
+  $$("[data-prog-day]", s).forEach(sl=>{
+    const toggle = ()=>{
+      const was = sl.classList.contains("open");
+      $$("[data-prog-day]", s).forEach(x=>x.classList.remove("open"));
+      if (!was) sl.classList.add("open");
+    };
+    sl.addEventListener("click", e=>{ if (e.target.tagName !== "SELECT") toggle(); });
+    sl.addEventListener("keydown", e=>{ if ((e.key === "Enter" || e.key === " ") && e.target === sl){ e.preventDefault(); toggle(); } });
+  });
+  $$("[data-prog-slot]", s).forEach(sel=>sel.addEventListener("change", ()=>{
+    const d = progDraft();
+    d.slots[+sel.dataset.progSlot] = sel.value || null;
+    progSaveDraft(d);
+    const i = +sel.dataset.progSlot;
+    const slice = sel.closest("[data-prog-day]");
+    if (slice) slice.querySelector(".prog-pick-name").textContent = progRoutineName(d.slots[i]);
+    const f = s.querySelector('[data-prog-flow="' + i + '"]');
+    if (f) f.textContent = progRoutineName(d.slots[i]);
+    const fs = s.querySelector('[data-prog-flow-sets="' + i + '"]');
+    if (fs) fs.textContent = d.slots[i] ? progRoutineSets(d.slots[i]) + " sets" : "recover";
+    const live = s.querySelector('.prog-card .prog-week');
+    if (live) live.innerHTML = progWeekDots(d.slots);
+    const micro = sel.parentElement.querySelector(".micro");
+    if (micro) micro.textContent = progRoutineSets(d.slots[i]) + " sets planned";
+  }));
+  const saveB = $("[data-prog-save]", s);
+  if (saveB) saveB.addEventListener("click", ()=>{ progSaveDraft(progDraft()); toast("Custom week saved in this browser"); });
+  const startB = $("[data-prog-start]", s);
+  if (startB) startB.addEventListener("click", ()=>toast("Prototype: enroll and reminders land next"));
 }
 
 /* =========================================================================
