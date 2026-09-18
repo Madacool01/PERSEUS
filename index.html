@@ -1648,7 +1648,7 @@
   .prog-body { padding: 1.3rem 1.4rem 1.4rem; display: flex; flex-direction: column; gap: .6rem; }
   .prog-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.25rem, 2vw, 1.6rem); letter-spacing: -.01em; color: var(--ink); }
   .prog-blurb { color: var(--ink-2); font-size: .92rem; line-height: 1.55; margin: 0; }
-  .prog-week { display: flex; gap: .32rem; margin-top: .2rem; }
+  .prog-week { display: flex; flex-direction: row; flex-wrap: wrap; gap: .32rem; margin-top: .2rem; }
   .prog-dot { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; border: 1px solid var(--line); color: var(--ink-3); background: var(--surface-2); }
   .prog-dot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .prog-acc { display: flex; gap: .6rem; }
@@ -8146,7 +8146,7 @@ function renderPrograms(){
   ];
   const dotsFor = c=>'<div class="prog-week" aria-hidden="true">' + c.split.map((w, i)=>'<span class="prog-dot' + (w.focus === "Rest" ? '' : ' on') + '" title="' + esc(PROG_DAYS[i] + ": " + w.focus) + '">' + PROG_DAYS[i][0] + '</span>').join("") + '</div>';
   const cards = shells.map(c=>{
-    const dots = c.live ? progWeekDots(draft.slots) : dotsFor(c);
+    const dots = c.live ? '<div class="prog-week" aria-hidden="true">' + progWeekDots(draft.slots) + '</div>' : dotsFor(c);
     const attr = c.live ? 'data-prog-goto="prog-builder"' : 'data-prog-open="' + c.id + '"';
     return '<article class="prog-card ' + c.span + ' fx-in" ' + attr + ' tabindex="0" role="button" aria-label="' + esc(c.name) + '">' +
       '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + c.seed + '/1200/800)"></span></div>' +
@@ -8168,7 +8168,7 @@ function renderPrograms(){
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-programs/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
-        '<h2 class="view-title">Train in <span class="img-chip" aria-hidden="true"><span style="background-image:url(https://picsum.photos/seed/perseus-cycle/400/200)"></span></span> cycles,<br>not single workouts</h2>' +
+        '<h2 class="view-title">Train in cycles,<br>not single workouts</h2>' +
         '<p class="view-sub fx-scrub">Follow a repeating week built from your saved routines. Browse the shelf, shape your own seven days, start when ready.</p>' +
         '<div class="hero-cta"><button class="btn btn-xl primary" data-prog-scroll="prog-library">Browse programs <span class="btn-arrow">→</span></button>' +
         '<button class="btn btn-xl ghost-dark" data-prog-scroll="prog-builder">Create custom <span class="btn-arrow">→</span></button></div>' +

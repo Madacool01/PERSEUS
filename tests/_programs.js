@@ -27,6 +27,8 @@ const cards = $$("#view-programs .prog-card");
 check(cards.length === 2, "bento has 2 cards (found " + cards.length + ")");
 const spans = cards.map(c => (c.className.match(/span-\d+/) || ["?"])[0]).join(",");
 check(spans === "span-7,span-5", "bento spans interlock 7+5 (found " + spans + ")");
+check(cards.every(c=>c.querySelector(".prog-week")), "every card dots row has a horizontal wrapper");
+check(cards.every(c=>c.querySelectorAll(".prog-week .prog-dot").length === 7), "every card shows all 7 day dots");
 check(!!$("#view-programs .bento"), "bento grid present (dense via CSS)");
 const slices = $$("#view-programs [data-prog-day]");
 check(slices.length === 7, "accordion has 7 day slices (found " + slices.length + ")");
