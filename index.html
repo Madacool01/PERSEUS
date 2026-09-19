@@ -830,6 +830,9 @@
   .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
   .you-chart { position: relative; }
   .you-line { display: block; width: 100%; height: auto; }
+  /* Expanded screens: a taller viewBox gives the line enough room to read at a glance. */
+  .you-chart-tall .you-val { font-size: 15px; }
+  .you-chart-tall .you-line-path { stroke-width: 2.8; }
   #you-page-0 .you-chart, #you-page-1 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
   #you-page-0 .you-chart:hover, #you-page-1 .you-chart:hover { background: var(--surface-2); }
   .you-grid-line { stroke: var(--line-2); stroke-width: 1; }
@@ -928,7 +931,7 @@
   }
   .you-modal { height: 100%; display: grid; place-items: center; }
   .you-modal-shell {
-    width: min(720px, 100%); height: 100%; max-height: 820px;
+    width: min(720px, 100%); height: auto; max-height: min(820px, 100%);
     display: flex; flex-direction: column;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--r-xl); box-shadow: var(--shadow-2);
@@ -938,7 +941,7 @@
   .you-modal-top h2 { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 1.04rem; letter-spacing: .01em; color: var(--ink); }
   .you-modal-body {
     flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-    padding: 1.2rem 1.3rem 2.2rem; display: flex; flex-direction: column; gap: 1rem;
+    padding: 1.2rem 1.3rem 1.4rem; display: flex; flex-direction: column; gap: 1rem;
   }
   /* ---------- You streak (bottom of overview + expanded calendar) ---------- */
   #you-streak-section { cursor: pointer; transition: border-color .2s, box-shadow .25s, transform .2s; }
@@ -8523,9 +8526,9 @@ function youVolumeData(period){
   };
 }
 /* Bars when there is countable volume; a plain-language reason otherwise. */
-function youVolumeBody(period){
+function youVolumeBody(period, opts){
   const d = youVolumeData(period);
-  if (d.total>0) return youLineHtml(d.bars, { values: true });
+  if (d.total>0) return youLineHtml(d.bars, Object.assign({ values: true }, opts));
   return '<div class="vis-empty">'+(d.sessions===0
     ? "No sessions in this period yet — log a workout to see your weekly volume."
     : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load — timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
@@ -8700,8 +8703,10 @@ function renderYouStreakSection(){
 let youGradSeq = 0; // each chart gets its own gradient id (two SVGs share a page)
 function youLineHtml(bars, opts){
   const showValues = !!(opts && opts.values);
+  const tall = !!(opts && opts.tall); // expanded screens give the line real room
   const n = bars.length;
-  const W = 1000, H = 200, PADX = 16, PADY = 20, TOP_PAD = showValues ? 30 : PADY;
+  const W = 1000, H = tall ? 520 : 200, PADX = 16;
+  const PADY = tall ? 34 : 20, TOP_PAD = showValues ? (tall ? 56 : 30) : PADY;
   const gid = "youAreaGrad"+(++youGradSeq);
   const max = Math.max(1, ...bars.map(b=>b.v));
   const step = Math.max(1, Math.ceil(n/7));
@@ -8726,7 +8731,7 @@ function youLineHtml(bars, opts){
     return '<text class="you-val" x="'+p[0].toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle">'+esc(String(b.v))+'</text>';
   }).join("") : "";
   const xaxis = bars.map((b,i)=>'<span class="you-x'+(i%step===0?"":" dim")+'">'+(i%step===0?esc(b.x):"")+'</span>').join("");
-  return '<div class="you-chart" role="img" aria-label="Line chart">'+
+  return '<div class="you-chart'+(tall?" you-chart-tall":"")+'" role="img" aria-label="Line chart">'+
       '<svg class="you-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+
         '<defs>'+
           '<linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'+
@@ -8963,7 +8968,7 @@ function renderYouModalBody(host){
   if (youModalMode === "volume"){
     body.innerHTML =
       youPeriodBtns("modal-period", youVolPeriod)+
-      youVolumeBody(youVolPeriod)+
+      youVolumeBody(youVolPeriod, { tall: true })+
       '<p class="micro">Weekly totals from your logged sessions: reps × (added weight + body weight × load factor). Timed holds are not counted yet.</p>'+
       youUnknownLoadsHtml()+youNeedWeightHtml();
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
@@ -8976,7 +8981,7 @@ function renderYouModalBody(host){
       youPeriodBtns("modal-period", youPeriod)+
       (data.total===0
         ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
-        : youLineHtml(data.bars, { values: true }))+
+        : youLineHtml(data.bars, { values: true, tall: true }))+
       '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youPeriod = b.dataset.youModalPeriod;
