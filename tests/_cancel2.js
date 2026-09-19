@@ -13,8 +13,10 @@ function $(s){ return W.document.querySelector(s); }
 function $$(s){ return Array.from(W.document.querySelectorAll(s)); }
 let pass=0,fail=0; const check=(c,m)=>{ if(c){pass++;console.log("  ✓ "+m);}else{fail++;console.log("  ✗ FAIL: "+m);} };
 
-// Default view is workouts; exercise creation is NOT offered inside the routine editor.
-check(E("currentView")==="workouts", "start on workouts view");
+// Default view is Home; exercise creation is NOT offered inside the routine editor.
+check(E("currentView")==="home", "start on home view");
+W.switchView("workouts");
+check(E("currentView")==="workouts", "workouts view reachable");
 const rcard = $("[data-edit-day]");
 check(Boolean(rcard), "routine card present in list");
 rcard.dispatchEvent(new W.MouseEvent("click",{bubbles:true}));

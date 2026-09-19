@@ -1850,6 +1850,88 @@
     #m-tabs .tab-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   }
 
+  /* ---------- Home: today-first dashboard (H1 wide, gapless bento) ---------- */
+  .home-hero .view-title { max-width: 34ch; }
+  .home-eyebrow {
+    display: flex; gap: .8rem; justify-content: center; align-items: center; flex-wrap: wrap;
+    font-family: var(--font-mono); font-size: .6rem; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--on-dark-muted); margin-bottom: 1.1rem;
+  }
+  .home-eyebrow .sep { color: var(--hero-accent); }
+  .home-eyebrow .home-status { display: inline-flex; align-items: center; gap: .45rem; color: var(--hero-accent); }
+  .home-eyebrow .home-status i {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--hero-accent);
+    animation: homePulse 2.6s ease-out infinite;
+  }
+  @keyframes homePulse {
+    0% { box-shadow: 0 0 0 0 rgba(240,162,113,.55); }
+    70% { box-shadow: 0 0 0 12px rgba(240,162,113,0); }
+    100% { box-shadow: 0 0 0 0 rgba(240,162,113,0); }
+  }
+  .home-grid { margin-top: 2.8rem; }
+  .home-card {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: .85rem;
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1); padding: 1.5rem 1.6rem;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .3s;
+  }
+  .home-card:hover { border-color: var(--accent-line); box-shadow: var(--shadow-2); transform: translateY(-3px); }
+  .home-card .hc-head { display: flex; align-items: center; gap: .6rem; }
+  .home-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.02rem; letter-spacing: -.01em; color: var(--ink); }
+  .hc-kicker { font-family: var(--font-mono); font-size: .56rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-3); }
+  .hc-spacer { margin-left: auto; }
+  .home-today { background: linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 100%); }
+  .ht-name { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.04; letter-spacing: -.03em; color: var(--ink); margin: 0; }
+  .ht-blurb { color: var(--ink-2); margin: 0; font-size: .95rem; max-width: 48ch; }
+  .ht-moves { display: flex; flex-direction: column; gap: .5rem; border-top: 1px solid var(--line-2); padding-top: .95rem; }
+  .ht-move { display: flex; align-items: center; gap: .6rem; font-size: .9rem; color: var(--ink-2); }
+  .ht-move .idx { font-size: .62rem; color: var(--ink-3); width: 1.8em; }
+  .ht-move .nm { font-weight: 600; color: var(--ink); }
+  .ht-move .mode { margin-left: auto; }
+  .ht-actions { margin-top: auto; padding-top: .9rem; }
+  .ht-done { display: flex; align-items: center; gap: .8rem; }
+  .ht-ring { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; flex: none; border: 2px solid var(--green); color: var(--green); background: var(--green-soft); }
+  .ht-ring svg { width: 26px; height: 26px; }
+  .home-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4rem; grid-auto-flow: dense; }
+  .home-day {
+    display: flex; flex-direction: column; align-items: center; gap: .4rem;
+    padding: .7rem .25rem; cursor: pointer; font: inherit;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--ink-3);
+    transition: border-color .2s, background .2s, transform .2s;
+  }
+  .home-day:hover { transform: translateY(-2px); border-color: var(--accent-line); }
+  .home-day .hdow { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; }
+  .home-day .hdot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .home-day.on .hdot { background: var(--accent); }
+  .home-day.today { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .home-day.today .hdot { box-shadow: 0 0 0 4px rgba(217,95,43,.18); }
+  .home-day .hname { max-width: 100%; font-size: .6rem; line-height: 1.1; text-align: center; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-day .hcheck { display: inline-flex; color: var(--green); }
+  .home-day .hcheck svg { width: 11px; height: 11px; }
+  .home-stat { justify-content: space-between; }
+  .home-stat .ico { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent); }
+  .home-stat .ico svg { width: 30px; height: 30px; }
+  .home-stat .n { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1; letter-spacing: -.03em; color: var(--ink); }
+  .home-stat .l { color: var(--ink-2); font-size: .9rem; }
+  .home-stat .sub { color: var(--ink-3); font-size: .78rem; margin-top: .15rem; }
+  .home-coach .summary { margin: 0; font-size: .95rem; line-height: 1.62; color: var(--ink-2); }
+  .home-coach .count { font-weight: 700; color: var(--accent); font-size: .82rem; }
+  .home-recent { display: flex; flex-direction: column; gap: .45rem; }
+  .recent-row { display: flex; align-items: center; gap: .8rem; padding: .7rem .85rem; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); transition: border-color .2s, transform .2s; }
+  .recent-row:hover { border-color: var(--accent-line); transform: translateX(3px); }
+  .recent-row .rr-date { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .06em; color: var(--ink-3); min-width: 4rem; }
+  .recent-row .rr-name { font-weight: 600; color: var(--ink); }
+  .recent-row .rr-meta { margin-left: auto; color: var(--ink-3); font-size: .78rem; }
+  .recent-row .rr-go { all: unset; cursor: pointer; color: var(--accent); font-weight: 700; font-size: .78rem; }
+  .recent-row .rr-go:hover { text-decoration: underline; }
+  .home-empty { margin: 0; color: var(--ink-3); font-size: .9rem; }
+  @media (max-width: 768px) {
+    .home-card { padding: 1.2rem 1.15rem; }
+    .home-week { gap: .3rem; }
+    .home-day .hname { display: none; }
+  }
+
   /* ---------- Motion polish (transitions only; global reduced-motion kill applies) ---------- */
   .view.active { animation: viewIn .38s cubic-bezier(.22,1,.36,1); }
   @keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -1894,7 +1976,8 @@
       </div>
     </div>
     <nav class="tabs" aria-label="Primary navigation">
-      <button data-view="workouts" class="tab-btn active"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg></span>Workouts</button>
+      <button data-view="home" class="tab-btn active"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg></span>Home</button>
+      <button data-view="workouts" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg></span>Workouts</button>
       <button data-view="log" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>Log session</button>
       <button data-view="coach" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6v4"/><path d="M21 6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.675A7 7 0 1 1 9 6z"/></svg></span>Coach</button>
       <button data-view="history" class="tab-btn"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg></span>History</button>
@@ -1913,6 +1996,9 @@
       <span>Progressive overload</span><i>·</i><span>Adaptive coaching</span><i>·</i><span>Sets never change</span><i>·</i><span>Effort-based adjustments</span><i>·</i><span>Explainable changes</span><i>·</i><span>Pain-aware coaching</span><i>·</i><span>Local-first data</span><i>·</i><span>Calisthenics focused</span><i>·</i>
     </div>
   </div>
+
+  <!-- ================= HOME ================= -->
+  <section id="view-home" class="view"></section>
 
   <!-- ================= WORKOUTS ================= -->
   <section id="view-workouts" class="view"></section>
@@ -1947,7 +2033,8 @@
 
 <div id="toast" class="toast"></div>
 <nav id="m-tabs" aria-label="Primary">
-  <button data-view="workouts" class="tab-btn active" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
+  <button data-view="home" class="tab-btn active" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
+  <button data-view="workouts" class="tab-btn" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
   <button data-view="log" class="tab-btn" aria-label="Log session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Log</span></button>
   <button data-view="coach" class="tab-btn" aria-label="Coach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6v4"/><path d="M21 6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.675A7 7 0 1 1 9 6z"/></svg><span>Coach</span></button>
   <button data-view="history" class="tab-btn" aria-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg><span>History</span></button>
@@ -2555,7 +2642,7 @@ var memStore = {};
 /* Which tab the user was on — remembered across refreshes via its own tiny key
    so restoring it doesn't rewrite the (possibly photo-heavy) whole state. */
 var VIEW_KEY = "perseus-view-v1";
-var VIEW_IDS = ["you","workouts","log","coach","history","library","programs","settings"];
+var VIEW_IDS = ["home","you","workouts","log","coach","history","library","programs","settings"];
 function rememberView(v){
   if (hasStorage()){ try{ localStorage.setItem(VIEW_KEY, v); return; }catch(e){} }
   memStore[VIEW_KEY] = v;
@@ -2878,7 +2965,7 @@ function confettiSmall(){
 }
 
 /* ==== APP CORE ==== */
-let currentView = "workouts";
+let currentView = "home";
 let planMode = "list";     // workouts tab: "list" (routines overview) | "edit" (routine editor)
 let planEditId = null;      // routine id being edited
 let logCtx = null;          // active logging context
@@ -2899,7 +2986,8 @@ function render(){
   applyTheme();
   $$(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===currentView));
   $$(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+currentView));
-  if (currentView==="workouts") renderWorkouts();
+  if (currentView==="home") renderHome();
+  else if (currentView==="workouts") renderWorkouts();
   else if (currentView==="log") renderLog();
   else if (currentView==="coach") renderCoach();
   else if (currentView==="history") renderHistory();
@@ -8065,6 +8153,230 @@ function renderPrograms(){
 }
 
 /* =========================================================================
+   HOME — today-first dashboard: the session to log, the week, the numbers
+   Pure derivations from state.sessions + the Programs draft; every render
+   recomputes so logging a session updates Home immediately.
+   ========================================================================= */
+/* Programs days are Mon-first; JS getDay() is Sun-first. */
+function homeDowIndex(){ return (new Date().getDay() + 6) % 7; }
+function homeTodayKey(){ return youStreakDayKey(new Date()); }
+function homeLoggedToday(){
+  return (state.sessions || []).some(s=>{
+    const d = new Date(s.dateISO);
+    return isFinite(d.getTime()) && youStreakDayKey(d) === homeTodayKey();
+  });
+}
+function homeWeekStats(){
+  const mon = youWeekStart(Date.now());
+  const out = { n: 0, sets: 0, vol: 0, days: {} };
+  (state.sessions || []).forEach(s=>{
+    const t = new Date(s.dateISO).getTime();
+    if (!isFinite(t) || t < mon || t >= mon + 7 * 86400000) return;
+    out.n++;
+    out.sets += (s.completedSets || []).length;
+    out.vol += sessionVolumeKg(s);
+    out.days[Math.floor((t - mon) / 86400000)] = true;
+  });
+  return out;
+}
+function homeGreeting(){
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+function homeOpenCalls(){
+  let n = 0;
+  (state.pending || []).forEach(p=>{ n += (p.suggestions || []).filter(x=>x && x.kept === null).length; });
+  return n;
+}
+function homeLastSessions(n){
+  return (state.sessions || []).slice()
+    .sort((a, b)=> new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime())
+    .slice(0, n);
+}
+function homeChip(seed){
+  return '<span class="img-chip"><span style="background-image:url(https://picsum.photos/seed/' + esc(seed) + '/240/120)"></span></span>';
+}
+function homeTodayCardHtml(){
+  const dow = homeDowIndex();
+  const planId = progDraft().slots[dow];
+  const day = planId ? getDay(planId) : null;
+  const logged = homeLoggedToday();
+  const dateStr = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  if (!day){
+    return '<article class="home-card home-today span-7 fx-in">' +
+      '<div class="hc-head"><span class="hc-kicker">Rest day</span><span class="hc-spacer"></span><span class="hc-kicker">' + esc(dateStr) + '</span></div>' +
+      '<h3 class="ht-name">Recovery is the work.</h3>' +
+      '<p class="ht-blurb">Nothing scheduled today. A walk, a mobility flow, or an easy dead hang keeps the week honest.</p>' +
+      '<div class="ht-actions btn-row">' +
+        '<button type="button" class="btn primary btn-xl" data-home-goto="log">Train anyway <span class="btn-arrow">→</span></button>' +
+        '<button type="button" class="btn btn-xl" data-home-goto="programs">Edit the week</button>' +
+      '</div></article>';
+  }
+  const exCount = (day.exercises || []).length;
+  const setCount = (day.exercises || []).reduce((a, x)=>a + (+x.targetSets || 0), 0);
+  const head = '<div class="hc-head"><span class="hc-kicker">Today’s session</span><span class="hc-spacer"></span><span class="hc-kicker">' + esc(dateStr) + '</span></div>';
+  if (logged){
+    const rec = homeLastSessions(1)[0] || null;
+    const recDay = rec ? getDay(rec.dayId) : null;
+    const sets = rec ? (rec.completedSets || []).length : 0;
+    const vol = rec ? fmtVol(sessionVolumeKg(rec)) : 0;
+    return '<article class="home-card home-today span-7 fx-in">' + head +
+      '<div class="ht-done"><span class="ht-ring">' + STREAK_ICO_CHECK + '</span>' +
+        '<div><h3 class="ht-name" style="font-size:clamp(1.4rem,2.6vw,1.9rem)">Logged for today</h3>' +
+        '<p class="ht-blurb">' + esc(recDay ? recDay.name : day.name) + ' is in the books — ' + sets + ' sets' + (vol ? ' · ' + vol + ' ' + weightUnit() : '') + '.</p></div></div>' +
+      '<div class="ht-actions btn-row">' +
+        '<button type="button" class="btn btn-xl" data-home-start="' + day.id + '">Log another session</button>' +
+        '<button type="button" class="btn ghost btn-xl" data-home-goto="history">See history</button>' +
+      '</div></article>';
+  }
+  const moves = (day.exercises || []).slice(0, 5).map((de, i)=>{
+    const ex = getEx(de.exId);
+    return '<div class="ht-move"><span class="idx mono">' + String(i + 1).padStart(2, "0") + '</span>' +
+      '<span class="nm">' + esc(ex ? ex.name : "Unknown") + '</span>' +
+      '<span class="mode">' + (ex ? modePill(ex) : "") + '</span></div>';
+  }).join("");
+  const more = exCount > 5 ? '<div class="ht-move"><span class="idx mono">…</span><span class="nm muted">and ' + (exCount - 5) + ' more</span></div>' : "";
+  return '<article class="home-card home-today span-7 fx-in">' + head +
+    '<h3 class="ht-name">' + esc(day.name) + '</h3>' +
+    '<p class="ht-blurb">' + esc(sessionTypeLabel(day.type || "hypertrophy")) + ' · ' + exCount + ' exercise' + (exCount !== 1 ? 's' : '') + ' · ' + setCount + ' sets. The coach tunes reps, holds, and load after every set.</p>' +
+    '<div class="ht-moves">' + moves + more + '</div>' +
+    '<div class="ht-actions btn-row">' +
+      '<button type="button" class="btn primary btn-xl" data-home-start="' + day.id + '">Start today’s session <span class="btn-arrow">→</span></button>' +
+      '<button type="button" class="btn btn-xl" data-home-goto="log">Pick another</button>' +
+    '</div></article>';
+}
+function homeWeekCardHtml(){
+  const slots = progDraft().slots;
+  const today = homeDowIndex();
+  const stats = homeWeekStats();
+  const planned = slots.filter(Boolean).length;
+  const cells = PROG_DAYS.map((d, i)=>{
+    const id = slots[i];
+    const day = id ? getDay(id) : null;
+    const name = day ? day.name : "Rest";
+    const cls = "home-day" + (id ? " on" : "") + (i === today ? " today" : "") + (stats.days[i] ? " done" : "");
+    return '<button type="button" class="' + cls + '" data-home-goto="programs" title="' + esc(d + ": " + name) + '" aria-label="' + esc(d + ": " + name) + '">' +
+      '<span class="hdow">' + d.slice(0, 1) + '</span><span class="hdot" aria-hidden="true"></span>' +
+      '<span class="hname">' + esc(name) + '</span>' +
+      (stats.days[i] ? '<span class="hcheck" aria-hidden="true">' + STREAK_ICO_CHECK + '</span>' : '') +
+    '</button>';
+  }).join("");
+  return '<article class="home-card span-5 fx-in">' +
+    '<div class="hc-head"><h3>Your week</h3><span class="hc-spacer"></span><span class="hc-kicker">' + stats.n + ' / ' + planned + ' done</span></div>' +
+    '<div class="home-week">' + cells + '</div>' +
+    '<p class="home-empty">Program days come from the Programs tab. Tap a day to reshape it.</p></article>';
+}
+function homeStatsHtml(){
+  const stats = homeWeekStats();
+  const streak = youWeeksStreak(Date.now());
+  const planned = progDraft().slots.filter(Boolean).length;
+  const hasVol = stats.vol > 0;
+  const volTxt = hasVol ? fmtVol(stats.vol) : stats.sets;
+  return '<article class="home-card home-stat span-4 fx-in">' +
+      '<div class="ico">' + STREAK_ICO_FLAME_SM + '</div>' +
+      '<div><div class="n stat-num">' + streak + '</div><div class="l">week' + (streak === 1 ? '' : 's') + ' in a row</div>' +
+      '<div class="sub">' + (streak > 0 ? 'Keep it alive.' : 'Log a session to start a streak.') + '</div></div></article>' +
+    '<article class="home-card home-stat span-4 fx-in">' +
+      '<div class="ico">' + STREAK_ICO_DB + '</div>' +
+      '<div><div class="n stat-num">' + stats.n + '</div><div class="l">sessions this week</div>' +
+      '<div class="sub">' + planned + ' planned day' + (planned === 1 ? '' : 's') + '</div></div></article>' +
+    '<article class="home-card home-stat span-4 fx-in">' +
+      '<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>' +
+      '<div><div class="n stat-num">' + volTxt + '</div><div class="l">' + (hasVol ? 'volume this week' : 'sets this week') + '</div>' +
+      '<div class="sub">' + (hasVol ? weightUnit() + ' lifted' : 'logged working sets') + '</div></div></article>';
+}
+function homeCoachCardHtml(){
+  const open = homeOpenCalls();
+  const last = homeLastSessions(1)[0] || null;
+  const summary = last && last.summary ? last.summary : "";
+  const body = summary
+    ? '<p class="summary">' + esc(summary) + '</p>'
+    : '<p class="summary">Log a session and the coach will line up the exact rep, hold, or load changes for next time.</p>';
+  const badge = open
+    ? '<span class="count">' + open + ' open call' + (open === 1 ? '' : 's') + '</span>'
+    : '<span class="hc-kicker">No open calls</span>';
+  return '<article class="home-card home-coach span-5 fx-in">' +
+    '<div class="hc-head"><h3>The coach</h3><span class="hc-spacer"></span>' + badge + '</div>' +
+    body +
+    '<div class="btn-row" style="margin-top:auto">' +
+      '<button type="button" class="btn primary" data-home-goto="coach">Review suggestions <span class="btn-arrow">→</span></button>' +
+    '</div></article>';
+}
+function homeRecentCardHtml(){
+  const recent = homeLastSessions(4);
+  const rows = recent.map(s=>{
+    const day = getDay(s.dayId);
+    const sets = (s.completedSets || []).length;
+    const vol = fmtVol(sessionVolumeKg(s));
+    const meta = sets + ' sets' + (vol ? ' · ' + vol + ' ' + weightUnit() : '');
+    return '<div class="recent-row">' +
+      '<span class="rr-date">' + esc(fmtDate(s.dateISO)) + '</span>' +
+      '<span class="rr-name">' + esc(day ? day.name : "Session") + '</span>' +
+      '<span class="rr-meta">' + esc(meta) + '</span>' +
+      (day ? '<button type="button" class="rr-go" data-home-start="' + day.id + '" aria-label="Log ' + esc(day.name) + ' again">Repeat</button>' : '') +
+    '</div>';
+  }).join("");
+  return '<article class="home-card span-7 fx-in">' +
+    '<div class="hc-head"><h3>Recent sessions</h3><span class="hc-spacer"></span>' +
+      '<button type="button" class="btn ghost small" data-home-goto="history">All history</button></div>' +
+    (rows ? '<div class="home-recent">' + rows + '</div>' : '<p class="home-empty">No sessions logged yet. Your first one shows up here.</p>') +
+    '</article>';
+}
+function renderHome(){
+  const s = $("#view-home");
+  if (!s) return;
+  const planId = progDraft().slots[homeDowIndex()];
+  const day = planId ? getDay(planId) : null;
+  const logged = homeLoggedToday();
+  const name = (state.profile && state.profile.name) ? String(state.profile.name).trim() : "";
+  const greet = homeGreeting() + (name ? ", " + name : "");
+  const todayStr = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const status = !day ? "Rest day" : logged ? "Logged today" : "Session due";
+  const title = !day
+    ? 'Rest is <em class="serif-i">part of the plan</em>.'
+    : logged
+      ? 'Today is <em class="serif-i">in the books</em>.'
+      : 'Today asks for ' + homeChip("perseus-chalk") + ' <em class="serif-i">one honest session</em>.';
+  const sub = !day
+    ? 'No training scheduled. Move well, sleep, and let the work settle.'
+    : logged
+      ? 'Nice work. Review what the coach wants to change next time, or go again.'
+      : 'Everything the coach needs is ready. Log every set and it will tune the next one.';
+  const primary = !day
+    ? '<button type="button" class="btn btn-xl primary" data-home-goto="log">Log a session <span class="btn-arrow">→</span></button>'
+    : '<button type="button" class="btn btn-xl primary" data-home-start="' + day.id + '">' + (logged ? "Log another" : "Start today’s session") + ' <span class="btn-arrow">→</span></button>';
+  s.innerHTML =
+    '<div class="view-hero home-hero">' +
+      '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-home/1920/1080)"></div>' +
+      '<div class="view-hero-inner">' +
+        '<div class="home-eyebrow"><span>' + esc(greet) + '</span><span class="sep" aria-hidden="true">/</span><span>' + esc(todayStr) + '</span><span class="sep" aria-hidden="true">/</span><span class="home-status"><i aria-hidden="true"></i>' + esc(status) + '</span></div>' +
+        '<h2 class="view-title">' + title + '</h2>' +
+        '<p class="view-sub fx-scrub">' + sub + '</p>' +
+        '<div class="hero-cta">' + primary +
+          '<button type="button" class="btn btn-xl ghost-dark" data-home-goto="programs">Open the week <span class="btn-arrow">→</span></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wrap">' +
+      '<div class="bento home-grid">' +
+        homeTodayCardHtml() +
+        homeWeekCardHtml() +
+        homeStatsHtml() +
+        homeCoachCardHtml() +
+        homeRecentCardHtml() +
+      '</div>' +
+    '</div>';
+  $$("[data-home-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.homeGoto)));
+  $$("[data-home-start]", s).forEach(b=>b.addEventListener("click", ()=>homeStartSession(b.dataset.homeStart)));
+}
+/* Switch to the logger first so render() lands on the log step, not the picker. */
+function homeStartSession(dayId){
+  if (!dayId) return;
+  switchView("log");
+  startLog(dayId);
+}
+
+/* =========================================================================
    YOU — TRAINING ANALYTICS
    ========================================================================= */
 
@@ -8777,7 +9089,7 @@ saveState();
 /* Return to whichever section the user was on before a refresh (workouts on a fresh visit). */
 function restoreView(){
   const saved = lastView();
-  currentView = (VIEW_IDS.indexOf(saved) !== -1) ? saved : "workouts";
+  currentView = (VIEW_IDS.indexOf(saved) !== -1) ? saved : "home";
 }
 restoreView();
 

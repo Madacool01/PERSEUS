@@ -45,7 +45,7 @@ const waitFor = (fn, label, ms) => new Promise(res => {
   E("getDay('day-2').exercises.find(x=>x.exId==='ex-1').setReps = [5,5]");
   E("getDay('day-2').exercises.find(x=>x.exId==='ex-1').setTypes = ['regular','regular']");
   E("state.days.push({ id:'day-3', name:'Workout C', type:'hypertrophy', exercises:[] })");
-  E("planMode='edit'; planEditId='day-3'; render()");
+  E("currentView='workouts'; planMode='edit'; planEditId='day-3'; render()");
   E("openAddEx('day-3')");
   const shared = G("exercisePlan('ex-1')");
   check(shared && shared.targetSets === 2 && shared.setReps[0] === 5 && shared.setReps[1] === 5,

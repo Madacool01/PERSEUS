@@ -23,10 +23,12 @@ const tabs = $$("header nav.tabs .tab-btn");
 const youBtn = $(".tab-btn[data-view='you']");
 check(Boolean(youBtn), "You tab button exists in the primary nav");
 check(youBtn.textContent.trim() === "You", "You tab is labelled You");
-check(tabs.length === 8, "eight primary tabs total");
-check(tabs[5].dataset.view === "programs" && tabs[6].dataset.view === "you" && tabs[7].dataset.view === "settings", "Programs sits between Exercises and You, Settings last");
+check(tabs.length === 9, "nine primary tabs total");
+check(tabs[0].dataset.view === "home", "Home is the first tab");
+check(tabs[6].dataset.view === "programs" && tabs[7].dataset.view === "you" && tabs[8].dataset.view === "settings", "Programs sits between Exercises and You, Settings last");
 const mtabs = $$("#m-tabs .tab-btn");
-check(mtabs.length === 8, "eight mobile bottom tabs mirror the top nav");
+check(mtabs.length === 9, "nine mobile bottom tabs mirror the top nav");
+check(mtabs[0].dataset.view === "home", "mobile Home is first too");
 
 clickTab("you");
 check($("#view-you").classList.contains("active"), "You view activates after click");

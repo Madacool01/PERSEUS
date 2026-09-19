@@ -18,7 +18,7 @@ const $ = s => W.document.querySelector(s);
 const clickTab = v => $(`.tab-btn[data-view="${v}"]`).dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
 
 console.log("== View restore across refresh ==");
-check($("#view-workouts").classList.contains("active"), "first visit starts on workouts");
+check($("#view-home").classList.contains("active"), "first visit starts on home");
 const viewKey = E("VIEW_KEY");
 check(typeof viewKey === "string" && viewKey.length > 0, "view key constant readable");
 
@@ -38,10 +38,10 @@ clickTab("settings");
 E("currentView = 'workouts'; restoreView(); render();");
 check($("#view-settings").classList.contains("active"), "restore tracks the latest tab (settings)");
 
-// No remembered view (first-ever visit) keeps the workouts default
+// No remembered view (first-ever visit) keeps the Home default
 E("localStorage.removeItem(VIEW_KEY)");
 E("currentView = 'library'; restoreView(); render();");
-check($("#view-workouts").classList.contains("active"), "no remembered view falls back to workouts");
+check($("#view-home").classList.contains("active"), "no remembered view falls back to home");
 
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

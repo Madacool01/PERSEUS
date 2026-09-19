@@ -39,6 +39,7 @@ function section(t){ console.log("\n== " + t + " =="); }
 
 (async () => {
   section("Initial render");
+  window.switchView("workouts");
   const woView = $("#view-workouts");
   check(Boolean(woView.innerHTML.length > 500), "workouts view rendered (len=" + woView.innerHTML.length + ")");
   check($$("#view-workouts [data-edit-day]").length === 2, "two seeded routines shown in the list");
