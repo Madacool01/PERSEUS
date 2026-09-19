@@ -216,7 +216,7 @@
   }
   .app-inner {
     max-width: 1240px; margin: 0 auto;
-    display: flex; align-items: center; gap: 1rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
     padding: .68rem clamp(1.1rem, 3vw, 2rem);
   }
   .brand { display: flex; align-items: center; gap: .8rem; margin-right: auto; }
@@ -236,9 +236,9 @@
     color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r);
     padding: .38rem .72rem; white-space: nowrap; flex: none;
   }
-  @media (max-width: 1280px) { .status-chip { display: none; } }
+  @media (max-width: 1400px) { .status-chip { display: none; } }
   nav.tabs {
-    display: flex; gap: .1rem; padding: 0;
+    display: flex; margin-left: auto; gap: .1rem; padding: 0;
     border: 1px solid var(--line); border-radius: var(--r);
     background: var(--surface);
     overflow-x: auto; scrollbar-width: none;
@@ -260,6 +260,8 @@
     background: var(--accent);
   }
   nav.tabs button.active .glyph { color: var(--accent); opacity: 1; }
+  /* Narrow desktops: icons off so all 8 tabs fit the wrapped nav row without scrolling */
+  @media (max-width: 860px) { nav.tabs button .glyph { display: none; } }
 
   /* ---------- Layout ---------- */
   main.page { width: 100%; overflow-x: hidden; }
@@ -1845,13 +1847,14 @@
     }
     #m-tabs::-webkit-scrollbar { display: none; }
     #m-tabs .tab-btn {
-      flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem;
+      flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem; min-width: 0;
       font-family: var(--font-body); font-size: .6rem; font-weight: 700; color: var(--ink-2);
-      background: transparent; border: none; min-width: 44px; min-height: 56px; padding: .45rem .3rem;
+      background: transparent; border: none; min-height: 56px; padding: .45rem .2rem;
       cursor: pointer; border-radius: var(--r-md); white-space: nowrap;
     }
     #m-tabs .tab-btn svg { width: 20px; height: 20px; }
     #m-tabs .tab-btn.active { color: var(--accent-deep); background: var(--accent-soft); }
+    #m-tabs .tab-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   }
 
   /* ---------- Motion polish (transitions only; global reduced-motion kill applies) ---------- */
