@@ -216,7 +216,7 @@
   }
   .app-inner {
     max-width: 1240px; margin: 0 auto;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
+    display: flex; flex-wrap: nowrap; align-items: center; gap: 1rem;
     padding: .68rem clamp(1.1rem, 3vw, 2rem);
   }
   .brand { display: flex; align-items: center; gap: .8rem; margin-right: auto; }
@@ -234,16 +234,15 @@
   .status-chip {
     font-family: var(--font-mono); font-size: .58rem; letter-spacing: .16em; text-transform: uppercase;
     color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r);
-    padding: .38rem .72rem; white-space: nowrap; flex: none;
+    padding: .38rem .72rem; white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden;
   }
   @media (max-width: 1400px) { .status-chip { display: none; } }
   nav.tabs {
-    display: flex; margin-left: auto; gap: .1rem; padding: 0;
+    display: flex; flex: 0 0 auto; margin-left: auto; gap: .1rem; padding: 0;
     border: 1px solid var(--line); border-radius: var(--r);
     background: var(--surface);
-    overflow-x: auto; scrollbar-width: none;
+    overflow: visible;
   }
-  nav.tabs::-webkit-scrollbar { display: none; }
   nav.tabs button {
     position: relative;
     font-family: var(--font-body); font-size: .82rem; font-weight: 600; color: var(--ink-2);
@@ -260,7 +259,7 @@
     background: var(--accent);
   }
   nav.tabs button.active .glyph { color: var(--accent); opacity: 1; }
-  /* Narrow desktops: icons off so all 8 tabs fit the wrapped nav row without scrolling */
+  /* Narrow desktops: icons off so all 8 tabs stay on the single nav row */
   @media (max-width: 860px) { nav.tabs button .glyph { display: none; } }
 
   /* ---------- Layout ---------- */
