@@ -1915,6 +1915,12 @@
   .home-stat .n { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1; letter-spacing: -.03em; color: var(--ink); }
   .home-stat .l { color: var(--ink-2); font-size: .9rem; }
   .home-stat .sub { color: var(--ink-3); font-size: .78rem; margin-top: .15rem; }
+  .home-stat[data-home-streak] { cursor: pointer; }
+  .home-stat[data-home-streak]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .home-stat .hs-go { align-self: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); transition: background .2s, color .2s, transform .2s; }
+  .home-stat .hs-go svg { width: 15px; height: 15px; }
+  .home-stat[data-home-streak] .hs-go { color: #f59e0b; }
+  .home-stat[data-home-streak]:hover .hs-go { background: var(--accent-soft); color: var(--accent); transform: translateX(2px); }
   .home-coach .summary { margin: 0; font-size: .95rem; line-height: 1.62; color: var(--ink-2); }
   .home-coach .count { font-weight: 700; color: var(--accent); font-size: .82rem; }
   .home-recent { display: flex; flex-direction: column; gap: .45rem; }
@@ -8272,10 +8278,11 @@ function homeStatsHtml(){
   const planned = progDraft().slots.filter(Boolean).length;
   const hasVol = stats.vol > 0;
   const volTxt = hasVol ? fmtVol(stats.vol) : stats.sets;
-  return '<article class="home-card home-stat span-4 fx-in">' +
+  return '<article class="home-card home-stat span-4 fx-in" data-home-streak role="button" tabindex="0" aria-label="Open the streak calendar">' +
       '<div class="ico">' + STREAK_ICO_FLAME_SM + '</div>' +
       '<div><div class="n stat-num">' + streak + '</div><div class="l">week' + (streak === 1 ? '' : 's') + ' in a row</div>' +
-      '<div class="sub">' + (streak > 0 ? 'Keep it alive.' : 'Log a session to start a streak.') + '</div></div></article>' +
+      '<div class="sub">' + (streak > 0 ? 'Keep it alive.' : 'Log a session to start a streak.') + '</div></div>' +
+      '<span class="hs-go" aria-hidden="true">' + STREAK_ICO_DB + '</span></article>' +
     '<article class="home-card home-stat span-4 fx-in">' +
       '<div class="ico">' + STREAK_ICO_DB + '</div>' +
       '<div><div class="n stat-num">' + stats.n + '</div><div class="l">sessions this week</div>' +
@@ -8368,6 +8375,13 @@ function renderHome(){
     '</div>';
   $$("[data-home-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.homeGoto)));
   $$("[data-home-start]", s).forEach(b=>b.addEventListener("click", ()=>homeStartSession(b.dataset.homeStart)));
+  /* Streak card opens the same expanded streak screen as the You tab. */
+  $$("[data-home-streak]", s).forEach(b=>{
+    b.addEventListener("click", ()=>openYouModal("streak"));
+    b.addEventListener("keydown", ev=>{
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openYouModal("streak"); }
+    });
+  });
 }
 /* Switch to the logger first so render() lands on the log step, not the picker. */
 function homeStartSession(dayId){

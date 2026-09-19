@@ -66,6 +66,16 @@ E("const dd=progDraft(); dd.slots=[null,null,null,null,null,null,null]; progSave
 const todayCard = $("#view-home .home-today");
 check(/Rest day|Recovery is the work/.test(todayCard.textContent), "rest-day state when nothing is scheduled");
 
+// Streak stat card opens the expanded streak screen (same as the You tab)
+const streakCard = $("#view-home [data-home-streak]");
+check(Boolean(streakCard), "streak stat card is clickable");
+streakCard.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+const modal = $("#you-modal-host");
+check(Boolean(modal), "streak card opens the expanded You modal");
+check(!!$("#you-modal-host .streak-big") && !!$("#you-modal-host .streak-cal"), "expanded streak calendar renders");
+check(/Streak/.test($("#you-modal-host .you-modal-top h2").textContent), "modal titles the streak screen");
+E("document.getElementById('you-modal-host') && document.getElementById('you-modal-host').remove()");
+
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
