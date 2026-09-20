@@ -2908,6 +2908,26 @@ function fromCm(cm){ return cm==null ? "" : (state.profile.weightUnit==="lb" ? r
 function bodyWeightKg(){ const w=state.profile&&state.profile.bodyWeight; return (typeof w==="number"&&isFinite(w)&&w>0)?w:null; }
 function getEx(id){ return state.exercises.find(e=>e.id===id); }
 function getDay(id){ return state.days.find(d=>d.id===id); }
+/* Names must stay unique: routines and exercises each form their own namespace.
+   Comparison ignores case and surrounding whitespace, and never matches the
+   item being edited (so re-saving an unchanged name is fine). */
+function normName(s){ return String(s==null ? "" : s).trim().toLowerCase(); }
+function nameTaken(list, name, ignoreId){
+  const n = normName(name);
+  if (!n) return null;
+  return (list||[]).find(x => x && x.id !== ignoreId && normName(x.name) === n) || null;
+}
+/* Pick the first "Workout A/B/C…" label not already in use, so adding a routine
+   after renames or deletions can never collide. */
+function nextRoutineName(){
+  const used = {};
+  (state.days||[]).forEach(d=>{ used[normName(d.name)] = true; });
+  for (let i=0; i<26*4; i++){
+    const lab = i<26 ? "Workout "+String.fromCharCode(65+i) : "Workout "+(i+1);
+    if (!used[normName(lab)]) return lab;
+  }
+  return "Workout "+uid();
+}
 /* Downscale an uploaded image to a compact JPEG data URL so it survives
    localStorage without blowing the quota. */
 function readImageFile(file, cb){
@@ -3590,6 +3610,8 @@ function openExEditor(id){
   $("#ex-save", host).addEventListener("click", ()=>{
     const name = $("#ex-name", host).value.trim();
     if (!name){ toast("Name is required"); return; }
+    const nameDup = nameTaken(state.exercises, name, ex ? ex.id : null);
+    if (nameDup){ toast('An exercise named "'+nameDup.name+'" already exists'); return; }
     const data = {
       name: name,
       type: curType,
@@ -4329,7 +4351,7 @@ function renderRoutineList(){
   }
   $("#add-day", s).addEventListener("click", ()=>{
     const id = "day-"+uid();
-    state.days.push({ id:id, name:"Workout "+String.fromCharCode(65+state.days.length), exercises:[] });
+    state.days.push({ id:id, name:nextRoutineName(), exercises:[] });
     saveState();
     planMode="edit"; planEditId = id; render();
   });
@@ -4617,7 +4639,12 @@ function renderWorkoutEditor(){
     planMode="list"; planEditId=null; render();
   });
   $$("input[data-dayname]", s).forEach(inp => inp.addEventListener("change", ev=>{
-    const day = getDay(inp.dataset.dayname); if(day){ day.name=inp.value.trim()||day.name; saveState(); }
+    const day = getDay(inp.dataset.dayname); if(!day) return;
+    const val = inp.value.trim();
+    if (!val){ inp.value = day.name; return; }
+    const dup = nameTaken(state.days, val, day.id);
+    if (dup){ toast('A routine named "'+dup.name+'" already exists'); inp.value = day.name; return; }
+    day.name = val; saveState();
   }));
   const dayRestIn = $("#day-rest", s);
   const saveDayRest = ()=>{
