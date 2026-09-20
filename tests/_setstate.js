@@ -40,6 +40,11 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
   check(cell0.classList.contains("partial"), "work without effort turns the set yellow (partial)");
   check(!cell0.classList.contains("done"), "…and is not yet marked done");
 
+  // The "!" badge carries the hover explanation of what is still missing.
+  const warn0 = cell0.querySelector(".set-warn");
+  check(Boolean(warn0), "yellow set renders an exclamation badge");
+  check(Boolean(warn0.dataset.tip) && /effort/i.test(warn0.dataset.tip), "badge tip explains the missing effort rating");
+
   const effort = cell0.querySelector(".effort-range");
   input(effort, "3");
   check(cell0.classList.contains("done"), "adding effort completes the set (done)");
@@ -58,6 +63,8 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
   input(effort1, "4");
   check(cell1.classList.contains("partial"), "effort without work is flagged yellow (partial)");
   check(!cell1.classList.contains("done"), "effort alone never marks a set done");
+  const warn1 = cell1.querySelector(".set-warn");
+  check(Boolean(warn1) && /reps or time/i.test(warn1.dataset.tip), "badge tip explains the missing reps/time instead");
 
   console.log("\n== History counts work, not effort ==");
   const ent = E("logCtx.entries['" + de.exId + "']");
