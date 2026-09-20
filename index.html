@@ -1376,6 +1376,16 @@
   }
   .set-top { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .6rem; padding-right: 1.4rem; }
   .set-cell.done .set-top { padding-right: 1.4rem; }
+  /* Half-filled set: work logged without effort, or effort without work. */
+  .set-cell.partial { border-color: var(--amber-line); background: linear-gradient(180deg, #fbf4e2, var(--amber-soft)); box-shadow: 0 14px 30px -20px rgba(143,106,28,.5); }
+  .set-cell.partial::before { transform: scaleX(1); background: linear-gradient(90deg, var(--amber), #c9a44e); }
+  .set-cell.partial::after {
+    content: "!"; position: absolute; top: .55rem; right: .6rem;
+    width: 22px; height: 22px; display: grid; place-items: center;
+    font-size: .8rem; font-weight: 800; color: #fff;
+    background: var(--amber); border-radius: 50%; pointer-events: none;
+  }
+  .set-cell.partial .set-top { padding-right: 1.4rem; }
   .set-num { font-family: var(--font-display); font-weight: 800; font-size: 1.45rem; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
   .set-num small { font-family: var(--font-mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; color: var(--ink-3); margin-left: .45rem; vertical-align: middle; }
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
@@ -1918,12 +1928,13 @@
   .home-stat .n { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1; letter-spacing: -.03em; color: var(--ink); }
   .home-stat .l { color: var(--ink-2); font-size: .9rem; }
   .home-stat .sub { color: var(--ink-3); font-size: .78rem; margin-top: .15rem; }
-  .home-stat[data-home-streak] { cursor: pointer; }
-  .home-stat[data-home-streak]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .home-stat[data-home-streak], .home-stat[data-home-graph] { cursor: pointer; }
+  .home-stat[data-home-streak]:focus-visible, .home-stat[data-home-graph]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .home-stat .hs-go { align-self: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); transition: background .2s, color .2s, transform .2s; }
   .home-stat .hs-go svg { width: 15px; height: 15px; }
   .home-stat[data-home-streak] .hs-go { color: #f59e0b; }
-  .home-stat[data-home-streak]:hover .hs-go { background: var(--accent-soft); color: var(--accent); transform: translateX(2px); }
+  .home-stat[data-home-streak]:hover .hs-go,
+  .home-stat[data-home-graph]:hover .hs-go { background: var(--accent-soft); color: var(--accent); transform: translateX(2px); }
   .home-coach .summary { margin: 0; font-size: .95rem; line-height: 1.62; color: var(--ink-2); }
   .home-coach .count { font-weight: 700; color: var(--accent); font-size: .82rem; }
   .home-recent { display: flex; flex-direction: column; gap: .45rem; }
@@ -5511,10 +5522,33 @@ function bindSteppers(s){
     inp.dispatchEvent(new Event("input", { bubbles:true }));
   }));
 }
-/* How many sets of an entry already carry performance data or an effort rating. */
+/* A set counts as performed once it carries a real performance number — reps for
+   rep/weight work, seconds for timed holds. An effort rating alone is not work. */
+function setPerformed(set){
+  if (!set) return false;
+  return (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
+}
+/* Logger cell state: "done" once work and effort are both present, "partial"
+   (yellow) when exactly one of the two is still missing, otherwise untouched. */
+function logCellState(set){
+  if (!set) return "";
+  const perf = setPerformed(set);
+  const rated = (set.rating||0) > 0;
+  if (perf && rated) return "done";
+  if (perf || rated) return "partial";
+  return "";
+}
+/* Repaint one set cell for the live state above without a full re-render. */
+function applyCellState(cell, set){
+  if (!cell) return;
+  const st = logCellState(set);
+  cell.classList.toggle("done", st === "done");
+  cell.classList.toggle("partial", st === "partial");
+}
+/* How many sets of an entry count as performed work (the same tally History uses). */
 function logSetsDone(entry){
   if (!entry || !entry.sets) return 0;
-  return entry.sets.filter(s=>s.rating>0 || (s.reps!=="" && s.reps!=null) || (s.time!=="" && s.time!=null)).length;
+  return entry.sets.filter(setPerformed).length;
 }
 /* Slim movement ticker reusing the global marquee system. */
 function logTickerHtml(day){
@@ -5612,13 +5646,13 @@ function renderLogExerciseStep(s, day, step, total){
   const showReps = ex.mode!=="time";
   const logMode = !!state.profile.loggingMode;
   const setCells = entry.sets.map((set,i)=>{
-    const done = set.rating>0 || (set.reps!=="" && set.reps!=null);
+    const cellState = logCellState(set);
     const plan = de;
     const st = setTypeOf(plan, i);
     const planTxt = setPlanTxt(plan, ex, i, day.id);
     const beat = st==="failure" ? prevSetActual(day.id, de.exId, i, showTime?"time":"reps") : null;
     const failLabel = st==="failure" ? (beat!=null ? (showTime ? 'Hold — beat '+beat+'s' : 'AMRAP reps — beat '+beat) : 'AMRAP reps (to failure)') : "";
-    return '<div class="set-cell fx-rise'+(done?' done':"")+'" data-set="'+i+'">'+
+    return '<div class="set-cell fx-rise'+(cellState?' '+cellState:'')+'" data-set="'+i+'">'+
       '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
@@ -5670,7 +5704,11 @@ function renderLogExerciseStep(s, day, step, total){
       const n = cell.querySelector(".s-note"); if(n) set.note = n.value;
     });
   };
-  $$(".s-reps,.s-time,.s-weight", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
+  $$(".s-reps,.s-time,.s-weight", s).forEach(inp=>inp.addEventListener("input", ()=>{
+    readFromDom();
+    const cell = inp.closest(".set-cell");
+    if (cell) applyCellState(cell, entry.sets[+cell.dataset.set]);
+  }));
   $$(".s-note", s).forEach(inp=>inp.addEventListener("input", ()=>{ readFromDom(); }));
   /* Done checkbox + first number entry auto-start the rest timer. The first
      completion wins per set; re-edits never restart, and a running timer is
@@ -5749,8 +5787,8 @@ function renderLogRoundStep(s, day, step, total){
     const showReps = ex.mode!=="time";
     const planTxt = setPlanTxt(de, ex, r, day.id);
     const beat = st==="failure" ? prevSetActual(day.id, de.exId, r, showTime?"time":"reps") : null;
-    const done = set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
-    return '<div class="set-cell round-cell fx-rise'+(done?' done':'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
+    const cellState = logCellState(set);
+    return '<div class="set-cell round-cell fx-rise'+(cellState?' '+cellState:'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
@@ -5808,8 +5846,7 @@ function renderLogRoundStep(s, day, step, total){
       const tv = g(".s-time");  if (tv!=null) set.time = tv==="" ? "" : +tv;
       const wv = g(".s-weight"); if (wv!=null) set.weight = wv==="" ? "" : +wv;
       const nv = g(".s-note");  if (nv!=null) set.note = nv;
-      const done = set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
-      cell.classList.toggle("done", done);
+      applyCellState(cell, set);
     });
   };
   $$(".s-reps,.s-time,.s-weight,.s-note", s).forEach(inp=>inp.addEventListener("input", readPanels));
@@ -5881,7 +5918,7 @@ function renderRecovery(s){
   const day = getDay(logCtx.dayId);
   const rows = day.exercises.map(de=>{
     const ex = getEx(de.exId); const ent = logCtx.entries[de.exId];
-    const done = ent.sets.filter(x=>x.rating>0||x.reps!=="").length;
+    const done = ent.sets.filter(setPerformed).length;
     return '<tr><td>'+esc(ex.name)+'</td><td>'+done+'/'+ent.sets.length+' sets logged</td></tr>';
   }).join("");  s.innerHTML =
     '<div class="wrap">' +
@@ -6092,10 +6129,7 @@ function syncEffort(rangeEl, set){
   const descEl = eff.querySelector(".effort-desc");
   if (descEl){ descEl.textContent = rated ? effortDesc(set.rating) : "Drag to rate effort in half-point steps"; descEl.classList.toggle("rated", rated); }
   eff.classList.toggle("rated", rated);
-  if (cell){
-    const perfSet = (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null);
-    cell.classList.toggle("done", rated || perfSet);
-  }
+  if (cell) applyCellState(cell, set);
   if (valEl && window.gsap && FX.ok && !FX.reduced()){
     try{ window.gsap.fromTo(valEl, {scale:1.3}, {scale:1, duration:.3, ease:"back.out(2.4)", overwrite:"auto"}); }catch(e){}
   }
@@ -6123,6 +6157,9 @@ function buildSession(day, entries, recovery){
       const reps = set.reps===""||set.reps==null ? null : +set.reps;
       const time = set.time===""||set.time==null ? null : +set.time;
       const weight = set.weight===""||set.weight==null ? null : +set.weight;
+      // A set only counts as logged work once a performance number exists. Effort
+      // alone (a rating but no reps/time) is not done and never reaches History.
+      if (reps==null && time==null) return;
       // hit: for reps/time compare against the per-set plan target; weight mode uses reps target.
       // Warm-ups always count as done; failure sets are judged as performed (no fixed target).
       const p = entries[de.exId].plan||{reps:0,time:0,weight:0};
@@ -6421,7 +6458,7 @@ function sessionNotesFor(session, exId){
       recMoves++;
       e.sets.forEach(set=>{
         recTotal++;
-        if (set.rating>0 || (set.reps!=="" && set.reps!=null) || (set.time!=="" && set.time!=null)) recSets++;
+        if (setPerformed(set)) recSets++;
         if (set.rating>0) recRates.push(+set.rating);
       });
     });
@@ -8286,14 +8323,16 @@ function homeStatsHtml(){
       '<div><div class="n stat-num">' + streak + '</div><div class="l">week' + (streak === 1 ? '' : 's') + ' in a row</div>' +
       '<div class="sub">' + (streak > 0 ? 'Keep it alive.' : 'Log a session to start a streak.') + '</div></div>' +
       '<span class="hs-go" aria-hidden="true">' + STREAK_ICO_DB + '</span></article>' +
-    '<article class="home-card home-stat span-4 fx-in">' +
+    '<article class="home-card home-stat span-4 fx-in" data-home-graph="weeks" role="button" tabindex="0" aria-label="Open the workouts per week graph">' +
       '<div class="ico">' + STREAK_ICO_DB + '</div>' +
       '<div><div class="n stat-num">' + stats.n + '</div><div class="l">sessions this week</div>' +
-      '<div class="sub">' + planned + ' planned day' + (planned === 1 ? '' : 's') + '</div></div></article>' +
-    '<article class="home-card home-stat span-4 fx-in">' +
+      '<div class="sub">' + planned + ' planned day' + (planned === 1 ? '' : 's') + '</div></div>' +
+      '<span class="hs-go" aria-hidden="true">' + HOME_ICO_GO + '</span></article>' +
+    '<article class="home-card home-stat span-4 fx-in" data-home-graph="volume" role="button" tabindex="0" aria-label="Open the total volume graph">' +
       '<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>' +
       '<div><div class="n stat-num">' + volTxt + '</div><div class="l">' + (hasVol ? 'volume this week' : 'sets this week') + '</div>' +
-      '<div class="sub">' + (hasVol ? weightUnit() + ' lifted' : 'logged working sets') + '</div></div></article>';
+      '<div class="sub">' + (hasVol ? weightUnit() + ' lifted' : 'logged working sets') + '</div></div>' +
+      '<span class="hs-go" aria-hidden="true">' + HOME_ICO_GO + '</span></article>';
 }
 function homeCoachCardHtml(){
   const open = homeOpenCalls();
@@ -8383,6 +8422,14 @@ function renderHome(){
     b.addEventListener("click", ()=>openYouModal("streak"));
     b.addEventListener("keydown", ev=>{
       if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openYouModal("streak"); }
+    });
+  });
+  /* Sessions / volume stat cards open their expanded You charts. */
+  $$("[data-home-graph]", s).forEach(b=>{
+    const open = ()=>openYouModal(b.dataset.homeGraph);
+    b.addEventListener("click", open);
+    b.addEventListener("keydown", ev=>{
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); open(); }
     });
   });
 }
@@ -8547,6 +8594,8 @@ function youNeedWeightHtml(){
 const STREAK_ICO_FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f59e0b" d="M12 1.8c1.2 3.2 4.6 5.1 6.2 8.2 1.2 2.3 1.6 4.2 1.1 6.1-.5 2.1-2.2 3.9-4.3 4.7-2.5 1-5.6.7-7.7-1-2-1.6-2.9-4-2.4-6.5.4-2.1 1.9-3.9 3.3-5.5.9-1 2.5-2.7 2.6-4.2l1.2-1.8z"/><path fill="#fbbf24" d="M12 9.2c.6 1.6 2.3 2.6 3.1 4.1.6 1.2.8 2.1.5 3-.2 1.1-1.1 2-2.1 2.4-1.3.5-2.8.3-3.9-.5-1-1-1.4-2.2-1.2-3.4.2-1.1 1-2 1.7-2.8.4-.5 1.3-1.4 1.3-2.1l.6-.7z"/></svg>';
 const STREAK_ICO_FLAME_SM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f59e0b" d="M12 1.8c1.2 3.2 4.6 5.1 6.2 8.2 1.2 2.3 1.6 4.2 1.1 6.1-.5 2.1-2.2 3.9-4.3 4.7-2.5 1-5.6.7-7.7-1-2-1.6-2.9-4-2.4-6.5.4-2.1 1.9-3.9 3.3-5.5.9-1 2.5-2.7 2.6-4.2l1.2-1.8z"/><path fill="#ffd23e" d="M12 9.2c.6 1.6 2.3 2.6 3.1 4.1.6 1.2.8 2.1.5 3-.2 1.1-1.1 2-2.1 2.4-1.3.5-2.8.3-3.9-.5-1-1-1.4-2.2-1.2-3.4.2-1.1 1-2 1.7-2.8.4-.5 1.3-1.4 1.3-2.1l.6-.7z"/></svg>';
 const STREAK_ICO_DB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg>';
+/* Affordance chevron for Home stat cards that open an expanded You chart. */
+const HOME_ICO_GO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
 const STREAK_ICO_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 10 18 19.5 6.5"/></svg>';
 let youStreakMonthOffset = 0;
 function youStreakDayKey(d){ return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate(); }

@@ -76,6 +76,20 @@ check(!!$("#you-modal-host .streak-big") && !!$("#you-modal-host .streak-cal"), 
 check(/Streak/.test($("#you-modal-host .you-modal-top h2").textContent), "modal titles the streak screen");
 E("document.getElementById('you-modal-host') && document.getElementById('you-modal-host').remove()");
 
+// Sessions + volume stat cards open the matching expanded You charts
+const sessCard = $("#view-home [data-home-graph='weeks']");
+check(Boolean(sessCard), "sessions stat card is clickable");
+sessCard.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(!!$("#you-modal-host") && $("#you-modal-host h2").textContent === "Workouts", "sessions card opens the Workouts graph from the You tab");
+$("#you-modal-host [data-you-back]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(!$("#you-modal-host"), "sessions graph closes via back button");
+const volCard = $("#view-home [data-home-graph='volume']");
+check(Boolean(volCard), "volume stat card is clickable");
+volCard.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(!!$("#you-modal-host") && $("#you-modal-host h2").textContent === "Total volume", "volume card opens the Total volume graph from the You tab");
+$("#you-modal-host [data-you-back]").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(!$("#you-modal-host"), "volume graph closes via back button");
+
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
