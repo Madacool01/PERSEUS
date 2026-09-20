@@ -43,7 +43,8 @@ check(slices.length === 7, "accordion has 7 day slices (found " + slices.length 
 const sel0 = $("#view-programs [data-prog-slot='0']");
 check(!!sel0 && sel0.options.length >= 3, "day select offers Rest + saved routines (" + (sel0 ? sel0.options.length : 0) + " options)");
 check($$("#view-programs [data-prog-flow]").length === 7, "pinned flow has 7 steps");
-check(!!$("[data-prog-save]") && !!$("[data-prog-start]"), "action band has Save + Start");
+check(!!$("[data-prog-start]") && !$("[data-prog-save]"), "action band has Start only (Save removed)");
+check(!/Starting is a prototype/.test($("#view-programs").textContent), "prototype note removed from the CTA band");
 
 // interaction: change Tuesday slot to first routine, flow + dots update
 const before = $("[data-prog-flow='1']").textContent;
@@ -53,8 +54,7 @@ check(before !== after && after === "Routine A", "slot change updates pinned flo
 const liveOn = $$("#view-programs [data-prog-goto] .prog-dot.on").length;
 const trained = JSON.parse(E("JSON.stringify(progDraft().slots)")).filter(Boolean).length;
 check(liveOn === trained, "custom-week dots update on the spot (" + liveOn + " lit for " + trained + " sessions)");
-E("document.querySelector('[data-prog-save]').click()");
-check(W.document.querySelector("#toast").classList.contains("show"), "save shows toast");
+check(E("progDraft().slots[1]") === "day-t-a", "slot choice persisted to the draft")
 
 // no routine recommendation: a single session suggests nothing
 check(!/Second session suggested/.test($("[data-prog-suggest]").textContent), "no second-session routine recommendation");
@@ -63,9 +63,10 @@ check(!$("[data-prog-apply]"), "no one-click apply button");
 E("const dd2=progDraft(); dd2.slots=[null,'day-t-a',null,null,'day-t-b',null,null]; progSaveDraft(dd2); renderPrograms();");
 check(/Spacing looks right/.test($("[data-prog-suggest]").textContent), "two sessions 3 apart confirm spacing");
 
-// start button acknowledges the prototype
+// start button saves the week and lands the user on Home
 E("document.querySelector('[data-prog-start]').click()");
-check(W.document.querySelector("#toast").classList.contains("show"), "start shows a prototype toast");
+check($("#view-home").classList.contains("active"), "Start this week switches to the Home tab");
+check(W.document.querySelector("#toast").classList.contains("show"), "start shows a toast");
 
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");

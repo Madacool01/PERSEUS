@@ -8323,9 +8323,7 @@ function renderPrograms(){
       '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
       '<div>' + flow + '</div></div></div>' +
       '<div class="section-block"><div class="card prog-cta-band fx-in"><div class="big">Ready when your week <em class="serif-i">reads right</em></div>' +
-      '<p class="subtitle" style="margin:1rem auto 0">Starting is a prototype for now. Your draft is saved in this browser.</p>' +
-      '<div class="hero-cta"><button class="btn btn-xl primary" data-prog-start>Start this week <span class="btn-arrow">→</span></button>' +
-      '<button class="btn btn-xl" data-prog-save>Save custom</button></div></div></div>' +
+      '<div class="hero-cta" style="margin-top:1.6rem"><button class="btn btn-xl primary" data-prog-start>Start this week <span class="btn-arrow">→</span></button></div></div></div>' +
     '</div>';
   const go = id=>{ const el = document.getElementById(id); if (el){ try{ el.scrollIntoView({ behavior: "smooth", block: "start" }); }catch(e){ el.scrollIntoView(); } } };
   $$("[data-prog-scroll]", s).forEach(b=>b.addEventListener("click", ()=>go(b.dataset.progScroll)));
@@ -8410,10 +8408,12 @@ function renderPrograms(){
     }));
   }
   progBindSuggest(s);
-  const saveB = $("[data-prog-save]", s);
-  if (saveB) saveB.addEventListener("click", ()=>{ progSaveDraft(progDraft()); toast("Custom week saved in this browser"); });
   const startB = $("[data-prog-start]", s);
-  if (startB) startB.addEventListener("click", ()=>toast("Prototype: enroll and reminders land next"));
+  if (startB) startB.addEventListener("click", ()=>{
+    progSaveDraft(progDraft());
+    switchView("home");
+    toast("Week saved \u2014 starting on Home");
+  });
 }
 
 /* =========================================================================
