@@ -1705,6 +1705,90 @@
   @media (max-width: 900px) { .prog-split { grid-template-columns: 1fr; } .prog-sticky { position: static; } }
   @media (max-width: 720px) { .prog-acc { flex-direction: column; } .prog-slice { min-height: 0; } }
 
+  /* ---------- Programs: phone day-picker (shown <=768px only) ----------
+     The desktop accordion above is horizontal (flex-grow + overflow:hidden) and
+     gated its control behind .open, which collapses on a phone. This block
+     replaces it on small screens with full-width day cards that expand into a
+     plain chip chooser. Desktop never sees this markup or these rules. */
+  .pm-picker { display: none; }
+  @media (max-width: 768px) {
+    .prog-acc-desktop { display: none; }
+    #view-programs .section-block { margin-top: 3.2rem; }
+    .pm-picker { display: flex; flex-direction: column; gap: .55rem; }
+    .pm-summary {
+      display: flex; align-items: center; gap: .5rem; margin: 0 0 .1rem .2rem;
+      font-family: var(--font-mono); font-size: .58rem; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .pm-summary b { color: var(--accent); font-weight: 700; }
+    .pm-day {
+      border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface);
+      overflow: hidden;
+      transition: border-color .25s, box-shadow .3s, background .25s;
+    }
+    .pm-day.training { background: linear-gradient(150deg, var(--surface) 0%, var(--surface-2) 100%); }
+    .pm-day.open { border-color: var(--accent); box-shadow: var(--shadow-2); }
+    .pm-head {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+      align-items: center; gap: .7rem; width: 100%; box-sizing: border-box;
+      margin: 0; padding: .95rem 1rem; min-height: 62px;
+      background: transparent; border: 0; font: inherit; color: inherit;
+      text-align: left; cursor: pointer; -webkit-appearance: none; appearance: none;
+    }
+    .pm-dow {
+      display: inline-flex; align-items: center; gap: .4rem; min-width: 3.5em;
+      font-family: var(--font-mono); font-size: .58rem; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .pm-dow::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none;
+      background: var(--line); transition: background .25s;
+    }
+    .pm-day.training .pm-dow { color: var(--accent); }
+    .pm-day.training .pm-dow::before { background: var(--accent); }
+    .pm-name {
+      font-family: var(--font-display); font-weight: 700; font-size: 1.02rem;
+      letter-spacing: -.01em; color: var(--ink);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pm-day:not(.training) .pm-name { font-weight: 600; color: var(--ink-3); }
+    .pm-sets {
+      font-family: var(--font-mono); font-size: .58rem; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+    }
+    .pm-day.training .pm-sets { color: var(--accent-deep); }
+    .pm-chev {
+      display: grid; place-items: center; width: 26px; height: 26px; flex: none;
+      border-radius: 50%; background: var(--surface-2); color: var(--ink-2);
+      transition: transform .32s cubic-bezier(.22,1,.36,1), background .2s, color .2s;
+    }
+    .pm-chev svg { width: 12px; height: 12px; }
+    .pm-day.open .pm-chev { transform: rotate(180deg); background: var(--accent-soft); color: var(--accent); }
+    .pm-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .34s cubic-bezier(.22,1,.36,1); }
+    .pm-day.open .pm-panel { grid-template-rows: 1fr; }
+    .pm-panel-inner { overflow: hidden; }
+    .pm-opts { display: flex; flex-direction: column; gap: .4rem; padding: 0 1rem 1rem; }
+    .pm-opt {
+      display: flex; align-items: center; gap: .6rem; width: 100%; box-sizing: border-box;
+      padding: .8rem .9rem; min-height: 52px; text-align: left; font: inherit;
+      cursor: pointer; -webkit-appearance: none; appearance: none;
+      border: 1px solid var(--line); border-radius: var(--r-md);
+      background: var(--surface-2); color: var(--ink-2);
+      transition: border-color .2s, background .2s, color .2s, transform .15s;
+    }
+    .pm-opt:active { transform: scale(.985); }
+    .pm-opt.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+    .pm-opt-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pm-opt-sets {
+      margin-left: auto; font-family: var(--font-mono); font-size: .56rem;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+    }
+    .pm-opt.on .pm-opt-sets { color: var(--accent-deep); }
+    .prog-step { padding: 1rem 1.05rem; }
+    .prog-step.on { border-color: var(--accent-line); }
+    .prog-step.on .day-num { color: var(--accent); }
+  }
+
   /* ---------- Settings misc ---------- */
   .kv { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
   .kv:last-child { border-bottom: none; }
@@ -8164,6 +8248,11 @@ function progBindSuggest(s){
   if (!box) return;
   box.innerHTML = progSuggestHtml();
 }
+/* Phone builder header: how many of the seven days carry a routine. */
+function progSummaryHtml(slots){
+  const n = (slots || []).filter(Boolean).length;
+  return '<b>' + n + '</b> training day' + (n === 1 ? '' : 's') + ' \u00b7 ' + (7 - n) + ' rest';
+}
 function renderPrograms(){
   const s = $("#view-programs");
   if (!s) return;
@@ -8186,7 +8275,31 @@ function renderPrograms(){
       dayOpts.replace('value="' + sel + '"', 'value="' + sel + '" selected') +
       '</select><span class="micro">' + progRoutineSets(draft.slots[i]) + ' sets planned</span></div></div>';
   }).join("");
-  const flow = PROG_DAYS.map((d, i)=>'<div class="prog-step fx-in"><span class="day-num mono">' + String(i + 1).padStart(2, "0") + '</span><span style="min-width:44px;font-weight:700">' + d + '</span><span data-prog-flow="' + i + '">' + esc(progRoutineName(draft.slots[i])) + '</span><span class="micro" style="margin-left:auto" data-prog-flow-sets="' + i + '">' + (draft.slots[i] ? progRoutineSets(draft.slots[i]) + " sets" : "recover") + '</span></div>').join("");
+  /* Phone builder: one full-width card per day that expands into chip choices.
+     Kept separate from the desktop accordion so desktop markup/CSS stay as-is. */
+  const pmSummary = '<div class="pm-summary" data-pm-summary>' + progSummaryHtml(draft.slots) + '</div>';
+  const pmRows = PROG_DAYS.map((d, i)=>{
+    const cur = draft.slots[i] || "";
+    const on = !!cur;
+    const opts = [{ id: "", name: "Rest day" }].concat((state.days || []).map(x=>({ id: x.id, name: x.name })))
+      .map(r=>{
+        const pick = (r.id || "") === cur;
+        const sets = r.id ? progRoutineSets(r.id) : 0;
+        return '<button type="button" class="pm-opt' + (pick ? ' on' : '') + '" data-pm-pick="' + i + '" data-pm-val="' + esc(r.id) + '" aria-pressed="' + (pick ? "true" : "false") + '">' +
+          '<span class="pm-opt-name">' + esc(r.name) + '</span>' +
+          '<span class="pm-opt-sets">' + (r.id ? sets + ' sets' : 'recover') + '</span></button>';
+      }).join("");
+    return '<div class="pm-day' + (on ? ' training' : '') + '" data-pm-row="' + i + '">' +
+        '<button type="button" class="pm-head" data-pm-day="' + i + '" aria-expanded="false" aria-controls="pm-panel-' + i + '">' +
+          '<span class="pm-dow">' + d + '</span>' +
+          '<span class="pm-name" data-pm-name="' + i + '">' + esc(progRoutineName(cur)) + '</span>' +
+          '<span class="pm-sets" data-pm-sets="' + i + '">' + (on ? progRoutineSets(cur) + " sets" : "Rest") + '</span>' +
+          '<span class="pm-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>' +
+        '</button>' +
+        '<div class="pm-panel" id="pm-panel-' + i + '"><div class="pm-panel-inner"><div class="pm-opts">' + opts + '</div></div></div>' +
+      '</div>';
+  }).join("");
+  const flow = PROG_DAYS.map((d, i)=>'<div class="prog-step' + (draft.slots[i] ? ' on' : '') + ' fx-in"><span class="day-num mono">' + String(i + 1).padStart(2, "0") + '</span><span style="min-width:44px;font-weight:700">' + d + '</span><span data-prog-flow="' + i + '">' + esc(progRoutineName(draft.slots[i])) + '</span><span class="micro" style="margin-left:auto" data-prog-flow-sets="' + i + '">' + (draft.slots[i] ? progRoutineSets(draft.slots[i]) + " sets" : "recover") + '</span></div>').join("");
   const marq = ["Train", "Rest", "Rest", "Train", "Rest", "Rest", "Repeat"];
   const half = marq.map(w=>'<span>' + w + '</span><i>·</i>').join("");
   s.innerHTML =
@@ -8203,7 +8316,8 @@ function renderPrograms(){
       '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Your saved routines, arranged into a repeating week. Nothing here is final until you start it.</p>' +
       '<div class="bento">' + cards + '</div></div>' +
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
-      '<div class="prog-acc" role="list">' + acc + '</div>' +
+      '<div class="prog-acc prog-acc-desktop" role="list">' + acc + '</div>' +
+      '<div class="pm-picker" data-pm-picker>' + pmSummary + pmRows + '</div>' +
       '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
       '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
@@ -8229,23 +8343,72 @@ function renderPrograms(){
     sl.addEventListener("click", e=>{ if (e.target.tagName !== "SELECT") toggle(); });
     sl.addEventListener("keydown", e=>{ if ((e.key === "Enter" || e.key === " ") && e.target === sl){ e.preventDefault(); toggle(); } });
   });
-  $$("[data-prog-slot]", s).forEach(sel=>sel.addEventListener("change", ()=>{
+  /* Single writer for a day slot, shared by the desktop select and the phone
+     chooser, so both stays in lockstep whatever the viewport. */
+  function progApplySlot(i, val){
     const d = progDraft();
-    d.slots[+sel.dataset.progSlot] = sel.value || null;
+    d.slots[i] = val || null;
     progSaveDraft(d);
-    const i = +sel.dataset.progSlot;
-    const slice = sel.closest("[data-prog-day]");
-    if (slice) slice.querySelector(".prog-pick-name").textContent = progRoutineName(d.slots[i]);
+    const name = progRoutineName(d.slots[i]);
+    const size = d.slots[i] ? progRoutineSets(d.slots[i]) : 0;
+    const slice = s.querySelector('[data-prog-day="' + i + '"]');
+    if (slice){
+      const pn = slice.querySelector(".prog-pick-name");
+      if (pn) pn.textContent = name;
+      const sel = slice.querySelector("[data-prog-slot]");
+      if (sel) sel.value = d.slots[i] || "";
+      const micro = sel && sel.parentElement.querySelector(".micro");
+      if (micro) micro.textContent = size + " sets planned";
+    }
     const f = s.querySelector('[data-prog-flow="' + i + '"]');
-    if (f) f.textContent = progRoutineName(d.slots[i]);
+    if (f) f.textContent = name;
+    const step = f && f.closest(".prog-step");
+    if (step) step.classList.toggle("on", !!d.slots[i]);
     const fs = s.querySelector('[data-prog-flow-sets="' + i + '"]');
-    if (fs) fs.textContent = d.slots[i] ? progRoutineSets(d.slots[i]) + " sets" : "recover";
+    if (fs) fs.textContent = d.slots[i] ? size + " sets" : "recover";
+    const row = s.querySelector('[data-pm-row="' + i + '"]');
+    if (row){
+      row.classList.toggle("training", !!d.slots[i]);
+      const nm = row.querySelector("[data-pm-name]");
+      if (nm) nm.textContent = name;
+      const st = row.querySelector("[data-pm-sets]");
+      if (st) st.textContent = d.slots[i] ? size + " sets" : "Rest";
+      $$(".pm-opt", row).forEach(o=>{
+        const pick = (o.dataset.pmVal || "") === (d.slots[i] || "");
+        o.classList.toggle("on", pick);
+        o.setAttribute("aria-pressed", pick ? "true" : "false");
+      });
+    }
+    const sum = s.querySelector("[data-pm-summary]");
+    if (sum) sum.innerHTML = progSummaryHtml(d.slots);
     const live = s.querySelector('[data-prog-goto] .prog-week');
     if (live) live.innerHTML = progWeekDots(d.slots);
-    const micro = sel.parentElement.querySelector(".micro");
-    if (micro) micro.textContent = progRoutineSets(d.slots[i]) + " sets planned";
     progBindSuggest(s);
-  }));
+  }
+  $$("[data-prog-slot]", s).forEach(sel=>sel.addEventListener("change", ()=>
+    progApplySlot(+sel.dataset.progSlot, sel.value || null)));
+  const pmPicker = $("[data-pm-picker]", s);
+  if (pmPicker){
+    $$(".pm-head", pmPicker).forEach(h=>h.addEventListener("click", ()=>{
+      const row = h.closest("[data-pm-row]");
+      const was = row.classList.contains("open");
+      $$(".pm-day", pmPicker).forEach(x=>{
+        x.classList.remove("open");
+        const hh = x.querySelector(".pm-head");
+        if (hh) hh.setAttribute("aria-expanded", "false");
+      });
+      if (!was){ row.classList.add("open"); h.setAttribute("aria-expanded", "true"); }
+    }));
+    $$(".pm-opt", pmPicker).forEach(b=>b.addEventListener("click", ()=>{
+      progApplySlot(+b.dataset.pmPick, b.dataset.pmVal || null);
+      const row = b.closest("[data-pm-row]");
+      if (row){
+        row.classList.remove("open");
+        const hh = row.querySelector(".pm-head");
+        if (hh) hh.setAttribute("aria-expanded", "false");
+      }
+    }));
+  }
   progBindSuggest(s);
   const saveB = $("[data-prog-save]", s);
   if (saveB) saveB.addEventListener("click", ()=>{ progSaveDraft(progDraft()); toast("Custom week saved in this browser"); });
