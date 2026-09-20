@@ -830,7 +830,7 @@
   .you-page-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.06rem; letter-spacing: -.01em; color: var(--ink); }
   .you-chart { position: relative; }
   .you-line { display: block; width: 100%; height: auto; }
-  /* Expanded screens: a taller viewBox gives the line enough room to read at a glance. */
+  /* Expanded screens: a wide, roomy viewBox gives the line enough width to read at a glance. */
   .you-chart-tall .you-val { font-size: 15px; }
   .you-chart-tall .you-line-path { stroke-width: 2.8; }
   #you-page-0 .you-chart, #you-page-1 .you-chart { cursor: pointer; border-radius: var(--r-md); transition: background .2s; }
@@ -931,7 +931,7 @@
   }
   .you-modal { height: 100%; display: grid; place-items: center; }
   .you-modal-shell {
-    width: min(720px, 100%); height: auto; max-height: min(820px, 100%);
+    width: min(1080px, 100%); height: auto; max-height: min(820px, 100%);
     display: flex; flex-direction: column;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--r-xl); box-shadow: var(--shadow-2);
@@ -8705,7 +8705,7 @@ function youLineHtml(bars, opts){
   const showValues = !!(opts && opts.values);
   const tall = !!(opts && opts.tall); // expanded screens give the line real room
   const n = bars.length;
-  const W = 1000, H = tall ? 520 : 200, PADX = 16;
+  const W = 1000, H = tall ? 420 : 200, PADX = 16;
   const PADY = tall ? 34 : 20, TOP_PAD = showValues ? (tall ? 56 : 30) : PADY;
   const gid = "youAreaGrad"+(++youGradSeq);
   const max = Math.max(1, ...bars.map(b=>b.v));

@@ -88,7 +88,7 @@ check($("#you-modal-host h2").textContent === "Workouts", "expanded screen title
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "expanded screen offers 5 period options");
 check($$("#you-modal-host .you-line").length === 1, "expanded screen shows the weekly line chart");
 check(!!$("#you-modal-host .you-chart-tall"), "expanded workouts chart uses the tall layout");
-check($("#you-modal-host .you-line").getAttribute("viewBox") === "0 0 1000 520", "expanded workouts chart is taller (bigger graph, less empty space)");
+check($("#you-modal-host .you-line").getAttribute("viewBox") === "0 0 1000 420", "expanded workouts chart is wider (bigger graph, less elongated)");
 click($$("#you-modal-host [data-you-modal-period]")[2]); // 6M
 check(E("youPeriod") === "6m", "workouts period updated to 6M inside the expanded screen");
 check($("#you-modal-host [data-you-modal-period].active").textContent === "6M", "6M pill active in the expanded screen");
@@ -102,7 +102,7 @@ check($("#you-modal-host h2").textContent === "Total volume", "expanded screen t
 check($$("#you-modal-host [data-you-modal-period]").length === 5, "volume expanded screen offers 5 period options");
 check($$("#you-modal-host .you-line").length === 1, "expanded screen shows the volume line chart");
 check(!!$("#you-modal-host .you-chart-tall"), "expanded volume chart uses the tall layout");
-check($("#you-modal-host .you-line").getAttribute("viewBox") === "0 0 1000 520", "expanded volume chart is taller (bigger graph, less empty space)");
+check($("#you-modal-host .you-line").getAttribute("viewBox") === "0 0 1000 420", "expanded volume chart is wider (bigger graph, less elongated)");
 check($("#you-modal-host").textContent.indexOf("Placeholder data") === -1, "expanded volume screen is not labelled as placeholder");
 click($$("#you-modal-host [data-you-modal-period]")[3]); // 1Y
 check(E("youVolPeriod") === "1y", "volume period updated to 1Y inside the expanded screen");
