@@ -2032,6 +2032,10 @@
   .home-stat[data-home-graph]:hover .hs-go { background: var(--accent-soft); color: var(--accent); transform: translateX(2px); }
   .home-coach .summary { margin: 0; font-size: .95rem; line-height: 1.62; color: var(--ink-2); }
   .home-coach .count { font-weight: 700; color: var(--accent); font-size: .82rem; }
+  .home-coach .hc-quote { margin: 0; display: flex; flex-direction: column; gap: .55rem; }
+  .home-coach .hc-quote blockquote { position: relative; margin: 0; padding-left: 1.2rem; font-family: var(--font-serif); font-style: italic; font-size: 1.12rem; line-height: 1.5; color: var(--ink); }
+  .home-coach .hc-quote blockquote::before { content: "\201C"; position: absolute; left: -.05rem; top: -.4rem; font-size: 2.1rem; line-height: 1; color: var(--accent); opacity: .45; }
+  .home-coach .hc-quote figcaption { padding-left: 1.2rem; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); }
   .home-recent { display: flex; flex-direction: column; gap: .45rem; }
   .recent-row { display: flex; align-items: center; gap: .8rem; padding: .7rem .85rem; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); transition: border-color .2s, transform .2s; }
   .recent-row:hover { border-color: var(--accent-line); transform: translateX(3px); }
@@ -8552,21 +8556,47 @@ function homeStatsHtml(){
       '<div class="sub">' + (hasVol ? weightUnit() + ' lifted' : 'logged working sets') + '</div></div>' +
       '<span class="hs-go" aria-hidden="true">' + HOME_ICO_GO + '</span></article>';
 }
+/* When the coach has no open calls, the last session's summary is stale advice
+   the user has already dealt with. Swap in a rotating line instead. */
+var HOME_QUOTES = [
+  { text: "We are what we repeatedly do. Excellence, then, is not an act but a habit.", who: "Will Durant" },
+  { text: "Strength does not come from winning. Your struggles develop your strengths.", who: "Arnold Schwarzenegger" },
+  { text: "The body achieves what the mind believes." },
+  { text: "Discipline is choosing between what you want now and what you want most.", who: "Abraham Lincoln" },
+  { text: "Little and often makes much.", who: "John Ray" },
+  { text: "It never gets easier. You just get stronger." },
+  { text: "The resistance you train against today is the strength you carry tomorrow." },
+  { text: "Rest is not a reward for training. It is part of the training." },
+  { text: "Slow progress is still progress. Show up again tomorrow." },
+  { text: "You do not have to be extreme, just consistent." }
+];
+/* One line per day, so it changes without shuffling on every render. */
+function homeQuote(){
+  const n = HOME_QUOTES.length;
+  const i = ((Math.floor(Date.now() / 86400000) % n) + n) % n;
+  return HOME_QUOTES[i];
+}
 function homeCoachCardHtml(){
   const open = homeOpenCalls();
   const last = homeLastSessions(1)[0] || null;
   const summary = last && last.summary ? last.summary : "";
-  const body = summary
-    ? '<p class="summary">' + esc(summary) + '</p>'
-    : '<p class="summary">Log a session and the coach will line up the exact rep, hold, or load changes for next time.</p>';
-  const badge = open
-    ? '<span class="count">' + open + ' open call' + (open === 1 ? '' : 's') + '</span>'
-    : '<span class="hc-kicker">No open calls</span>';
+  let body, badge, cta;
+  if (open > 0){
+    body = '<p class="summary">' + esc(summary || "The coach has a change or two lined up for your next session.") + '</p>';
+    badge = '<span class="count">' + open + ' open call' + (open === 1 ? '' : 's') + '</span>';
+    cta = "Review suggestions";
+  } else {
+    const q = homeQuote();
+    body = '<figure class="hc-quote"><blockquote>' + esc(q.text) + '</blockquote>' +
+      (q.who ? '<figcaption>' + esc(q.who) + '</figcaption>' : '') + '</figure>';
+    badge = '<span class="hc-kicker">No open calls</span>';
+    cta = "Open the coach";
+  }
   return '<article class="home-card home-coach span-5 fx-in">' +
     '<div class="hc-head"><h3>The coach</h3><span class="hc-spacer"></span>' + badge + '</div>' +
     body +
     '<div class="btn-row" style="margin-top:auto">' +
-      '<button type="button" class="btn primary" data-home-goto="coach">Review suggestions <span class="btn-arrow">→</span></button>' +
+      '<button type="button" class="btn primary" data-home-goto="coach">' + cta + ' <span class="btn-arrow">→</span></button>' +
     '</div></article>';
 }
 function homeRecentCardHtml(){
