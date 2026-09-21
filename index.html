@@ -633,7 +633,9 @@
   .fs-tile::after { content: ""; position: absolute; inset: auto 0 0 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity .25s; }
   .fs-tile .fs-ico { width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink-3); transition: transform .55s cubic-bezier(.22,1,.36,1), color .25s; }
   .fs-tile .fs-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .fs-tile .fs-ico svg { width: 24px; height: 24px; }
+  /* The inline glyph is a fallback only — the illustration carries the tile. */
+  .fs-tile .fs-ico svg { display: none; width: 24px; height: 24px; }
+  .fs-tile .fs-ico.fallback svg { display: block; }
   .fs-tile:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: var(--shadow-1); color: var(--ink); }
   .fs-tile:hover .fs-ico { transform: scale(1.14); color: var(--accent); }
   .fs-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -3400,8 +3402,10 @@ const FS_CHECK = '<span class="fs-mark" aria-hidden="true"><svg viewBox="0 0 24 
    label — the filter contract the delegated click handler relies on. */
 function libTileIcon(file, glyphKey){
   const glyph = glyphKey ? (RADAR_GLYPHS[glyphKey] || "") : "";
-  const img = file ? '<img src="' + esc(file) + '" alt="" loading="lazy" draggable="false" ondragstart="return false" onerror="this.remove()"/>' : "";
-  return '<span class="fs-ico" aria-hidden="true">' + img + glyph + "</span>";
+  const img = file
+    ? '<img src="' + esc(file) + '" alt="" loading="lazy" draggable="false" ondragstart="return false" onerror="this.parentNode.classList.add(\'fallback\');this.remove()"/>'
+    : "";
+  return '<span class="fs-ico' + (img ? "" : " fallback") + '" aria-hidden="true">' + img + glyph + "</span>";
 }
 function libPartTiles(selected){
   return BODY_PARTS.map(p=>{
