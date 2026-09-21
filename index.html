@@ -575,31 +575,144 @@
   .search-ico { position: absolute; left: .95rem; top: 50%; transform: translateY(-50%); color: var(--ink-3); display: grid; place-items: center; }
   .search-ico svg { width: 16px; height: 16px; }
 
-  /* ---------- Library advanced filters ---------- */
+  /* ---------- Library filter studio (full-screen refine workspace) ---------- */
   .lib-fpanel { display: none; }
-  .lib-fpanel.open { display: grid; place-items: center; position: fixed; inset: 0; z-index: 60; padding: 1.2rem; background: rgba(23,19,12,.55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: modalBack .2s ease; }
-  .lib-fcard { width: min(620px, 100%); max-height: 84vh; overflow-y: auto; background: var(--glass); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); padding: 1.1rem 1.2rem 1.2rem; animation: modalIn .28s cubic-bezier(.22,1,.36,1); }
-  .lib-fhead { display: flex; align-items: center; gap: .7rem; margin-bottom: .4rem; }
-  .lib-fhead b { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
-  .lib-fhead .lib-fcount { font-size: .75rem; color: var(--ink-3); }
-  .lib-fhead .btn { margin-left: auto; }
-  .lib-frow { padding: .55rem 0; border-bottom: 1px dashed var(--line); }
-  .lib-frow:last-child { border-bottom: 0; }
-  .lib-frow-head { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-bottom: .45rem; }
-  .lib-frow-head b { font-family: var(--font-display); font-size: .92rem; color: var(--ink); }
-  .lib-frow-head span { font-size: .75rem; color: var(--ink-3); }
-  .lib-fchips { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .fchip { font-family: var(--font-body); font-size: .82rem; font-weight: 500; padding: .42rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); cursor: pointer; transition: border-color .15s, background .15s, color .15s, transform .1s; }
+  .lib-fpanel.open {
+    display: grid; place-items: center; position: fixed; inset: 0; z-index: 60;
+    padding: clamp(.5rem, 1.7vw, 1.5rem);
+    background: radial-gradient(120% 90% at 50% 0%, rgba(23,19,12,.48), rgba(23,19,12,.7));
+    -webkit-backdrop-filter: blur(14px) saturate(1.15); backdrop-filter: blur(14px) saturate(1.15);
+    animation: modalBack .2s ease;
+  }
+  .lib-fcard {
+    position: relative; width: min(1120px, 100%); max-height: 94vh; min-height: min(560px, 94vh);
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(1.45); backdrop-filter: blur(20px) saturate(1.45);
+    border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    animation: modalIn .3s cubic-bezier(.22,1,.36,1);
+  }
+  /* ambient accent wash so the studio reads as a place, not a form */
+  .lib-fcard::before {
+    content: ""; position: absolute; left: 50%; top: -52%; width: 130%; height: 100%; transform: translateX(-50%);
+    background: radial-gradient(50% 58% at 50% 50%, var(--accent-soft), transparent 72%);
+    opacity: .85; pointer-events: none;
+  }
+  .lib-fhead {
+    position: relative; flex: 0 0 auto; display: flex; align-items: center; gap: 1rem;
+    padding: .95rem 1.15rem; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface), transparent);
+  }
+  .fs-title { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .fs-title b { font-family: var(--font-display); font-size: 1.08rem; letter-spacing: -.015em; color: var(--ink); }
+  .lib-fhead .lib-fcount { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3); }
+  .lib-fhead .lib-fcount.hot { color: var(--accent); }
+  .fs-live { margin-left: auto; display: flex; align-items: baseline; gap: .45rem; min-width: 0; }
+  .fs-live-n { font-family: var(--font-display); font-weight: 800; font-size: 1.55rem; line-height: 1; letter-spacing: -.035em; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .fs-live-t { font-size: .74rem; color: var(--ink-3); white-space: nowrap; }
+  .fs-live-q { padding: .22rem .5rem; max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px dashed var(--line); border-radius: 999px; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .fs-x { flex: 0 0 auto; }
+  .fs-body { position: relative; flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 302px; }
+  .fs-main { display: flex; flex-direction: column; gap: 1.55rem; padding: 1.15rem 1.3rem 1.6rem; overflow-y: auto; overscroll-behavior: contain; }
+  .fs-ch { min-width: 0; }
+  .fs-ch-head { display: flex; align-items: baseline; gap: .65rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .fs-ch-head b { font-family: var(--font-display); font-size: 1.02rem; letter-spacing: -.015em; color: var(--ink); }
+  .fs-ch-head > span { font-size: .72rem; color: var(--ink-3); }
+  .fs-ch-head > .fs-gap { flex: 1 1 auto; }
+
+  /* illustrated atlas tiles (body parts + equipment): image-led, dense, gapless */
+  .fs-atlas { display: grid; grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: .45rem; grid-auto-flow: dense; }
+  .fs-tile {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .3rem;
+    min-height: 90px; padding: .6rem .4rem .55rem; overflow: hidden; cursor: pointer;
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    background: linear-gradient(175deg, var(--surface), var(--surface-2));
+    color: var(--ink-2); font: inherit; font-size: .75rem; font-weight: 600; letter-spacing: -.01em; text-align: center;
+    transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .3s, color .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fs-tile::after { content: ""; position: absolute; inset: auto 0 0 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity .25s; }
+  .fs-tile .fs-ico { width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink-3); transition: transform .55s cubic-bezier(.22,1,.36,1), color .25s; }
+  .fs-tile .fs-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .fs-tile .fs-ico svg { width: 24px; height: 24px; }
+  .fs-tile:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: var(--shadow-1); color: var(--ink); }
+  .fs-tile:hover .fs-ico { transform: scale(1.14); color: var(--accent); }
+  .fs-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .fs-tile.on { border-color: var(--accent); background: linear-gradient(175deg, var(--accent-soft), var(--surface-2)); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent-line); }
+  .fs-tile.on .fs-ico { color: var(--accent); }
+  .fs-tile.on::after { opacity: 1; }
+  .fs-tile .fs-mark {
+    position: absolute; top: .38rem; right: .38rem; width: 15px; height: 15px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--accent); color: var(--on-accent);
+    opacity: 0; transform: scale(.4); transition: opacity .18s, transform .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .fs-tile .fs-mark svg { width: 9px; height: 9px; }
+  .fs-tile.on .fs-mark { opacity: 1; transform: none; }
+  .fs-eq { min-height: 86px; font-size: .72rem; }
+  .fs-eq .fs-ico { width: 34px; height: 34px; }
+
+  /* what it trains: one native accordion panel per muscle region */
+  .fs-regions { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: .45rem; grid-auto-flow: dense; align-items: start; }
+  .fs-region { overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); transition: border-color .2s, background .2s; }
+  .fs-region[open] { border-color: var(--accent-line); }
+  .fs-region.on { background: var(--accent-soft); border-color: var(--accent-line); }
+  .fs-region > summary { display: flex; align-items: center; gap: .5rem; padding: .58rem .7rem; cursor: pointer; list-style: none; }
+  .fs-region > summary::-webkit-details-marker { display: none; }
+  .fs-region > summary:hover b { color: var(--accent); }
+  .fs-region > summary b { font-family: var(--font-display); font-size: .85rem; letter-spacing: -.01em; color: var(--ink); transition: color .2s; }
+  .fs-region > summary::after { content: ""; width: 6px; height: 6px; margin-left: auto; border-right: 1.6px solid var(--ink-3); border-bottom: 1.6px solid var(--ink-3); transform: rotate(45deg) translateY(-2px); transition: transform .25s, border-color .2s; }
+  .fs-region[open] > summary::after { transform: rotate(-135deg) translateY(-1px); border-color: var(--accent); }
+  .fs-region-n { font-family: var(--font-mono); font-size: .55rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .fs-region[open] .fs-region-n, .fs-region.on .fs-region-n { color: var(--accent); }
+  .fs-mchips { display: flex; flex-wrap: wrap; gap: .3rem; padding: 0 .7rem .7rem; }
+
+  /* segmented controls + labelled rows */
+  .fs-seg { display: inline-flex; flex-wrap: wrap; gap: .2rem; padding: .18rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); }
+  .fs-row { display: grid; grid-template-columns: 146px minmax(0, 1fr); align-items: center; gap: .9rem; padding: .6rem 0; }
+  .fs-row + .fs-row { border-top: 1px dashed var(--line); }
+  .fs-row-lbl b { display: block; font-family: var(--font-display); font-size: .85rem; letter-spacing: -.01em; color: var(--ink); }
+  .fs-row-lbl span { display: block; margin-top: .1rem; font-size: .68rem; color: var(--ink-3); }
+  .fchip { font-family: var(--font-body); font-size: .8rem; font-weight: 500; padding: .38rem .72rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); cursor: pointer; transition: border-color .15s, background .15s, color .15s, transform .1s; -webkit-tap-highlight-color: transparent; }
   .fchip:hover { border-color: var(--accent-line); color: var(--ink); }
   .fchip:active { transform: scale(.96); }
   .fchip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
-  .fchip.seg.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .fchip.seg { border-color: transparent; background: transparent; }
+  .fchip.seg.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+  .fs-clear { border-style: dashed; }
+  .fs-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* live preview rail: every tap shows its consequence immediately */
+  .fs-rail { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: linear-gradient(180deg, var(--surface-2), transparent 58%); }
+  .fs-rail-head { flex: 0 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; padding: .95rem 1.05rem .5rem; }
+  .fs-rail-head b { font-family: var(--font-display); font-size: .84rem; letter-spacing: .01em; color: var(--ink); }
+  .fs-rail-n { font-family: var(--font-mono); font-size: .57rem; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); }
+  .fs-preview { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: .32rem; padding: 0 .75rem .8rem; overflow-y: auto; overscroll-behavior: contain; }
+  .fs-prev-row { display: flex; align-items: center; gap: .55rem; padding: .48rem .6rem; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); }
+  .fs-prev-row .pr-name { min-width: 0; font-size: .79rem; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-prev-row .pr-meta { flex: 0 0 auto; margin-left: auto; font-family: var(--font-mono); font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .fs-prev-more { padding: .3rem .6rem 0; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .fs-note { margin: 0; padding: .55rem .6rem; font-size: .78rem; line-height: 1.5; color: var(--ink-3); }
+  .fs-rail-foot { flex: 0 0 auto; padding: .8rem 1.05rem 1rem; border-top: 1px solid var(--line); }
+  .fs-rail-foot .btn { width: 100%; justify-content: center; }
   .lib-fmeta { display: flex; align-items: baseline; gap: .3rem; flex-wrap: wrap; margin: 0 0 1rem; font-size: .85rem; color: var(--ink-2); }
   .lib-fmeta b { color: var(--ink); }
-  .lib-fclear { margin-left: auto; }
   .fcount { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: .72rem; font-weight: 700; padding: 0 .3rem; }
   .fcount.zero { display: none; }
-  @media (max-width: 768px) { .lib-fpanel.open { padding: .8rem; } .lib-fcard { max-height: 86dvh; } }
+  @media (max-width: 900px) {
+    .lib-fpanel.open { padding: .55rem; }
+    .lib-fcard { max-height: 93dvh; min-height: 0; }
+    .fs-body { grid-template-columns: 1fr; overflow-y: auto; }
+    .fs-main { overflow: visible; padding: 1rem 1rem 1.2rem; gap: 1.2rem; }
+    .fs-rail { border-left: 0; border-top: 1px solid var(--line); }
+    .fs-preview { overflow: visible; max-height: 34vh; }
+    .fs-row { grid-template-columns: 1fr; gap: .45rem; }
+    .fs-live-n { font-size: 1.3rem; }
+  }
+  @media (max-width: 560px) {
+    .fs-atlas { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+    .fs-tile, .fs-eq { min-height: 80px; }
+    .fs-tile .fs-ico { width: 34px; height: 34px; }
+    .fs-regions { grid-template-columns: 1fr; }
+  }
 
   /* ---------- Exercise library ---------- */
   .exercise-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; grid-auto-flow: dense; }
@@ -3269,51 +3382,176 @@ function renderLibraryResults(){
     badge.textContent = n;
     badge.classList.toggle("zero", n === 0);
   }
-}
-function libChipRow(group, items, selected, label){
-  return items.map(v=>{
-    const name = label ? label(v) : v;
-    return '<button type="button" class="fchip' + (selected.includes(v) ? " on" : "") + '" data-fg="' + group + '" data-fv="' + esc(v) + '">' + esc(name) + "</button>";
-  }).join("");
+  /* Keep the studio's live rail honest whenever the result set changes. */
+  renderLibStudio();
 }
 function libSegRow(group, options, current){
   return options.map(o=>
     '<button type="button" class="fchip seg' + (current === o.v ? " on" : "") + '" data-fg="' + group + '" data-fv="' + esc(o.v) + '">' + esc(o.l) + "</button>"
   ).join("");
 }
+/* ---------- Filter studio: illustrated tiles + live preview rail --------- */
+/* Body-part tiles borrow the trained-muscle taxonomy so the atlas shows real
+   anatomy illustrations (icon_muscles/, same assets as the radar below) with
+   the inline glyph as fallback whenever an image is missing. */
+const LIB_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Hips:"glutes", Glutes:"glutes", Thighs:"quads", Calves:"calves", Neck:"upper-mid-back" };
+const FS_CHECK = '<span class="fs-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 6.5"/></svg></span>';
+/* An <img> contributes no text, so a tile's textContent stays exactly its
+   label — the filter contract the delegated click handler relies on. */
+function libTileIcon(file, glyphKey){
+  const glyph = glyphKey ? (RADAR_GLYPHS[glyphKey] || "") : "";
+  const img = file ? '<img src="' + esc(file) + '" alt="" loading="lazy" draggable="false" ondragstart="return false" onerror="this.remove()"/>' : "";
+  return '<span class="fs-ico" aria-hidden="true">' + img + glyph + "</span>";
+}
+function libPartTiles(selected){
+  return BODY_PARTS.map(p=>{
+    const key = LIB_PART_ICON[p] || "";
+    const on = selected.includes(p);
+    return '<button type="button" class="fs-tile' + (on ? " on" : "") + '" data-fg="parts" data-fv="' + esc(p) + '" aria-pressed="' + on + '">' +
+      FS_CHECK + libTileIcon(key ? ("icon_muscles/" + (RADAR_ICON_FILE[key] || key) + ".png") : "", key) + esc(p) + "</button>";
+  }).join("");
+}
+function libEquipTiles(selected){
+  return ALL_EQUIP.map(k=>{
+    const on = selected.includes(k);
+    return '<button type="button" class="fs-tile fs-eq' + (on ? " on" : "") + '" data-fg="equip" data-fv="' + esc(k) + '" aria-pressed="' + on + '">' +
+      FS_CHECK + libTileIcon(EQUIP_ICONS[k] || "", "") + esc(EQUIP_FILTER_LABELS[k] || k) + "</button>";
+  }).join("");
+}
+/* MUSCLES is grouped by region in source order — reshape it into panels. */
+function libMuscleRegions(){
+  const out = [];
+  MUSCLES.forEach(pair=>{
+    let g = out.filter(x=>x.name === pair[0])[0];
+    if (!g){ g = { name: pair[0], items: [] }; out.push(g); }
+    g.items.push(pair[1]);
+  });
+  return out;
+}
+function libRegionRows(f){
+  return libMuscleRegions().map(g=>{
+    const on = g.items.filter(m=>f.muscles.includes(m)).length;
+    return '<details class="fs-region' + (on ? " on" : "") + '"' + (on ? " open" : "") + '>' +
+      '<summary><b>' + esc(g.name) + '</b><span class="fs-region-n">' + (on ? on + " / " + g.items.length : String(g.items.length)) + "</span></summary>" +
+      '<div class="fs-mchips">' + g.items.map(m=>'<button type="button" class="fchip' + (f.muscles.includes(m) ? " on" : "") + '" data-fg="muscles" data-fv="' + esc(m) + '">' + esc(m) + "</button>").join("") + "</div>" +
+      "</details>";
+  }).join("");
+}
+/* Short right-hand tag for a preview row: first piece of gear, else movement kind. */
+function libPreviewTag(e){
+  const eq = (e.equipment || [])[0];
+  if (eq) return EQUIP_FILTER_LABELS[eq] || eq;
+  const t = EX_TYPES[libTypeOf(e)];
+  return t ? t.label : "";
+}
+/* Count-up for the live match number (instant when motion is unavailable). */
+let libStudioShown = -1;
+function libStudioNumber(node, target){
+  const from = libStudioShown < 0 ? target : libStudioShown;
+  libStudioShown = target;
+  let g = null;
+  try{ g = window.gsap; }catch(e){ g = null; }
+  if (g && FX.ok && !FX.reduced() && from !== target){
+    try{
+      const obj = { v: from };
+      g.to(obj, { v: target, duration: .42, ease: "power2.out", overwrite: "auto",
+        onUpdate: ()=>{ node.textContent = Math.round(obj.v); },
+        onComplete: ()=>{ node.textContent = target; } });
+      return;
+    }catch(e){}
+  }
+  node.textContent = target;
+}
+/* The rail is the whole point: every tap shows its consequence immediately. */
+function renderLibStudio(){
+  const panel = $("#lib-filter-panel");
+  if (!panel) return;
+  const list = libraryMatches();
+  const live = panel.querySelector("#lib-fs-count");
+  if (live) libStudioNumber(live, list.length);
+  const railN = panel.querySelector(".fs-rail-n");
+  if (railN) railN.textContent = list.length + " of " + state.exercises.length;
+  const prev = panel.querySelector("#lib-fs-preview");
+  if (prev){
+    const rows = list.slice(0, 8);
+    prev.innerHTML = rows.length
+      ? rows.map(e=>'<div class="fs-prev-row"><span class="pr-name">' + esc(e.name) + '</span><span class="pr-meta">' + esc(libPreviewTag(e)) + "</span></div>").join("") +
+        (list.length > rows.length ? '<div class="fs-prev-more">+' + (list.length - rows.length) + " more</div>" : "")
+      : '<p class="fs-note">Nothing matches yet. Loosen a filter or clear them all.</p>';
+  }
+  const cta = panel.querySelector("#lib-fs-cta");
+  if (cta) cta.textContent = "Show " + list.length + (list.length === 1 ? " exercise" : " exercises");
+}
+/* Stagger the rail so a filter tap reads as a live recompute, not a repaint. */
+function libStudioPulse(){
+  try{
+    const g = window.gsap;
+    const panel = $("#lib-filter-panel");
+    if (!g || !FX.ok || FX.reduced() || !panel) return;
+    const rows = panel.querySelectorAll("#lib-fs-preview .fs-prev-row");
+    if (rows.length) g.fromTo(rows, { y: 9, opacity: 0 }, { y: 0, opacity: 1, duration: .32, stagger: .025, ease: "power2.out", overwrite: "auto" });
+    const n = panel.querySelector("#lib-fs-count");
+    if (n) g.fromTo(n, { scale: 1.16 }, { scale: 1, duration: .38, ease: "back.out(2.2)", overwrite: "auto" });
+  }catch(e){}
+}
+/* Chapter-by-chapter entrance when the studio opens. */
+function libStudioEnter(){
+  try{
+    const g = window.gsap;
+    const card = document.querySelector("#lib-filter-panel .lib-fcard");
+    if (!g || !FX.ok || FX.reduced() || !card) return;
+    g.fromTo(card.querySelectorAll(".fs-ch"), { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .5, stagger: .06, ease: "power3.out", overwrite: "auto" });
+    g.fromTo(card.querySelectorAll(".fs-tile"), { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: .36, stagger: .014, ease: "power2.out", overwrite: "auto", delay: .07 });
+    g.fromTo(card.querySelectorAll(".fs-region"), { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: .4, stagger: .03, ease: "power2.out", overwrite: "auto", delay: .12 });
+    g.fromTo(card.querySelectorAll(".fs-rail"), { x: 22, opacity: 0 }, { x: 0, opacity: 1, duration: .5, ease: "power3.out", overwrite: "auto", delay: .05 });
+    g.fromTo(card.querySelectorAll(".fs-prev-row"), { y: 9, opacity: 0 }, { y: 0, opacity: 1, duration: .32, stagger: .03, ease: "power2.out", overwrite: "auto", delay: .16 });
+  }catch(e){}
+}
 function renderLibPanel(){
   const s = $("#view-library");
   const panel = $("#lib-filter-panel", s);
   if (!panel) return;
   const f = libraryFilters;
-  let lastG = null, muscleHtml = "";
-  MUSCLES.forEach(pair=>{
-    const g = pair[0], m = pair[1];
-    if (g !== lastG){ muscleHtml += (lastG ? "</div>" : "") + '<div class="mgroup"><div class="mgroup-lbl">' + esc(g) + "</div>"; lastG = g; }
-    muscleHtml += '<button type="button" class="fchip' + (f.muscles.includes(m) ? " on" : "") + '" data-fg="muscles" data-fv="' + esc(m) + '">' + esc(m) + "</button>";
-  });
-  muscleHtml += "</div>";
+  const n = libActiveFilterCount(), q = f.search.trim();
   panel.innerHTML =
     '<div class="lib-fcard" role="dialog" aria-modal="true" aria-label="Exercise filters">' +
-    '<div class="lib-fhead"><b>Filters</b><span class="lib-fcount">' + libActiveFilterCount() + ' active</span>' +
-      '<button type="button" class="btn ghost small" data-fg="close" data-fv="" aria-label="Close filters">✕</button></div>' +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Body parts</b><span>chest, back, biceps…</span></div>' +
-      '<div class="lib-fchips">' + libChipRow("parts", BODY_PARTS, f.parts) + "</div></div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Muscles</b><span>match ' +
-      libSegRow("muscleScope", [{ v:"any", l:"Any" }, { v:"primary", l:"Primary" }, { v:"secondary", l:"Secondary" }], f.muscleScope) +
-      "</span></div>" + muscleHtml + "</div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Equipment</b><span>gear involved, for any reason</span></div>' +
-      '<div class="lib-fchips">' + libChipRow("equip", ALL_EQUIP, f.equip, k=>EQUIP_FILTER_LABELS[k] || k) + "</div></div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Movement</b></div>' +
-      '<div class="lib-fchips">' + libSegRow("type", [{ v:"", l:"All" }, { v:"duration", l:"Duration" }, { v:"bodyweight", l:"Bodyweight" }, { v:"weight", l:"Weight & reps" }], f.type) + "</div></div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Load</b></div>' +
-      '<div class="lib-fchips">' + libSegRow("load", [{ v:"any", l:"Any" }, { v:"weighted", l:"Weighted" }, { v:"bodyonly", l:"Bodyweight only" }], f.load) + "</div></div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Favorites</b></div>' +
-      '<div class="lib-fchips">' + libSegRow("fav", [{ v:"all", l:"All" }, { v:"only", l:"Favorites" }, { v:"excluded", l:"Exclude favorites" }], f.fav) + "</div></div>" +
-    '<div class="lib-frow"><div class="lib-frow-head"><b>Combine filters</b><span>search always applies · Combined = every group must match · Broad = any group matches</span></div>' +
-      '<div class="lib-fchips">' + libSegRow("mode", [{ v:"and", l:"Combined" }, { v:"or", l:"Broad" }], f.mode) +
-      '<button type="button" class="fchip lib-fclear" data-fg="clear" data-fv="">Clear all</button></div></div>' +
-    "</div>";
+    '<div class="lib-fhead">' +
+      '<div class="fs-title"><b>Refine the library</b><span class="lib-fcount' + (n ? " hot" : "") + '">' + n + " active</span></div>" +
+      '<div class="fs-live"><span class="fs-live-n" id="lib-fs-count">0</span><span class="fs-live-t">exercises match</span>' +
+        (q ? '<span class="fs-live-q" title="Search always applies">' + esc(q) + "</span>" : "") + "</div>" +
+      '<button type="button" class="btn ghost small fs-x" data-fg="close" data-fv="" aria-label="Close filters">✕</button>' +
+    '</div>' +
+    '<div class="fs-body">' +
+      '<div class="fs-main">' +
+        '<section class="fs-ch"><div class="fs-ch-head"><b>Where it works</b><span>tap the region a movement should train</span></div>' +
+          '<div class="fs-atlas">' + libPartTiles(f.parts) + "</div></section>" +
+        '<section class="fs-ch"><div class="fs-ch-head"><b>What it trains</b><span>match ' +
+          libSegRow("muscleScope", [{ v:"any", l:"Any" }, { v:"primary", l:"Primary" }, { v:"secondary", l:"Secondary" }], f.muscleScope) +
+          '</span><span class="fs-gap"></span><span>open a region to pick exact muscles</span></div>' +
+          '<div class="fs-regions">' + libRegionRows(f) + "</div></section>" +
+        '<section class="fs-ch"><div class="fs-ch-head"><b>Gear in play</b><span>anything the movement uses</span></div>' +
+          '<div class="fs-atlas">' + libEquipTiles(f.equip) + "</div></section>" +
+        '<section class="fs-ch"><div class="fs-ch-head"><b>Shape of the set</b></div>' +
+          '<div class="fs-row"><div class="fs-row-lbl"><b>Movement</b><span>how the set is measured</span></div>' +
+            '<div class="fs-seg">' + libSegRow("type", [{ v:"", l:"All" }, { v:"duration", l:"Duration" }, { v:"bodyweight", l:"Bodyweight" }, { v:"weight", l:"Weight & reps" }], f.type) + "</div></div>" +
+          '<div class="fs-row"><div class="fs-row-lbl"><b>Load</b><span>added weight or pure bodyweight</span></div>' +
+            '<div class="fs-seg">' + libSegRow("load", [{ v:"any", l:"Any" }, { v:"weighted", l:"Weighted" }, { v:"bodyonly", l:"Bodyweight only" }], f.load) + "</div></div>" +
+          '<div class="fs-row"><div class="fs-row-lbl"><b>Favorites</b><span>the starred movements</span></div>' +
+            '<div class="fs-seg">' + libSegRow("fav", [{ v:"all", l:"All" }, { v:"only", l:"Favorites" }, { v:"excluded", l:"Exclude favorites" }], f.fav) + "</div></div>" +
+        "</section>" +
+        '<section class="fs-ch"><div class="fs-ch-head"><b>Combine the filters</b><span>' +
+          (f.mode === "and" ? "every group must match" : "any group can match") + "</span></div>" +
+          '<div class="fs-seg">' + libSegRow("mode", [{ v:"and", l:"Combined" }, { v:"or", l:"Broad" }], f.mode) +
+          '<button type="button" class="fchip fs-clear" data-fg="clear" data-fv="">Clear all</button></div></section>' +
+      '</div>' +
+      '<aside class="fs-rail">' +
+        '<div class="fs-rail-head"><b>Matching now</b><span class="fs-rail-n"></span></div>' +
+        '<div class="fs-preview" id="lib-fs-preview"></div>' +
+        '<div class="fs-rail-foot"><button type="button" class="btn primary" id="lib-fs-cta" data-fg="close" data-fv="">Show exercises</button></div>' +
+      '</aside>' +
+    '</div>' +
+    '</div>';
+  renderLibStudio();
 }
 function closeLibPanel(){
   libraryFilters.open = false;
@@ -3327,11 +3565,32 @@ function syncLibPanel(panel){
   const f = libraryFilters;
   panel.querySelectorAll("[data-fg]").forEach(b=>{
     const g = b.dataset.fg, v = b.dataset.fv;
-    if (g === "parts" || g === "muscles" || g === "equip") b.classList.toggle("on", f[g].includes(v));
-    else if (LIB_SEG_DEFAULTS.hasOwnProperty(g)) b.classList.toggle("on", f[g] === v);
+    if (g === "parts" || g === "muscles" || g === "equip"){
+      const on = f[g].includes(v);
+      b.classList.toggle("on", on);
+      if (b.classList.contains("fs-tile")) b.setAttribute("aria-pressed", on ? "true" : "false");
+    } else if (LIB_SEG_DEFAULTS.hasOwnProperty(g)) b.classList.toggle("on", f[g] === v);
+  });
+  /* Region panels are generated in libMuscleRegions() order, so index-matching
+     lets each one show its own selection count and pin itself open. */
+  const boxes = panel.querySelectorAll(".fs-region");
+  libMuscleRegions().forEach((g, i)=>{
+    const box = boxes[i];
+    if (!box) return;
+    const on = g.items.filter(m=>f.muscles.includes(m)).length;
+    box.classList.toggle("on", on > 0);
+    if (on) box.setAttribute("open", "");
+    const badge = box.querySelector(".fs-region-n");
+    if (badge) badge.textContent = on ? on + " / " + g.items.length : String(g.items.length);
   });
   const head = panel.querySelector(".lib-fhead .lib-fcount");
-  if (head) head.textContent = libActiveFilterCount() + " active";
+  if (head){
+    const n = libActiveFilterCount();
+    head.textContent = n + " active";
+    head.classList.toggle("hot", n > 0);
+  }
+  renderLibStudio();
+  libStudioPulse();
 }
 function bindLibPanel(){
   const s = $("#view-library");
@@ -3358,8 +3617,9 @@ function bindLibPanel(){
       const arr = f[g], i = arr.indexOf(v);
       if (i === -1) arr.push(v); else arr.splice(i, 1);
     } else return;
-    syncLibPanel(panel);
+    /* Results first: syncLibPanel ends on the studio's animated state. */
     renderLibraryResults();
+    syncLibPanel(panel);
   });
 }
 function renderLibrary(){
@@ -3394,6 +3654,8 @@ function renderLibrary(){
     else {
       $("#lib-filter-panel").classList.add("open");
       $("#lib-filter-toggle").setAttribute("aria-expanded", "true");
+      renderLibStudio();
+      libStudioEnter();
     }
   });
   $("#add-exercise").addEventListener("click", ()=>openExEditor(null));
