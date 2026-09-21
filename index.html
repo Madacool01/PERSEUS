@@ -8461,9 +8461,6 @@ function homeLastSessions(n){
     .sort((a, b)=> new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime())
     .slice(0, n);
 }
-function homeChip(seed){
-  return '<span class="img-chip"><span style="background-image:url(https://picsum.photos/seed/' + esc(seed) + '/240/120)"></span></span>';
-}
 function homeTodayCardHtml(){
   const dow = homeDowIndex();
   const planId = progDraft().slots[dow];
@@ -8633,7 +8630,7 @@ function renderHome(){
     ? 'Rest is <em class="serif-i">part of the plan</em>.'
     : logged
       ? 'Today is <em class="serif-i">in the books</em>.'
-      : 'Today asks for ' + homeChip("perseus-chalk") + ' <em class="serif-i">one honest session</em>.';
+      : 'Today asks for <em class="serif-i">one honest session</em>.';
   const sub = !day
     ? 'No training scheduled. Move well, sleep, and let the work settle.'
     : logged
