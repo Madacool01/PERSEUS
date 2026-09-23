@@ -55,7 +55,8 @@ const check=(c,m)=>{ if(c){pass++;console.log("  ✓ "+m);}else{fail++;console.l
       else { s.reps=(de.reps||0)+2; s.rating=1; }
     });
   });
-  ctx.recovery = { recovery:3, sleep:4, energy:3, soreness:0, pain:"", note:"" };
+  ctx.readiness = { sleep:4, energy:3, soreness:0, stress:4, pain:"" };
+  ctx.feedback = { difficulty:3, performance:2, pump:1, fatigue:3, pain:"", note:"" };
   E("saveLogSession()");
   await new Promise(r=>setTimeout(r,300)); // let produceCoach finish
 
@@ -67,7 +68,8 @@ const check=(c,m)=>{ if(c){pass++;console.log("  ✓ "+m);}else{fail++;console.l
     check(user.plan && Array.isArray(user.plan) && user.plan.length>=4, "payload.plan present");
     check(user.performed && user.performed.length>=3, "payload.performed present");
     check(user.candidates && Array.isArray(user.candidates) && user.candidates.length>0, "payload.candidates present");
-    check(typeof user.recovery === "object", "payload.recovery present");
+    check(typeof user.readiness === "object" && user.readiness.sleep === 4, "payload.readiness carries the pre-session check-in");
+    check(typeof user.feedback === "object" && user.feedback.difficulty === 3, "payload.feedback carries the post-session reflection");
   }
 
   console.log("== Confirm AI JSON was clamped + applied ==");

@@ -55,6 +55,9 @@ startBtn.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
 check(E("currentView") === "log", "start from home switches to the logger");
 check(E("!!logCtx && logCtx.dayId === state.days[0].id"), "logger opened on the planned routine");
 check(Boolean($("#view-log .log-step")), "logger rendered a step, not the picker");
+check(Boolean($("#view-log #rd-start")), "the readiness check-in comes before the sets");
+$("#view-log #rd-start").dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(Boolean($("#view-log .set-cell") || $("#view-log .round-cell")), "start training shows the set grid");
 
 // Logged-today state flips the card to a recap
 E("logCtx=null; state.sessions.push({id:'sess-home', dayId:state.days[0].id, dateISO:new Date().toISOString(), type:'strength', completedSets:[{exId:state.exercises[0].id,setIndex:0,reps:8,time:null,weight:0,rating:2,note:'',hit:true}], recovery:null, finalized:false}); switchView('home');");

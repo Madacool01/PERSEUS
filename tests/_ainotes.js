@@ -33,20 +33,24 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
     s.weight = 0; s.rating = 2;
     s.note = i === 0 ? "sharp left shoulder pain" : "";
   });
-  ctx.recovery = { recovery: 2, sleep: 2, energy: 2, soreness: 1, pain: "shoulder", note: "tired, bad sleep" };
-  const out = E("buildSession(getDay('day-1'), logCtx.entries, logCtx.recovery)");
+  ctx.readiness = { sleep: 2, energy: 2, soreness: 1, stress: 2, pain: "shoulder" };
+  ctx.feedback = { difficulty: 4, performance: 1, fatigue: 4, pain: "shoulder", note: "tired, bad sleep" };
+  const out = E("buildSession(getDay('day-1'), logCtx.entries, logCtx.feedback, logCtx.readiness)");
   check(out.completedSets.some(c => c.note === "sharp left shoulder pain"), "set note preserved in completedSets");
-  check(out.recovery.note === "tired, bad sleep", "recovery note preserved");
+  check(out.feedback.note === "tired, bad sleep", "reflection note preserved");
+  check(out.readiness.sleep === 2, "readiness check-in preserved; unanswered keys dropped");
+  check(!("pump" in out.feedback), "skipped questions stay absent instead of defaulting");
 
   console.log("\n== notes reach AI payload ==");
   E("state.profile.apiKey='gsk_test'");
-  const sess = { id:"s1", dayId:"day-1", type:"hypertrophy", completedSets: out.completedSets, recovery: out.recovery };
+  const sess = { id:"s1", dayId:"day-1", type:"hypertrophy", completedSets: out.completedSets, feedback: out.feedback, readiness: out.readiness };
   const payload = E("buildAIPayload({session:" + JSON.stringify(sess).replace(/</g, "\\u003c") + ", day:getDay('day-1'), entries:{}, base:[]})");
   // build via eval-friendly path (avoid JSON injection issues): rebuild in page
   W.eval("window.__tSess = " + JSON.stringify(sess));
   const p2 = W.eval("buildAIPayload({session: window.__tSess, day: getDay('day-1'), entries:{}, base:[]})");
   check(p2.performed.some(p => p.note === "sharp left shoulder pain"), "performed[] carries set note");
-  check(p2.recovery && p2.recovery.note === "tired, bad sleep", "payload recovery carries note");
+  check(p2.feedback && p2.feedback.note === "tired, bad sleep", "payload feedback carries note");
+  check(p2.readiness && p2.readiness.sleep === 2, "payload readiness carries the check-in");
 
   console.log("\n== system prompt instructs note use ==");
   const sp = W.eval("systemPrompt()");

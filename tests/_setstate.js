@@ -28,6 +28,8 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
   console.log("\n== partial (yellow) set state while logging ==");
   E("switchView('log')");
   E("startLog('day-1')");
+  // The session opens on the readiness check-in; start it to reach the set grid.
+  $('#view-log #rd-start').dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
   const de = E("getDay('day-1').exercises[0]");
   const ex = E("getEx('" + de.exId + "')");
   const field = ex.mode === "time" ? ".s-time" : ".s-reps";
@@ -72,7 +74,7 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
   ent.sets[0][ex.mode === "time" ? "time" : "reps"] = ex.mode === "time" ? 30 : 8;
   ent.sets[0].rating = 0;                    // work, no effort -> counted
   if (ent.sets[1]) { ent.sets[1].rating = 3; } // effort, no work -> dropped
-  const out = E("buildSession(getDay('day-1'), logCtx.entries, logCtx.recovery||{})");
+  const out = E("buildSession(getDay('day-1'), logCtx.entries, logCtx.feedback||{}, logCtx.readiness||{})");
   check(out.completedSets.some(c => c.exId === de.exId && c.setIndex === 0), "reps/time without effort still logs to History");
   check(!out.completedSets.some(c => c.exId === de.exId && c.setIndex === 1), "effort without reps/time does NOT log to History");
   check(E("logSetsDone(logCtx.entries['" + de.exId + "'])") === 1, "sets-logged tally counts work-only sets, not effort-only ones");

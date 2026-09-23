@@ -90,7 +90,8 @@ const waitFor = (fn, label, ms) => new Promise(res => {
     if (!ent) return;
     ent.sets.forEach(s => { s.reps = 10; s.rating = 1; });
   });
-  ctx.recovery = { recovery: 3, sleep: 4, energy: 3, soreness: 0, pain: "", note: "" };
+  ctx.readiness = { sleep: 4, energy: 3, soreness: 0, stress: 4, pain: "" };
+  ctx.feedback = { difficulty: 3, performance: 2, pump: 1, fatigue: 3, pain: "", note: "" };
   E("saveLogSession()");
   const pend = G("state.pending")[G("state.pending.length") - 1];
   await waitFor(() => (pend.suggestions && pend.suggestions.length > 0), "coach suggestions generated");

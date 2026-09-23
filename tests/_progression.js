@@ -45,7 +45,8 @@ const section = t => console.log("\n== " + t + " ==");
       ent.sets.forEach(s => { s.reps = 30; s.rating = 1; }); // past every zone's top (endurance top is 25)
     });
     ctx.entries["ex-3"].sets.forEach(s => { s.weight = 20; }); // real load on Ring Dip
-    ctx.recovery = { recovery: 3, sleep: 4, energy: 3, soreness: 0, pain: "", note: "" };
+    ctx.readiness = { sleep: 4, energy: 3, soreness: 0, stress: 4, pain: "" };
+    ctx.feedback = { difficulty: 3, performance: 2, pump: 1, fatigue: 3, pain: "", note: "" };
     E("saveLogSession()");
     await new Promise(r => setTimeout(r, 150)); // let produceCoach settle
 
@@ -71,7 +72,8 @@ const section = t => console.log("\n== " + t + " ==");
   E("startLog('day-s')");
   const ctxs = G("logCtx");
   ctxs.entries["ex-1"].sets.forEach(s => { s.reps = 8; s.rating = 1; });
-  ctxs.recovery = { recovery: 3, sleep: 4, energy: 3, soreness: 0, pain: "", note: "" };
+  ctxs.readiness = { sleep: 4, energy: 3, soreness: 0, stress: 4, pain: "" };
+  ctxs.feedback = { difficulty: 3, performance: 2, pump: 1, fatigue: 3, pain: "", note: "" };
   E("saveLogSession()");
   await new Promise(r => setTimeout(r, 150));
   const pend = G("state.pending")[G("state.pending.length") - 1];

@@ -67,7 +67,10 @@ function section(t){ console.log("\n== " + t + " =="); }
   window.startLog("day-1");
   check(G("logCtx") && G("logCtx").dayId === "day-1", "logCtx started for day-1");
   const stepTitle = $("#view-log .big-title");
-  check(Boolean(stepTitle && stepTitle.textContent), "log step shows exercise name: " + (stepTitle && stepTitle.textContent));
+  check(Boolean(stepTitle && stepTitle.textContent), "log opens with a titled screen: " + (stepTitle && stepTitle.textContent));
+  check(Boolean($("#view-log #rd-start")), "the readiness check-in is the first screen of a session");
+  $("#view-log #rd-start").dispatchEvent(new window.MouseEvent("click", { bubbles:true }));
+  check(Boolean($("#view-log .set-cell") || $("#view-log .round-cell")), "start training shows the set grid");
 
   section("Fill in session data & save (rules engine + AI fallback)");
   const ctx = G("logCtx");
@@ -82,7 +85,8 @@ function section(t){ console.log("\n== " + t + " =="); }
       else { s.reps = (de.reps||0)+2; s.weight = de.weight; s.rating = 1; }
     });
   });
-  ctx.recovery = { recovery: 3, sleep: 4, energy: 3, soreness: 0, pain: "", note: "" };
+  ctx.readiness = { sleep: 4, energy: 3, soreness: 0, stress: 4, pain: "" };
+  ctx.feedback = { difficulty: 3, performance: 2, pump: 1, fatigue: 3, pain: "", note: "" };
   window.saveLogSession();
 
   let pend = G("state.pending")[G("state.pending.length")-1];

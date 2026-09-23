@@ -124,6 +124,8 @@ function section(t) { console.log("\n== " + t + " =="); }
   window.switchView("log");
   window.startLog("day-1");
   check(G("logCtx.stepTotal") === 6, "session knows its 6 steps up front");
+  check(Boolean($("#view-log #rd-start")), "the readiness check-in opens the session");
+  click($("#view-log #rd-start"));
   G("logCtx.idx = 4"); E("render()");
   const cells = $$("#view-log .round-cell");
   check(cells.length === 2, "round 1 screen shows one panel per member");
@@ -161,10 +163,10 @@ function section(t) { console.log("\n== " + t + " =="); }
   fillCell(curl2, 10, 8, 2.5);
   fillCell(push2, 12, 0, 3);
   click($("#view-log #log-next"));
-  check(Boolean($("#view-log #rec-finish")), "after the final round the session moves to recovery");
+  check(Boolean($("#view-log #ref-finish")), "after the final round the session moves to the reflection form");
 
   section("Session save: per-exercise records, superset-safe");
-  click($("#view-log #rec-finish"));
+  click($("#view-log #ref-finish"));
   await waitFor(() => G("state.sessions.length") === 1, "session saved");
   await waitFor(() => { const p = G("state.pending")[0]; return p && p.suggestions && p.suggestions.length > 0; }, "engine suggestions ready");
   const ses = G("state.sessions")[0];
@@ -227,7 +229,7 @@ function section(t) { console.log("\n== " + t + " =="); }
     "per-member focus saved from the wizard (strength + hypertrophy)");
 
   section("Coach payload carries superset membership + per-exercise type");
-  const pl = G("buildAIPayload({ session:{ type:'hybrid', recovery:{}, completedSets:[] }, day: getDay('day-1'), entries: [], base: [] })");
+  const pl = G("buildAIPayload({ session:{ type:'hybrid', readiness:{}, feedback:{}, completedSets:[] }, day: getDay('day-1'), entries: [], base: [] })");
   check(Array.isArray(pl.supersets) && pl.supersets.length >= 1, "payload lists the superset groups");
   const pl0 = pl.plan.find(p => p.exId === hyGrp.exIds[0]);
   const pl1 = pl.plan.find(p => p.exId === hyGrp.exIds[1]);

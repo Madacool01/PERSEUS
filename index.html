@@ -1460,12 +1460,6 @@
   .log-kicker-text b { color: var(--accent-deep); }
   .log-context { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: .5rem; }
   .big-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.2rem, 4.6vw, 3.4rem); letter-spacing: -.02em; line-height: 1.04; margin: 0; text-wrap: balance; }
-  .title-pill-img {
-    display: inline-block; width: 1.9em; height: .68em; border-radius: 999px;
-    background-size: cover; background-position: center;
-    vertical-align: baseline; transform: translateY(.06em); margin: 0 .08em;
-    border: 1px solid var(--accent-line); filter: saturate(.9) contrast(1.04);
-  }
   .log-ticker { margin: 1rem 0 0; border-radius: var(--r-md); }
   .progress-track { height: 10px; background: var(--paper-2); border-radius: 999px; margin: 1.3rem 0 .55rem; overflow: hidden; box-shadow: inset 0 1px 3px rgba(58,42,18,.12); }
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-deep), var(--accent) 55%, var(--accent-contrast)); border-radius: 999px; transition: width .5s cubic-bezier(.22,1,.36,1); }
@@ -1572,10 +1566,56 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23a63c12' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.6rem;
   }
-  .done-recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.6rem 0 .4rem; grid-auto-flow: dense; }
+  .done-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin: 1.6rem 0 .4rem; grid-auto-flow: dense; }
   .done-rec { border: 1px solid var(--line); border-radius: var(--r-md); padding: 1.1rem 1.15rem; background: var(--surface); box-shadow: var(--shadow-1); }
   .done-rec b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 2rem; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
   .done-rec span { display: block; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .5rem; }
+  /* ---------- Check-in rails (pre-session readiness / post-session reflection) ---------- */
+  .checkin-recap { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin: 0 0 1rem; }
+  .checkin-recap-k { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .checkin-recap .pill { margin: 0; }
+  .rail { margin: 0 0 .2rem; }
+  .rail-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; margin-bottom: .45rem; }
+  .rail-head > span:first-child { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .rail-val { font-family: var(--font-mono); font-size: .7rem; font-weight: 700; color: var(--accent-deep); }
+  .rail-val.unset { color: var(--ink-3); font-weight: 600; }
+  .rail-opts { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: .35rem; }
+  .rail-opt {
+    display: flex; align-items: center; justify-content: center; min-height: 58px; padding: .5rem .4rem;
+    font-family: var(--font-body); font-size: .76rem; font-weight: 600; line-height: 1.25; text-align: center;
+    color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer;
+    transition: transform .2s cubic-bezier(.22,1,.36,1), border-color .18s, background .18s, color .18s, box-shadow .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rail-opt:hover { border-color: var(--accent-line); background: var(--accent-soft); color: var(--ink); transform: translateY(-2px); }
+  .rail-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rail-opt[aria-checked="true"] { background: var(--accent); border-color: var(--accent-deep); color: var(--on-accent); box-shadow: var(--shadow-1); }
+  @media (max-width: 560px){ .rail-opt { min-height: 52px; font-size: .68rem; padding: .4rem .25rem; } }
+  .verdict { border: 1px solid var(--line); border-left: 3px solid var(--ink-3); border-radius: var(--r-md); background: var(--surface); padding: .95rem 1.1rem; }
+  .verdict.green { border-left-color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
+  .verdict.amber { border-left-color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
+  .verdict.red { border-left-color: var(--red); border-color: var(--red-line); background: var(--red-soft); }
+  .verdict b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: -.01em; color: var(--ink); }
+  .verdict p { margin: .35rem 0 0; font-size: .85rem; line-height: 1.5; color: var(--ink-2); max-width: 68ch; }
+  .ready-panel { border-top: 1px dashed var(--line); padding-top: 1.1rem; margin-top: 1.2rem; }
+  .ready-strip { display: grid; gap: .55rem; margin-top: .7rem; }
+  .ready-row { display: grid; grid-template-columns: minmax(96px, 1fr) auto 92px; align-items: center; gap: .8rem; }
+  .ready-name { font-size: .84rem; font-weight: 600; color: var(--ink-2); text-transform: capitalize; }
+  .ready-name i { font-family: var(--font-mono); font-style: normal; font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .ready-meter { display: flex; align-items: center; gap: .6rem; }
+  .ready-bar { width: 118px; height: 6px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+  .ready-fill { display: block; height: 100%; background: var(--green); transition: width .6s cubic-bezier(.22,1,.36,1); }
+  .ready-fill.amber { background: var(--amber); }
+  .ready-fill.red { background: var(--red); }
+  .ready-pct { font-family: var(--font-mono); font-size: .68rem; font-weight: 700; color: var(--ink-3); min-width: 32px; text-align: right; }
+  .ready-eta { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .06em; color: var(--ink-3); text-align: right; }
+  @media (max-width: 620px){ .ready-row { grid-template-columns: 1fr auto; } .ready-eta { grid-column: 1 / -1; text-align: left; } .ready-bar { width: 84px; } }
+  .hist-checkins { display: flex; flex-direction: column; gap: .25rem; margin-top: .6rem; }
+  .hist-checkin { font-size: .8rem; color: var(--ink-2); }
+  .hist-checkin b { font-family: var(--font-mono); font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-right: .4rem; }
+  .hist-checkin.tone-bad { color: var(--red); }
+  .hist-checkin.muted, .hist-checkin.muted b { color: var(--ink-3); }
+  .checkin-coach { font-family: var(--font-mono); font-size: 11px; letter-spacing: .02em; line-height: 1.6; color: var(--ink-3); margin: 0 0 12px; }
   /* ---------- Rest timers (logging mode) ---------- */
   .rest-bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-1); padding: .8rem 1rem; margin: 1rem 0 0; }
   .rest-clock { font-family: var(--font-mono); font-weight: 600; font-size: 1.5rem; color: var(--ink); min-width: 4.2rem; font-variant-numeric: tabular-nums; }
@@ -2309,7 +2349,8 @@
                     paired rounds (one set of every member per screen) } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
                     weight, rating, note, appliedFromId } ],
-                    feedback: { recovery, energy, sleep, soreness, note, satisfaction },
+                    readiness: { sleep, energy, soreness, stress, pain },
+                    feedback: { difficulty, performance, pump, fatigue, pain, note },
                     created: false } ],
      pending: [ { id, sessionId, changes: [ { exId, field, from, to, reason, kept:int? } ] } ],
      counts: { nextId: 1 }
@@ -5763,18 +5804,23 @@ function openAddSuperset(dayId){
 /* =========================================================================
    LOGGER
    -------------------------------------------------------------------------
-   Flow: pick a workout day -> step through each exercise -> for each set
-   record actual reps/time/weight next to the plan, rate it 1-5 and/or type
-   free-text feedback -> final recovery/readiness form -> generate coach
-   recommendations and save the session.
+   Flow: pick a workout day -> pre-session readiness check-in (sleep, energy,
+   soreness, stress, pain — the things you know BEFORE you train) -> step through
+   each exercise -> per set, record actual reps/time/weight next to the plan,
+   rate it 1-5 and/or type free-text feedback -> post-session reflection (how hard
+   it felt, how it landed against the plan, what hurt, what to change) -> generate
+   coach recommendations and save the session.
+   Both check-ins are stored on the session and handed to the AI with different
+   jobs: readiness explains an off day, reflection drives the progression call.
    ========================================================================= */
 function renderLog(){
   const s = $("#view-log");
   if (!logCtx){ renderLogPicker(s); return; }
   // A saved session always wins: once "Generate coach suggestions" is pressed the
-  // flow must leave the recovery form immediately, even if recoveryScreen is stale.
+  // flow must leave the reflection form immediately, even if reflectScreen is stale.
   if (logCtx.finished){ renderLogDone(s); return; }
-  if (logCtx.recoveryScreen){ renderRecovery(s); return; }
+  if (logCtx.reflectScreen){ renderReflect(s); return; }
+  if (logCtx.readyScreen){ renderReadiness(s); return; }
   renderLogStep(s);
 }
 
@@ -5817,7 +5863,10 @@ function startLog(dayId){
     idx: 0,
     stepTotal: logStepsForDay(day).length,  // superset groups expand into one step per round
     entries: {},           // exId -> { plan, sets:[...] }
-    recoveryScreen:false,
+    readiness: blankReadiness(),   // pre-session check-in, asked before the first set
+    feedback: blankFeedback(),     // post-session reflection, asked after the last set
+    readyScreen:true,              // the readiness check-in opens the session
+    reflectScreen:false,
     finished:false,
     saved:false,           // true once saveLogSession has committed; blocks duplicate saves
   };
@@ -6097,7 +6146,7 @@ function renderLogExerciseStep(s, day, step, total){
           (logCtx.idx>0?'<button class="btn" id="log-prev">‹ Previous exercise</button>':"") +
           '<button class="btn danger" id="log-discard">Discard session</button>' +
           '<div class="spacer" style="flex:1"></div>' +
-          (logCtx.idx<total-1 ? '<button class="btn primary" id="log-next">Next exercise →</button>' : '<button class="btn primary" id="log-recovery">Log recovery →</button>') +
+          (logCtx.idx<total-1 ? '<button class="btn primary" id="log-next">Next exercise →</button>' : '<button class="btn primary" id="log-reflect">Wrap up →</button>') +
         '</div>' +
       '</div>' +
     '</div></div>';
@@ -6159,11 +6208,11 @@ function renderLogExerciseStep(s, day, step, total){
     readFromDom();
     restClear();
     if (logCtx.idx<total-1){ logCtx.idx++; render(); }
-    else { logCtx.recoveryScreen=true; render(); }
+    else { logCtx.reflectScreen=true; render(); }
   };
   const prev = ()=>{ readFromDom(); restClear(); if(logCtx.idx>0){ logCtx.idx--; render(); } };
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
-  if ($("#log-recovery")) $("#log-recovery").addEventListener("click", next);
+  if ($("#log-reflect")) $("#log-reflect").addEventListener("click", next);
   if ($("#log-prev")) $("#log-prev").addEventListener("click", prev);
   // Form check mid-session: typed sets are already synced on every input, so
   // opening the visualizer loses nothing; closing it returns to this screen.
@@ -6216,7 +6265,7 @@ function renderLogRoundStep(s, day, step, total){
     return (i ? '<span class="title-plus" aria-hidden="true">+</span>' : '') + '<span class="round-title-name">'+esc(n)+how+'</span>';
   }).join("");
   const lastRound = r+1 >= rounds;
-  const nextLabel = !lastRound ? "Next set →" : (logCtx.idx < total-1 ? "Next exercise →" : "Log recovery →");
+  const nextLabel = !lastRound ? "Next set →" : (logCtx.idx < total-1 ? "Next exercise →" : "Wrap up →");
   const firstEx = getEx(members[0].exId);
   const roundDone = members.reduce((a,de)=>{ const e=logCtx.entries[de.exId]; return a + (e && e.sets[r] ? logSetsDone({sets:[e.sets[r]]}) : 0); }, 0);
   const roundRest = normRestSec(day.defaultRestSec);
@@ -6310,7 +6359,7 @@ function renderLogRoundStep(s, day, step, total){
     readPanels();
     restClear();
     if (logCtx.idx < total-1){ logCtx.idx++; render(); }
-    else { logCtx.recoveryScreen = true; render(); }
+    else { logCtx.reflectScreen = true; render(); }
   };
   const prev = ()=>{ readPanels(); restClear(); if (logCtx.idx>0){ logCtx.idx--; render(); } };
   if ($("#log-next")) $("#log-next").addEventListener("click", next);
@@ -6322,48 +6371,289 @@ function renderLogRoundStep(s, day, step, total){
   });
 }
 
-function renderRecovery(s){
+/* ---------- Check-in model -------------------------------------------------
+   Two moments, two different sets of questions. Readiness covers what you know
+   BEFORE you train (sleep, energy, soreness, stress, pain); the reflection
+   covers what only the session itself can tell you (how hard it felt, how it
+   landed against the plan, what hurt, what to change). Unanswered questions are
+   dropped at save time, so the coach never reads a default as an answer. */
+const READINESS_KEYS = ["sleep","energy","soreness","stress"];
+const READINESS_LABEL = { sleep:"Sleep", energy:"Energy", soreness:"Soreness", stress:"Stress" };
+const READINESS_CHOICES = {
+  sleep:    [{v:1,label:"Very poor"},{v:2,label:"Poor"},{v:3,label:"Normal"},{v:4,label:"Good"},{v:5,label:"Excellent"}],
+  energy:   [{v:1,label:"Depleted"},{v:2,label:"Low"},{v:3,label:"Normal"},{v:4,label:"High"},{v:5,label:"Primed"}],
+  soreness: [{v:0,label:"None"},{v:1,label:"Mild"},{v:2,label:"Notable"},{v:3,label:"Heavy"}],
+  stress:   [{v:1,label:"Very high"},{v:2,label:"High"},{v:3,label:"Normal"},{v:4,label:"Low"},{v:5,label:"Very low"}],
+};
+const FEEDBACK_LABEL = { difficulty:"Difficulty", performance:"Against plan", pump:"Pump", fatigue:"Fatigue" };
+const FEEDBACK_CHOICES = {
+  difficulty:  [{v:1,label:"Easy"},{v:2,label:"Moderate"},{v:3,label:"Hard"},{v:4,label:"Very hard"},{v:5,label:"All out"}],
+  performance: [{v:1,label:"Below plan"},{v:2,label:"As planned"},{v:3,label:"Above plan"}],
+  pump:        [{v:0,label:"None"},{v:1,label:"Some"},{v:2,label:"Strong"}],
+  fatigue:     [{v:1,label:"Fresh"},{v:2,label:"Fine"},{v:3,label:"Worked"},{v:4,label:"Spent"},{v:5,label:"Wrecked"}],
+};
+function blankReadiness(){ return { sleep:null, energy:null, soreness:null, stress:null, pain:"" }; }
+function blankFeedback(){ return { difficulty:null, performance:null, pump:null, fatigue:null, pain:"", note:"" }; }
+/* Drop unanswered keys: a skipped question must be absent, not a fabricated 3. */
+function cleanCheckin(obj){
+  const out = {};
+  Object.keys(obj||{}).forEach(k=>{
+    const v = obj[k];
+    if (v===null || v===undefined) return;
+    if (typeof v==="string" && !v.trim()) return;
+    out[k] = v;
+  });
+  return out;
+}
+function choiceLabel(choices, v){
+  const c = (choices||[]).filter(x=>x.v===v)[0];
+  return c ? c.label : "—";
+}
+/* One shared readout of a session's two check-ins, so the coach feed and the
+   history detail can never describe the same session differently. Sessions
+   saved before the split kept one post-hoc 'recovery' blob: it comes back as
+   `legacy` so old history still explains itself. */
+function checkinParts(ses){
+  const fb = (ses && ses.feedback) || {};
+  const rd = (ses && ses.readiness) || {};
+  const legacy = (ses && !ses.feedback && ses.recovery) ? ses.recovery : null;
+  const join = (keys, labels, choices, src)=> keys.filter(k=>src[k]!=null)
+    .map(k=>labels[k].toLowerCase()+" "+choiceLabel(choices[k], src[k]).toLowerCase()).join(" · ");
+  const legacyTxt = legacy
+    ? ["recovery","sleep","energy","soreness"].filter(k=>legacy[k]).map(k=>k+" "+(legacy[k]||"-")).join(" · ")
+    : "";
+  return {
+    before: join(READINESS_KEYS, READINESS_LABEL, READINESS_CHOICES, rd),
+    after: join(["difficulty","performance","pump","fatigue"], FEEDBACK_LABEL, FEEDBACK_CHOICES, fb),
+    painBefore: rd.pain || "",
+    painAfter: fb.pain || "",
+    note: fb.note || "",
+    legacy: legacyTxt,
+    legacyPain: (legacy && legacy.pain) || "",
+    legacyNote: (legacy && legacy.note) || "",
+    verdict: readinessVerdict(rd)
+  };
+}
+/* One rail is a labelled radiogroup of real buttons, so keyboard and screen
+   readers get the same control the mouse does. `block` decides which logCtx
+   check-in the pick lands in: "rd" = readiness, "fb" = reflection. */
+function checkinRailHtml(block, key, label, choices, value){
+  const cur = choices.some(c=>c.v===value) ? value : null;
+  const opts = choices.map(c=>
+    '<button type="button" role="radio" class="rail-opt" aria-checked="'+(cur===c.v)+'"'+
+      ' data-rail-block="'+block+'" data-rail-key="'+key+'" data-val="'+c.v+'" data-live="'+esc(c.label)+'">'+
+      esc(c.label)+'</button>').join("");
+  return '<div class="rail" data-rail="'+block+'-'+key+'">'+
+    '<div class="rail-head"><span>'+esc(label)+'</span>'+
+      '<span class="rail-val'+(cur==null?' unset':'')+'" data-rail-val="'+block+'-'+key+'">'+
+      (cur==null ? 'Tap to answer' : esc(choiceLabel(choices, cur)))+'</span></div>'+
+    '<div class="rail-opts" style="--n:'+choices.length+'" role="radiogroup" aria-label="'+esc(label)+'">'+opts+'</div>'+
+  '</div>';
+}
+/* The muscle groups today's routine loads, worst recovery first. Reuses the same
+   dose-weighted engine as the You tab, so the two can never disagree. */
+function readinessMuscleRows(day, rec){
+  const seen = {};
+  ((day && day.exercises)||[]).forEach(de=>{
+    const ex = getEx(de.exId);
+    if (!ex) return;
+    recoveryGroupsForExercise(ex).forEach(({ g, w })=>{
+      if (!(g in seen) || w > seen[g]) seen[g] = w;
+    });
+  });
+  return Object.keys(seen)
+    .sort((a,b)=> (rec[a]||0) - (rec[b]||0))
+    .map(g=>({ group:g, pct:(rec[g]==null?100:rec[g]), primary: seen[g] >= 1 }));
+}
+/* Rules-only read on the readiness answers. Shown to the user now and stored on
+   the session, so the coach and the athlete work from the same sentence. */
+function readinessVerdict(rd){
+  rd = rd || {};
+  const answered = READINESS_KEYS.filter(k=>rd[k]!=null).length;
+  if (answered < 3) return { level:"none", title:"Four taps, then go",
+    body:"Sleep, energy, soreness and stress are how you arrive today. The coach reads them against your sets, so a below-plan session gets explained instead of being blamed on the plan." };
+  const s = { sleep: rd.sleep==null?3:rd.sleep, energy: rd.energy==null?3:rd.energy,
+              stress: rd.stress==null?3:rd.stress, soreness: rd.soreness==null?0:rd.soreness };
+  const penalty = (5-s.sleep) + (5-s.energy) + (5-s.stress) + s.soreness*1.6;
+  const level = penalty <= 4 ? "green" : (penalty <= 9 ? "amber" : "red");
+  const driver = s.soreness >= 2 ? "soreness" : s.sleep <= 2 ? "sleep" : s.energy <= 2 ? "energy" : s.stress <= 2 ? "stress" : "";
+  const why = {
+    soreness: "Notable soreness going in — keep the loads where they are and let the first work set decide whether to push.",
+    sleep: "Short sleep — expect to fade in the last sets. Stop a rep or two shy instead of chasing a PR.",
+    energy: "Low energy — treat today as maintenance: same movements, same loads, no increases.",
+    stress: "Heavy life stress — recovery is taxed outside the gym, so keep the volume as planned and skip the last-rep grind.",
+    "": "Sleep, energy, soreness and stress all read normal."
+  }[driver];
+  const title = level==="green" ? "Green light — train as planned"
+    : level==="amber" ? "Amber — train, hold the progression"
+    : "Red — reduce today's load";
+  return { level, title, body: why + " The coach keeps this check-in with the session, so a set that lands below plan today is read as fatigue, not lost strength." };
+}
+/* What the coach does with the reflection, said back as the user answers it. */
+function feedbackHint(fb){
+  fb = fb || {};
+  const out = [];
+  if (fb.performance===3 && (fb.difficulty==null || fb.difficulty<=2)) out.push("Above plan at low effort — the coach looks at adding a rep or a small load step.");
+  if (fb.performance===1) out.push("Below plan — the coach holds the targets and checks the readiness check-in before cutting anything.");
+  if (fb.difficulty>=4) out.push("A session taken to the limit holds progression even when the targets were met.");
+  if (fb.fatigue>=4) out.push("Very spent — volume stays where it is instead of going up.");
+  if (fb.pump===0 && fb.difficulty!=null && fb.difficulty<=2) out.push("No pump on a session that felt easy usually means the load or reps can move.");
+  if (fb.pain && String(fb.pain).trim()) out.push("Pain noted — the coach holds or reduces the movements involved, never increases them.");
+  if (!out.length) return "Rate how hard it felt and how it landed against the plan — that pair decides the next step.";
+  return out.join(" ");
+}
+function verdictHtml(v){ return '<b>'+esc(v.title)+'</b><p>'+esc(v.body)+'</p>'; }
+/* Picks are written to logCtx immediately and only the verdict/hint panels are
+   refreshed, so no answer is lost and nothing the user is reading flickers. */
+function bindCheckin(scope){
+  $$("[data-rail-block]", scope).forEach(btn=>{
+    const sibs = ()=> $$('[data-rail-block="'+btn.dataset.railBlock+'"][data-rail-key="'+btn.dataset.railKey+'"]', scope);
+    btn.addEventListener("click", ()=>{
+      const b = btn.dataset.railBlock, k = btn.dataset.railKey, raw = btn.dataset.val;
+      const block = b==="rd" ? (logCtx.readiness = logCtx.readiness || blankReadiness())
+                             : (logCtx.feedback  = logCtx.feedback  || blankFeedback());
+      block[k] = /^-?\d+(\.\d+)?$/.test(raw) ? +raw : raw;
+      sibs().forEach(o=>o.setAttribute("aria-checked", String(o.dataset.val===raw)));
+      const valEl = $('[data-rail-val="'+b+'-'+k+'"]', scope);
+      if (valEl){ valEl.textContent = btn.dataset.live; valEl.classList.remove("unset"); }
+      try{ if (window.gsap && FX.ok && !FX.reduced()) window.gsap.fromTo(btn, {scale:.93}, {scale:1, duration:.3, ease:"back.out(2.6)", overwrite:"auto"}); }catch(e){}
+      refreshCheckin(scope);
+    });
+    btn.addEventListener("keydown", ev=>{
+      if (ev.key!=="ArrowLeft" && ev.key!=="ArrowRight") return;
+      const list = sibs(), i = list.indexOf(btn), j = ev.key==="ArrowRight" ? i+1 : i-1;
+      if (j<0 || j>=list.length) return;
+      ev.preventDefault(); list[j].focus(); list[j].click();
+    });
+  });
+  $$("[data-rd-field]", scope).forEach(inp=>inp.addEventListener("input", ()=>{
+    logCtx.readiness = logCtx.readiness || blankReadiness();
+    logCtx.readiness[inp.dataset.rdField] = inp.value;
+  }));
+  $$("[data-fb-field]", scope).forEach(inp=>inp.addEventListener("input", ()=>{
+    logCtx.feedback = logCtx.feedback || blankFeedback();
+    logCtx.feedback[inp.dataset.fbField] = inp.value;
+    refreshCheckin(scope);
+  }));
+}
+function refreshCheckin(scope){
+  const v = $("#rd-verdict", scope);
+  if (v){ const r = readinessVerdict(logCtx.readiness); v.className = "verdict "+r.level; v.innerHTML = verdictHtml(r); }
+  const h = $("#fb-hint", scope);
+  if (h) h.textContent = feedbackHint(logCtx.feedback);
+}
+/* Pre-session check-in: the questions that only make sense BEFORE the work, with
+   today's muscle readiness on the same screen so the answers have context. */
+function renderReadiness(s){
+  const day = getDay(logCtx.dayId) || { name:"Session", exercises:[] };
+  const rd = logCtx.readiness || (logCtx.readiness = blankReadiness());
+  const rec = muscleRecoveryAt(Date.now());
+  const rows = readinessMuscleRows(day, rec);
+  const strip = rows.length
+    ? '<div class="ready-strip">' + rows.map(r=>{
+        const tone = r.pct >= 85 ? "" : (r.pct >= 60 ? " amber" : " red");
+        const sub = r.pct >= RECOVERY_READY_PCT
+          ? "ready to train"
+          : "~"+recoveryEtaHours(r.group, Date.now())+"h to ready";
+        return '<div class="ready-row" data-ready-group="'+r.group+'">'+
+          '<span class="ready-name">'+esc(r.group)+(r.primary?'':' <i>assist</i>')+'</span>'+
+          '<span class="ready-meter"><span class="ready-bar"><span class="ready-fill'+tone+'" style="width:'+r.pct+'%"></span></span>'+
+            '<span class="ready-pct">'+r.pct+'%</span></span>'+
+          '<span class="ready-eta">'+esc(sub)+'</span></div>';
+      }).join("") + '</div>'
+    : '<div class="micro">Nothing to chart yet — today\'s exercises carry no muscle tags. Add primary muscles in the exercise editor and this strip fills in.</div>';
+  const v = readinessVerdict(rd);
+  s.innerHTML =
+    '<div class="wrap">' +
+    '<div class="log-head fx-in" style="margin-top:.4rem">' +
+      '<div class="log-kicker"><span class="log-kicker-text"><b>Before the first set</b> · '+esc(day.name)+'</span></div>' +
+      '<h2 class="big-title">Readiness <em class="serif-i">check-in</em></h2>' +
+    '</div>' +
+    '<p class="subtitle log-hint">How you arrived today. These belong before the work, not after it — a set that lands below plan is far easier to read once the coach knows you slept four hours.</p>' +
+    '<div class="log-step fx-in" style="margin-top:8px">' +
+      '<div class="grid two">' +
+        checkinRailHtml("rd","sleep","Sleep last night",READINESS_CHOICES.sleep,rd.sleep) +
+        checkinRailHtml("rd","energy","Energy / motivation",READINESS_CHOICES.energy,rd.energy) +
+        checkinRailHtml("rd","soreness","Muscle soreness",READINESS_CHOICES.soreness,rd.soreness) +
+        checkinRailHtml("rd","stress","Life stress",READINESS_CHOICES.stress,rd.stress) +
+      '</div>' +
+      '<label class="field"><span>Pain or niggle right now?</span>'+
+        '<input type="text" data-rd-field="pain" placeholder="e.g. right knee on squats. Leave blank if none" value="'+esc(rd.pain||"")+'"/>'+
+        '<div class="micro">Pain is never a progression signal: the coach holds or reduces that movement and says why.</div></label>' +
+      '<div id="rd-verdict" class="verdict '+v.level+'">'+verdictHtml(v)+'</div>' +
+      '<div class="ready-panel fx-in">' +
+        '<div class="rail-head"><span>Today\'s muscles</span><span class="micro">recovery from logged work, live</span></div>' +
+        strip +
+      '</div>' +
+      '<div class="btn-row log-actions">' +
+        '<button class="btn" id="rd-back">‹ Pick another day</button>' +
+        '<button class="btn danger" id="rd-discard">Discard session</button>' +
+        '<div class="spacer" style="flex:1"></div>' +
+        '<button class="btn primary" id="rd-start">Start training →</button>' +
+      '</div>' +
+    '</div></div>';
+  bindCheckin(s);
+  const readInputs = ()=>{ $$("[data-rd-field]", s).forEach(x=>{ logCtx.readiness[x.dataset.rdField] = x.value; }); };
+  $("#rd-back").addEventListener("click", ()=>{ logCtx=null; saveState(); render(); });
+  $("#rd-discard").addEventListener("click", ()=>{
+    if (!confirm("Discard this session? Nothing will be saved.")) return;
+    logCtx=null; saveState(); render();
+  });
+  $("#rd-start").addEventListener("click", ()=>{ readInputs(); logCtx.readyScreen=false; render(); });
+}
+
+/* Post-session reflection: only the questions the session itself can answer. */
+function renderReflect(s){
   // summarize entered sets for context
   const day = getDay(logCtx.dayId);
   const rows = day.exercises.map(de=>{
     const ex = getEx(de.exId); const ent = logCtx.entries[de.exId];
     const done = ent.sets.filter(setPerformed).length;
     return '<tr><td>'+esc(ex.name)+'</td><td>'+done+'/'+ent.sets.length+' sets logged</td></tr>';
-  }).join("");  s.innerHTML =
+  }).join("");
+  const rd = logCtx.readiness || {};
+  const rdChips = READINESS_KEYS.filter(k=>rd[k]!=null)
+    .map(k=>'<span class="pill">'+esc(READINESS_LABEL[k])+' '+esc(choiceLabel(READINESS_CHOICES[k], rd[k]))+'</span>').join("");
+  const fb = logCtx.feedback || (logCtx.feedback = blankFeedback());
+  s.innerHTML =
     '<div class="wrap">' +
     '<div class="log-head fx-in" style="margin-top:.4rem">' +
-      '<div class="log-kicker"><span class="log-kicker-text"><b>Final check-in</b> · '+esc(day.name)+'</span></div>' +
-      '<h2 class="big-title">Recovery and how it felt</h2>' +
+      '<div class="log-kicker"><span class="log-kicker-text"><b>After the last set</b> · '+esc(day.name)+'</span></div>' +
+      '<h2 class="big-title">How did it <em class="serif-i">go</em>?</h2>' +
     '</div>' +
-    '<p class="subtitle log-hint">A few quick context questions help the coach decide whether to progress, hold, or regress.</p>' +
+    '<p class="subtitle log-hint">The questions only the session itself can answer: how hard it felt, how it landed against the plan, and what to change next time. Sleep and soreness were already captured before you started.</p>' +
     '<div class="log-step fx-in" style="margin-top:8px">' +
+      (rdChips ? '<div class="checkin-recap"><span class="checkin-recap-k">Readiness before</span>'+rdChips+'</div>' : "") +
       '<div class="recap-wrap"><table class="striped"><tr><th>Exercise</th><th>Logged</th></tr>'+rows+'</table></div>'+
       '<div class="grid two" style="margin-top:16px">'+
-        '<label class="field"><span>Recovery / readiness (overall)</span><select data-recv="recovery"><option value=3 selected>Feels normal</option><option value=5>Fresh / great</option><option value=4>Good</option><option value=2>Mediocre</option><option value=1>Tired / depleted</option></select></label>'+
-        '<label class="field"><span>Sleep last night</span><select data-recv="sleep"><option value=3 selected>Normal</option><option value=5>Excellent</option><option value=4>Good</option><option value=2>Poor</option><option value=1>Very poor</option></select></label>'+
-        '<label class="field"><span>Energy / motivation</span><select data-recv="energy"><option value=3 selected>Normal</option><option value=4>High</option><option value=5>Pumped</option><option value=2>Low</option><option value=1>Exhausted</option></select></label>'+
-        '<label class="field"><span>Soreness</span><select data-recv="soreness"><option value=0 selected>None / normal</option><option value=1>Mild</option><option value=2>Notable</option><option value=3>Heavy</option></select></label>'+
+        checkinRailHtml("fb","difficulty","How hard was the session?",FEEDBACK_CHOICES.difficulty,fb.difficulty)+
+        checkinRailHtml("fb","performance","Against the plan",FEEDBACK_CHOICES.performance,fb.performance)+
+        checkinRailHtml("fb","pump","Target-muscle feel",FEEDBACK_CHOICES.pump,fb.pump)+
+        checkinRailHtml("fb","fatigue","How spent are you?",FEEDBACK_CHOICES.fatigue,fb.fatigue)+
       '</div>'+
-      '<label class="field"><span>Pain or discomfort?</span><input type="text" data-recv="pain" placeholder="e.g. left shoulder on dips. Leave blank if none"/>'+
-        '<div class="micro">Pain is handled conservatively: the coach will hold or reduce load and note it, not push through.</div></label>'+
-      '<label class="field"><span>Session note (optional)</span><textarea data-recv="note" placeholder="How did it go overall? Anything you noticed?"></textarea></label>'+      '<div class="btn-row log-actions">' +
-        '<button class="btn" id="rec-back">‹ Back to exercises</button>' +
-        '<button class="btn danger" id="rec-discard">Discard session</button>' +
+      '<label class="field"><span>Anything hurt during the session?</span><input type="text" data-fb-field="pain" placeholder="e.g. left shoulder on dips. Leave blank if none" value="'+esc(fb.pain||"")+'"/>'+
+        '<div class="micro">Pain is handled conservatively: the coach holds or reduces that movement and quotes it in the reason, rather than pushing through.</div></label>'+
+      '<label class="field"><span>Note for next time (optional)</span><textarea data-fb-field="note" placeholder="How did it go overall? Anything you noticed?">'+esc(fb.note||"")+'</textarea></label>'+
+      '<div class="verdict" id="fb-verdict"><b>What the coach does with this</b><p id="fb-hint">'+esc(feedbackHint(fb))+'</p></div>'+
+      '<div class="btn-row log-actions">' +
+        '<button class="btn" id="ref-back">‹ Back to the sets</button>' +
+        '<button class="btn danger" id="ref-discard">Discard session</button>' +
         '<div class="spacer" style="flex:1"></div>' +
-        '<button class="btn primary" id="rec-finish">Generate coach suggestions →</button>' +
+        '<button class="btn primary" id="ref-finish">Generate coach suggestions →</button>' +
       '</div>' +
     '</div>' +
     '</div>';
-  $("#rec-back").addEventListener("click", ()=>{ logCtx.recoveryScreen=false; render(); });
-  $("#rec-discard").addEventListener("click", ()=>{
+  bindCheckin(s);
+  $("#ref-back").addEventListener("click", ()=>{ logCtx.reflectScreen=false; render(); });
+  $("#ref-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx=null; saveState(); render();
   });
-  $("#rec-finish").addEventListener("click", ()=>finishLog(s));
+  $("#ref-finish").addEventListener("click", ()=>finishLog(s));
   function finishLog(el){
-    const fb = {};
-    $$("[data-recv]", el).forEach(x=>{ fb[x.dataset.recv] = x.value; });
-    logCtx.recovery = fb;
+    const out = logCtx.feedback || blankFeedback();
+    $$("[data-fb-field]", el).forEach(x=>{ out[x.dataset.fbField] = x.value; });
+    logCtx.feedback = out;
     saveLogSession(); // builds state.sessions and coach suggestions
   }
 }
@@ -6557,7 +6847,9 @@ function prevOkForExercise(prev, exId, field){
 /* =========================================================================
    SESSION SAVE + AI ENRICHMENT
    ========================================================================= */
-function buildSession(day, entries, recovery){
+/* `feedback` = the post-session reflection, `readiness` = the pre-session
+   check-in. Both are cleaned so unanswered questions stay absent. */
+function buildSession(day, entries, feedback, readiness){
   const completedSets = [];
   day.exercises.forEach(de=>{
     if (!entries[de.exId]) return;
@@ -6584,7 +6876,7 @@ function buildSession(day, entries, recovery){
       });
     });
   });
-  return { completedSets, recovery:recovery||{} };
+  return { completedSets, feedback:cleanCheckin(feedback), readiness:cleanCheckin(readiness) };
 }
 
 /* Session plan-undo: every plan change caused by a logged session (PR
@@ -6735,11 +7027,11 @@ function saveLogSession(){
   // enrichment is still in flight.
   if (!logCtx || logCtx.saved) return;
   const day = getDay(logCtx.dayId);
-  const { completedSets, recovery } = buildSession(day, logCtx.entries, logCtx.recovery);
+  const { completedSets, feedback, readiness } = buildSession(day, logCtx.entries, logCtx.feedback, logCtx.readiness);
   const session = {
     id: "sess-"+uid(), dayId: day.id, dateISO: logCtx.startedAt,
     type: logCtx.type || "hypertrophy",
-    completedSets, recovery, finalized: false
+    completedSets, readiness, feedback, finalized: false
   };
   state.sessions.push(session);
   // A PR is the new target even when the coach stays quiet: carry any set that
@@ -6752,10 +7044,10 @@ function saveLogSession(){
   logCtx.session = session;
   logCtx.saved = true;
   logCtx.finished = true;
-  logCtx.recoveryScreen = false;
+  logCtx.reflectScreen = false;
   // Leave the logger immediately so the user sees a real "done" screen instead of
   // waiting on (possibly slow / failing) AI enrichment that would otherwise leave
-  // the recovery form on screen, inviting duplicate clicks.
+  // the reflection form on screen, inviting duplicate clicks.
   render();
   // now produce coach suggestions (rules + AI)
   produceCoach(session.id);
@@ -6873,15 +7165,17 @@ function sessionNotesFor(session, exId){
     });
   }catch(e){}
   const recAvg = recRates.length ? (recRates.reduce((a,b)=>a+b,0)/recRates.length).toFixed(1) : "—";
+  const fbDone = (logCtx && logCtx.feedback) || {};
   s.innerHTML =
     '<div class="view-hero slim">' +
       '<div class="view-hero-bg fx-bg" style="background-image:url(https://picsum.photos/seed/perseus-done/1920/1080)"></div>' +
       '<div class="view-hero-inner">' +
-        '<h2 class="view-title">Session <span class="title-pill-img" style="background-image:url(https://picsum.photos/seed/perseus-done-pill/400/160)"></span> <em class="serif-i">logged</em></h2>' +
+        '<h2 class="view-title">Session <em class="serif-i">logged</em></h2>' +
         '<p class="view-sub fx-scrub">Your session is saved and the coach has prepared suggestions for next time. Review them in the Coach feed.</p>' +
         '<div class="done-recap fx-in">' +
           '<div class="done-rec"><span>Sets logged</span><b><span class="stat-num">'+recSets+'</span><small style="font-size:1rem;color:var(--ink-3)">/'+recTotal+'</small></b></div>' +
           '<div class="done-rec"><span>Avg effort</span><b>'+recAvg+'</b></div>' +
+          '<div class="done-rec"><span>Session felt</span><b style="font-size:1.35rem">'+(fbDone.difficulty!=null?esc(choiceLabel(FEEDBACK_CHOICES.difficulty, fbDone.difficulty)):"—")+'</b></div>' +
           '<div class="done-rec"><span>Movements</span><b><span class="stat-num">'+recMoves+'</span></b></div>' +
         '</div>' +
         '<div class="hero-cta">' +            '<button class="btn btn-xl primary" id="log-finish">Finish workout</button>' +
@@ -6915,6 +7209,27 @@ const AI_MODELS = {
   "groq/compound":       { label:"Groq Compound",        pros:"Agentic system (~450 tps) that can web-search and run code if the response needs it. Great for research-y questions, heavier for routine looks." },
   "groq/compound-mini":  { label:"Groq Compound Mini",   pros:"Lighter, faster lean version of Groq Compound. Still tool-capable, lower latency." },
 };
+/* Shared guidance for the two session check-ins (buildAIPayload sends both).
+   Defined once so the static and the zone-aware prompt cannot drift apart. */
+const CHECKIN_PROMPT = [
+  "The payload carries TWO check-ins taken at different moments. They are not",
+  "interchangeable:",
+  "- 'readiness' was collected BEFORE the first set: sleep 1-5 (very poor..",
+  "  excellent), energy 1-5 (depleted..primed), soreness 0-3 (none..heavy),",
+  "  stress 1-5 (very high..very low), pain free text. Its job is attribution: low",
+  "  readiness explains a session that fell short, so hold the plan and say why",
+  "  instead of regressing off one day. High readiness plus an easy session is the",
+  "  clearest case for a normal step up.",
+  "- 'feedback' was collected right AFTER the last set: difficulty 1-5 (easy..all",
+  "  out), performance 1-3 (below plan..above plan), pump 0-2 (none..strong),",
+  "  fatigue 1-5 (fresh..wrecked), pain and note free text. difficulty + performance",
+  "  are the progression signal: 4+ difficulty or 'below plan' argues for holding",
+  "  even when the targets were met; 'above plan' at 1-2 earns a step. feedback.pain",
+  "  means hold or reduce the movements that caused it. fatigue 4+ argues against",
+  "  adding volume.",
+  "- Either check-in may be missing fields because the user skipped it: never",
+  "  invent, assume, or read a missing field as a signal in either direction.",
+];
 const SYSTEM_PROMPT = [
   "You are the reasoning engine inside a calisthenics strength-coach app.",
   "You receive a JSON payload with the user's training plan, latest session,",
@@ -6952,8 +7267,8 @@ const SYSTEM_PROMPT = [
   "Each performed set may carry a user 'note' (free text: pain, form, equipment,",
   "fatigue, pump). Read every note as coaching signal: a pain/form/equipment note",
   "means hold or reduce, never increase, on that exercise; quote the relevant note",
-  "in your reason so the user sees it mattered. Session 'recovery.note' is the same:",
-  "poor sleep, soreness, or pain there means stay conservative.",
+  "in your reason so the user sees it mattered.",
+  ...CHECKIN_PROMPT,
   "Rules you MUST respect:",
   "- NEVER change number of sets; only reps, hold-time, or weight.",
   "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -7005,8 +7320,8 @@ function systemPrompt(){
       "independent, and never change set counts or reorder members.",
       "Each performed set may carry a user 'note' (pain, form, equipment, fatigue).",
       "Read every note: a pain/form/equipment note means hold or reduce, never increase,",
-      "on that exercise; quote the relevant note in your reason. Session 'recovery.note'",
-      "counts the same — poor sleep, soreness, or pain there means stay conservative.",
+      "on that exercise; quote the relevant note in your reason so the user sees it mattered.",
+      ...CHECKIN_PROMPT,
       "Rules you MUST respect:",
       "- NEVER change number of sets; only reps, hold-time, or weight.",
       "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
@@ -7038,11 +7353,13 @@ function buildAIPayload({ session, day, entries, base }){
   }));
   const candidates = base.map(s=>({ exId:s.exId, field:s.field, before:s.from, after:s.to, reason:s.reason }));
   return {
-    instruction:"Given the plan, the performed sets (each may carry a user note — treat pain/form/equipment notes as hold/reduce signals and quote them in reasons), recovery incl. recovery.note, custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative — never override them with generic ranges.",
+    instruction:"Given the plan, the performed sets (each may carry a user note — treat pain/form/equipment notes as hold/reduce signals and quote them in reasons), the two session check-ins ('readiness' taken BEFORE the session, 'feedback' right AFTER it — the system rules say what each one is for), custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative — never override them with generic ranges.",
     sessionType: session.type || "hypertrophy",
     repZones: getRepZones(),
     supersets: (day.supersets||[]).map(g=>({ id:g.id, exIds:(g.exIds||[]).slice() })),
-    recovery:session.recovery, plan, performed, candidates
+    readiness: session.readiness || {},
+    feedback: session.feedback || {},
+    plan, performed, candidates
   };
 }
 
@@ -7212,6 +7529,17 @@ function renderCoach(){
     html += '<div class="spacer"></div><span class="pill">'+suggestions.length+' suggestion'+(suggestions.length!==1?'s':'')+'</span>'+coachSourceBadge(coachSourceOf(pend, session));
     html += '<button type="button" class="rec-del" data-del-pend="'+pend.id+'" aria-label="Delete all suggestions from this session">✕</button></div>';
     if (session && session.summary) html += '<p class="small" style="color:var(--ink-3);margin:6px 0 12px">'+esc(session.summary)+'</p><p class="micro muted" style="margin:-6px 0 12px">'+(coachSourceOf(pend, session)==="ai" ? "Written by AI via GroqCloud." : "Written by the default built-in engine (no AI key / offline).")+'</p>';
+    // The session's own check-ins, shown with both the AI and the offline engine
+    // so the context behind every suggestion is visible either way.
+    const ck = checkinParts(session);
+    const ckBits = [];
+    if (ck.before) ckBits.push("before · "+ck.before);
+    if (ck.painBefore) ckBits.push("pain before · "+ck.painBefore);
+    if (ck.after) ckBits.push("after · "+ck.after);
+    if (ck.painAfter) ckBits.push("pain in session · "+ck.painAfter);
+    if (ck.note) ckBits.push('“'+ck.note+'”');
+    if (ck.legacy) ckBits.push("older check-in · "+ck.legacy);
+    if (ckBits.length) html += '<p class="micro checkin-coach">'+esc(ckBits.join("  |  "))+'</p>';
     if (!suggestions.length){ html += '<div class="muted small">No concrete changes to apply. Plan stays as is.</div>'; }
     suggestions.forEach(sug=>{
       const ex = getEx(sug.exId);
@@ -7547,7 +7875,19 @@ function renderHistory(){
     const exVolTxt = exVol>0 ? '<span class="pill">'+fmtVol(exVol)+' '+weightUnit()+'</span>' : '<span class="pill" title="Timed holds, warm-ups, or sets with missing load are not counted">— volume</span>';
     return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b><div class="spacer" style="flex:1"></div>' + exVolTxt + '</div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
-  const rec = ses.recovery||{};
+  /* Both check-ins, in the order they were asked. Sessions saved before the
+     split stored one post-hoc 'recovery' blob; that is shown as an older
+     check-in so nothing the user typed ever disappears. */
+  const ck = checkinParts(ses);
+  const checkinRows = [];
+  if (ck.before) checkinRows.push('<span class="hist-checkin"><b>Before</b>'+esc(ck.before)+'</span>');
+  if (ck.painBefore) checkinRows.push('<span class="hist-checkin tone-bad"><b>Pain before</b>'+esc(ck.painBefore)+'</span>');
+  if (ck.after) checkinRows.push('<span class="hist-checkin"><b>After</b>'+esc(ck.after)+'</span>');
+  if (ck.painAfter) checkinRows.push('<span class="hist-checkin tone-bad"><b>Pain in session</b>'+esc(ck.painAfter)+'</span>');
+  if (ck.note) checkinRows.push('<span class="hist-checkin"><b>Note</b>'+esc(ck.note)+'</span>');
+  if (ck.legacy) checkinRows.push('<span class="hist-checkin muted"><b>Older check-in</b>'+esc(ck.legacy)+(ck.legacyPain?' · pain: '+esc(ck.legacyPain):'')+'</span>');
+  if (ck.legacyNote) checkinRows.push('<span class="hist-checkin muted"><b>Note</b>'+esc(ck.legacyNote)+'</span>');
+  const checkinBlock = checkinRows.length ? '<div class="hist-checkins">'+checkinRows.join("")+'</div>' : "";
   let totalVol = 0;
   try{ totalVol = sessionVolumeKg(ses); }catch(e){ totalVol = 0; }
   const totalVolHtml = totalVol>0
@@ -7560,8 +7900,7 @@ function renderHistory(){
       '<button class="btn sess-close" data-close title="Close session"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button></div>'+
     '<div class="hist-detail">' + blocks + '</div>'+
     totalVolHtml+
-    '<div class="small muted" style="margin-top:8px">Recovery '+(rec.recovery||'-')+' · sleep '+(rec.sleep||'-')+' · soreness '+(rec.soreness||'-')+(rec.pain?' · pain: "'+esc(rec.pain)+'"':'')+'</div>'+
-    '<div class="small">'+(rec.note?esc(rec.note):'')+'</div>'+
+    checkinBlock+
     '</div>';
 }
 
