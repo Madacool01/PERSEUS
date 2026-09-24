@@ -6586,7 +6586,6 @@ function renderReadiness(s){
         strip +
       '</div>' +
       '<div class="btn-row log-actions">' +
-        '<button class="btn" id="rd-back">‹ Pick another day</button>' +
         '<button class="btn danger" id="rd-discard">Discard session</button>' +
         '<div class="spacer" style="flex:1"></div>' +
         '<button class="btn primary" id="rd-start">Start training →</button>' +
@@ -6594,7 +6593,6 @@ function renderReadiness(s){
     '</div></div>';
   bindCheckin(s);
   const readInputs = ()=>{ $$("[data-rd-field]", s).forEach(x=>{ logCtx.readiness[x.dataset.rdField] = x.value; }); };
-  $("#rd-back").addEventListener("click", ()=>{ logCtx=null; saveState(); render(); });
   $("#rd-discard").addEventListener("click", ()=>{
     if (!confirm("Discard this session? Nothing will be saved.")) return;
     logCtx=null; saveState(); render();
