@@ -2571,7 +2571,7 @@ function restSourceLabel(de, ex, day){
 /* Rest countdown state. One global timer: starting a new rest replaces the
    old one, and navigation re-renders clear it. Pure countdown math lives in
    restTick() so jsdom tests can drive it without waiting. */
-var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false, started: false };
+var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false, started: false, kind: "set", next: "" };
 function restClear(){
   if (restTimer.timer){ try{ clearInterval(restTimer.timer); }catch(e){} restTimer.timer = 0; }
   restTimer.running = false; restTimer.started = false;
@@ -2596,11 +2596,14 @@ function restTick(){
   if (restTimer.left <= 0){ restClear(); restDone(); }
   else restPaint();
 }
-function restStart(sec, label){
+function restStart(sec, label, opts){
   restClear();
   const s = normRestSec(sec);
   if (s == null || s <= 0) return false;
+  const o = opts || {};
   restTimer.total = s; restTimer.left = s; restTimer.label = label || "Rest";
+  restTimer.kind = o.kind || "set"; restTimer.next = o.next || "";
+  try{ restAudio(); }catch(e){ /* audio is optional; timer still runs */ }
   restTimer.running = true; restTimer.started = true;
   restPaint();
   try{
@@ -2626,21 +2629,69 @@ function restPaint(){
     el.setAttribute("aria-label", restTimer.running ? "Pause rest" : "Resume rest");
   });
 }
-function restDone(){
-  restPaint();
+/* Shared AudioContext, primed while the user is still on a gesture (starting
+   or logging a set) so the alarm can sound when the rest ends unattended. */
+var restAudioCtx = null;
+function restAudio(){
   try{
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (Ctx){
-      const ctx = new Ctx();
+    if (!Ctx) return null;
+    if (!restAudioCtx) restAudioCtx = new Ctx();
+    if (restAudioCtx.state === "suspended" && restAudioCtx.resume) restAudioCtx.resume();
+    return restAudioCtx;
+  }catch(e){ return null; }
+}
+/* Ringtone/alarm for a finished rest while logging. A rising three-note chime
+   marks the transition into the next exercise; a shorter two-tone ping marks
+   the next set of the current exercise. */
+function playRestAlarm(kind){
+  const ctx = restAudio();
+  if (!ctx) return;
+  try{
+    const t0 = ctx.currentTime + 0.02;
+    const notes = kind === "exercise" ? [659, 880, 1175] : [880, 1175];
+    notes.forEach((f, i)=>{
+      const at = t0 + i * 0.18;
       const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = f;
       o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = 880; g.gain.value = 0.12;
-      o.start(); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-      o.stop(ctx.currentTime + 0.65);
-    }
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.18, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
+      o.start(at); o.stop(at + 0.26);
+    });
   }catch(e){}
-  try{ if (navigator.vibrate) navigator.vibrate(200); }catch(e){}
-  if (typeof toast === "function") toast("Rest over — next set");
+}
+/* Name of the step that follows the one being logged, for the "on to X" cue.
+   Null when the current step is the last (session wrap-up). */
+function logNextStepLabel(){
+  try{
+    if (!logCtx || !logCtx.dayId) return null;
+    const steps = logStepsForDay(getDay(logCtx.dayId));
+    const nx = steps[logCtx.idx + 1];
+    if (!nx) return null;
+    if (nx.kind === "round"){
+      const first = nx.members && nx.members[0];
+      const ex = first ? getEx(first.exId) : null;
+      return ex ? ex.name : "the next round";
+    }
+    const ex = nx.de ? getEx(nx.de.exId) : null;
+    return ex ? ex.name : null;
+  }catch(e){ return null; }
+}
+function restDone(){
+  restPaint();
+  if (!state.profile.loggingMode) return;
+  const kind = restTimer.kind || "set";
+  const next = restTimer.next || "";
+  playRestAlarm(kind);
+  try{ if (navigator.vibrate) navigator.vibrate(kind === "exercise" ? [200, 90, 200] : 200); }catch(e){}
+  if (typeof toast === "function"){
+    toast(kind === "exercise" ? "Rest over — on to " + next
+        : kind === "finish" ? "Rest over — time to wrap up"
+        : "Rest over — next set");
+  }
 }
 
 /* Per-set types let a routine mark individual sets (drop sets, AMRAP failure
@@ -6098,10 +6149,17 @@ function maybeAutoStartRest(sec, isLast){
   const s = normRestSec(sec);
   if (s == null || s <= 0) return;
   if (restTimer.running) return;
-  restStart(s, "Rest");
+  // the last set of an exercise rests into the NEXT exercise ("exercise"),
+  // unless the session itself is over ("finish"); every other set rests
+  // toward the next set of the same movement
+  const next = isLast ? logNextStepLabel() : null;
+  const kind = !isLast ? "set" : (next ? "exercise" : "finish");
+  restStart(s, "Rest", { kind: kind, next: next || "" });
   const sb = document.querySelector("[data-rest-start]");
   if (sb) sb.textContent = "Restart";
-  toast(isLast ? "Last set — resting " + fmtRest(s) + " before the next exercise" : "Set done — resting " + fmtRest(s));
+  toast(kind === "exercise" ? "Last set — resting " + fmtRest(s) + " before " + next
+      : kind === "finish" ? "Last set — resting " + fmtRest(s) + " before you wrap up"
+      : "Set done — resting " + fmtRest(s));
 }
 /* One screen per standalone exercise: every one of its sets as a cell. */
 function renderLogExerciseStep(s, day, step, total){
@@ -6330,7 +6388,7 @@ function renderLogRoundStep(s, day, step, total){
       const cb = s.querySelector('.s-done[data-exid="'+exId+'"]');
       if (cb) cb.checked = true;
     }
-    maybeAutoStartRest(roundRest, false);
+    maybeAutoStartRest(roundRest, lastRound);
   };
   $$(".s-done", s).forEach(cb=>cb.addEventListener("change", ()=>{
     if (!cb.checked){
