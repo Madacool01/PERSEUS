@@ -868,12 +868,12 @@
   .ex-vis-icon:hover { background: var(--surface-2); color: var(--ink); }
   .ex-vis-icon svg { width: 18px; height: 18px; }
   .ex-vis-menuwrap, .routine-menu { position: relative; flex: 0 0 auto; }
-  .ex-vis-pop, .routine-pop {
+  .ex-vis-pop {
     position: absolute; top: calc(100% + 6px); right: 0; z-index: 5; min-width: 176px;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
     box-shadow: var(--shadow-2); padding: .35rem; display: none; flex-direction: column;
   }
-  .ex-vis-pop.open, .routine-pop.open { display: flex; }
+  .ex-vis-pop.open { display: flex; }
   .ex-vis-pop button, .routine-pop button {
     text-align: left; padding: .52rem .72rem; border: 0; background: transparent;
     border-radius: var(--r-sm); color: var(--ink-2); font: inherit; font-size: .85rem; cursor: pointer;
@@ -883,6 +883,22 @@
   .ex-vis-pop button.danger:hover, .routine-pop button.danger:hover { background: rgba(198,69,49,.1); }
   .routine-pop button { display: flex; align-items: center; gap: .55rem; }
   .routine-pop button svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  /* The routine menu fades and lifts into place rather than appearing instantly.
+     While it is open its card is raised in the paint order, so the routines
+     stacked underneath it can never draw over the menu. */
+  .routine-card.menu-open { z-index: 30; }
+  .routine-pop {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 31; min-width: 176px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+    box-shadow: var(--shadow-2); padding: .35rem; display: flex; flex-direction: column;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-8px) scale(.96); transform-origin: top right;
+    transition: opacity .2s ease, transform .24s cubic-bezier(.34,1.56,.64,1), visibility .2s;
+  }
+  .routine-pop.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
+  @media (prefers-reduced-motion: reduce) {
+    .routine-pop { transition-duration: .01s; }
+  }
   .ex-vis-tabs {
     flex: 0 0 auto; display: flex; gap: .3rem; overflow-x: auto; padding: .6rem .9rem;
     border-bottom: 1px solid var(--line); scrollbar-width: none;
@@ -4888,13 +4904,23 @@ function renderRoutineList(){
     const btn = wrap.querySelector("[data-routine-menu]");
     const pop = wrap.querySelector(".routine-pop");
     if (!btn || !pop) return;
-    const shut = ()=>{ pop.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); };
+    const card = wrap.closest("[data-edit-day]");
+    // lifting the card keeps the menu above the routines that overlap it
+    const shut = ()=>{
+      pop.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+      if (card) card.classList.remove("menu-open");
+    };
+    const openMenu = ()=>{
+      pop.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+      if (card) card.classList.add("menu-open");
+    };
     // the whole menu sits inside the card, so its clicks never open the routine
     wrap.addEventListener("click", ev=>ev.stopPropagation());
     btn.addEventListener("click", ev=>{
       ev.stopPropagation();
-      const on = pop.classList.toggle("open");
-      btn.setAttribute("aria-expanded", String(!!on));
+      if (pop.classList.contains("open")) shut(); else openMenu();
     });
     pop.addEventListener("click", ev=>{
       const item = ev.target && ev.target.closest ? ev.target.closest("[data-routine-act]") : null;

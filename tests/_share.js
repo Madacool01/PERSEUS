@@ -375,9 +375,11 @@ function makeDom() {
   check(Boolean(C.$("#view-workouts .routine-pop.open [data-routine-act='share']")), "the menu offers Share");
   check(Boolean(C.$("#view-workouts .routine-pop.open [data-routine-act='delete']")), "the menu offers Delete routine");
   check(C.E("planMode") === "list", "opening the menu does not open the routine");
+  check(C.$$("#view-workouts .routine-card.menu-open").length === 1, "the open menu lifts its card above the stacked routines");
   C.click(C.$("#view-workouts .routine-pop.open [data-routine-act='share']"));
   await C.sleep(40);
   check(C.$$("#view-workouts .routine-pop.open").length === 0, "picking an item closes the menu");
+  check(C.$$("#view-workouts .routine-card.menu-open").length === 0, "closing the menu drops the card back into place");
   check(C.$$("#share-host .sh-card").length === 1, "share sheet opens");
   const sheetOut = C.$("#share-host [data-sh-out]");
   check(Boolean(sheetOut && sheetOut.value.indexOf("#perseus-share=P") !== -1), "sheet shows a ready share link");
