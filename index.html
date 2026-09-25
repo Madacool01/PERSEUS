@@ -728,6 +728,66 @@
     .fs-regions { grid-template-columns: 1fr; }
   }
 
+  /* ---------- Shared workouts: share sheet + import preview ----------
+     One overlay host for both directions (send / receive). Colours reuse the
+     token pairs already contrast-checked in tests/_contrast.js. */
+  #share-host {
+    position: fixed; inset: 0; z-index: 72;
+    display: grid; place-items: center; padding: 1.2rem;
+    background: rgba(23,19,12,.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35);
+    animation: modalBack .25s ease;
+  }
+  #share-host:empty { display: none; }
+  .sh-card {
+    width: min(620px, 100%); max-height: 90vh; overflow-y: auto;
+    background: var(--glass-lite);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.55); border-radius: 16px;
+    box-shadow: 0 24px 64px -16px rgba(23,19,12,.35), inset 0 1px 0 rgba(255,255,255,.6);
+    padding: 1.25rem 1.4rem 1.45rem;
+    animation: modalIn .3s cubic-bezier(.22,1,.36,1);
+  }
+  .sh-card .micro { text-transform: none; }
+  .sh-head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: .9rem; }
+  .sh-title { font-family: var(--font-display); font-size: 1.18rem; letter-spacing: -.022em; margin: 0; color: var(--ink); }
+  .sh-sub { margin: .35rem 0 0; }
+  .sh-x { flex: none; margin-left: auto; }
+  .sh-list { display: flex; flex-direction: column; gap: .35rem; margin: .85rem 0 0; }
+  .sh-row {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .5rem .65rem; border: 1px solid var(--line-2); border-radius: var(--r-md);
+    background: var(--surface);
+  }
+  .sh-row .nm { flex: 1 1 auto; min-width: 0; font-size: .88rem; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-row .mt { flex: none; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .sh-tag {
+    flex: none; font-family: var(--font-mono); font-size: .56rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; padding: .18rem .45rem; border-radius: var(--r-md);
+    border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2);
+  }
+  .sh-tag.new { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+  .sh-tag.keep { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
+  .sh-tag.gone { color: var(--red); background: var(--red-soft); border-color: var(--red-line); }
+  .sh-opt { display: flex; align-items: center; gap: .55rem; margin: .85rem 0 0; font-size: .85rem; color: var(--ink-2); }
+  .sh-out { font-family: var(--font-mono); font-size: .72rem; line-height: 1.5; min-height: 62px; margin: .2rem 0 0; }
+  .sh-note { margin: .75rem 0 0; }
+  .sh-err {
+    margin: .85rem 0 0; padding: .6rem .7rem; border-radius: var(--r-md);
+    border: 1px solid var(--red-line); background: var(--red-soft); color: var(--red); font-size: .85rem;
+  }
+  .sh-ok { border: 1px dashed var(--accent-line); background: var(--accent-soft); border-radius: var(--r-md); padding: .85rem .95rem; }
+  .sh-drop {
+    margin: .5rem 0 0; padding: .6rem .7rem; text-align: center;
+    border: 1px dashed var(--line); border-radius: var(--r-md);
+    font-size: .8rem; color: var(--ink-3);
+  }
+  .sh-drop.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink-2); }
+  .sh-stat { display: flex; align-items: baseline; gap: .45rem; margin: .55rem 0 0; flex-wrap: wrap; }
+  .routine-share { flex: none; }
+  /* Imported routines carry a badge so their origin stays visible. */
+  .pill.share { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
+
   /* ---------- Exercise library ---------- */
   .exercise-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; grid-auto-flow: dense; }
   .exercise-item {
@@ -2318,6 +2378,7 @@
 </main>
 
 <div id="toast" class="toast"></div>
+<div id="share-host"></div>
 <nav id="m-tabs" aria-label="Primary">
   <button data-view="home" class="tab-btn active" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
   <button data-view="workouts" class="tab-btn" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
@@ -4762,6 +4823,7 @@ function renderRoutineList(){
         '<span class="day-num mono">'+String(i+1).padStart(2,"0")+'</span>'+
         '<span class="routine-name">'+esc(d.name)+'</span>'+
         '<div class="spacer"></div>'+
+        '<button type="button" class="btn ghost small routine-share" data-share-day="'+d.id+'" title="Share '+esc(d.name)+'" aria-label="Share '+esc(d.name)+'">Share</button>'+
         '<span class="routine-open">Open <span class="btn-arrow">→</span></span>'+
       '</div>'+
       '<div class="routine-meta">'+
@@ -4770,6 +4832,7 @@ function renderRoutineList(){
         (ssCount?'<span class="pill ss">'+ssCount+' superset'+(ssCount!==1?"s":"")+'</span>':"")+
         '<span class="pill">'+setCount+' total sets</span>'+
         (last?'<span class="pill time">last logged · '+fmtDate(last.dateISO)+'</span>':"")+
+        (d.shared?'<span class="pill share">shared</span>':"")+
       '</div>'+
     '</div>';
   }).join("");  s.innerHTML =
@@ -4787,6 +4850,10 @@ function renderRoutineList(){
     '<div class="wrap">' +
       coachStripHtml() +
       '<div class="section-block">' +
+        '<div class="btn-row" style="margin-bottom:1.1rem">'+
+          '<button class="btn" id="import-share">Open a shared workout</button>'+
+          '<span class="micro">Got a link or code from a friend? Paste it here.</span>'+
+        '</div>'+
         (cards ? '<div class="stack">'+cards+'</div>' : '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5"/></svg></div>No routines yet. Create your first routine above.</div>') +
       '</div>' +
     '</div>';
@@ -4801,6 +4868,12 @@ function renderRoutineList(){
     if (sp) sp.addEventListener("click", ()=>{ try{ stripTrack.scrollBy({left:-step(), behavior:"smooth"}); }catch(e){ stripTrack.scrollLeft -= step(); } });
     if (sn) sn.addEventListener("click", ()=>{ try{ stripTrack.scrollBy({left:step(), behavior:"smooth"}); }catch(e){ stripTrack.scrollLeft += step(); } });
   }
+  $$("[data-share-day]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openShareSheet(b.dataset.shareDay);
+  }));
+  const impShare = $("#import-share", s);
+  if (impShare) impShare.addEventListener("click", ()=>openImportDialog(""));
   $("#add-day", s).addEventListener("click", ()=>{
     const id = "day-"+uid();
     state.days.push({ id:id, name:nextRoutineName(), exercises:[] });
@@ -8062,6 +8135,7 @@ function renderSettings(){
       '</div>'+
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
+        '<div class="btn-row" style="margin-top:.6rem"><button class="btn" id="set-share-open">Open a shared workout</button><span class="micro">A link, code or file another lifter sent you.</span></div>' +
         '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
           '<p class="micro" id="set-folder-status">Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
           '<div class="btn-row"><button class="btn" id="set-folder-pick">Pick backup folder</button><button class="btn" id="set-folder-now">Backup now</button><button class="btn ghost" id="set-folder-forget">Disconnect</button></div></div>' +
@@ -8142,6 +8216,8 @@ function renderSettings(){
   $("#set-folder-now", s).addEventListener("click", ()=>writeBackupToFolder({ manual:true, force:true }));
   $("#set-folder-forget", s).addEventListener("click", ()=>forgetBackupFolder());
   $("#set-import", s).addEventListener("click", ()=>$("#import-file", s).click());
+  const setShareOpen = $("#set-share-open", s);
+  if (setShareOpen) setShareOpen.addEventListener("click", ()=>openImportDialog(""));
   $("#import-file", s).addEventListener("change", ev=>{
     const f = ev.target.files[0]; if(!f) return;
     const rd = new FileReader();
@@ -8872,6 +8948,917 @@ function youSplitHtml(nowMs){
 /* =========================================================================
    PROGRAMS — prototype: shelf bento, 7-day builder, pinned flow, action band
    ========================================================================= */
+/* =========================================================================
+   SHARED WORKOUTS — send a routine as a link, a code, or a file
+   -------------------------------------------------------------------------
+   What travels: one routine — its exercises plus the prescription (set count,
+   per-set reps/time, set types, weights, supersets, hybrid focus). What never
+   travels: history, sessions, the profile, settings, the AI key. Three
+   carriers, one payload:
+     link  https://…/#perseus-share=P1.xxxx    opens straight into a preview
+     code  the same P1.xxxx string             pasted into the import box
+     file  perseus-workout-*.json              offline / desktop transfer
+   P1 is deflate-raw then base64url; P0 is the uncompressed fallback for
+   browsers without CompressionStream. Everything decoded is untrusted input:
+   every field is validated, clamped and size-capped before it can reach state,
+   the commit is all-or-nothing, and a storage read-back rolls the entire
+   import back if the browser refuses to persist it.
+   An exercise whose name already exists — compared ignoring case, accents,
+   punctuation and spacing — is linked instead of duplicated, and keeps its
+   owner's own targets: in this app a movement's sets are shared across every
+   routine that contains it, so the recipient's prescription wins.
+   ========================================================================= */
+const SHARE_APP = "perseus";
+const SHARE_KIND = "workout";
+const SHARE_VERSION = 1;
+const SHARE_PREFIX_RAW = "P0.";
+const SHARE_PREFIX_DEFLATE = "P1.";
+const SHARE_HASH_KEY = "perseus-share=";
+const SHARE_INSTALL_KEY = "perseus-install-id";
+const SHARE_MAX_INPUT = 24000;       // characters accepted from a single paste
+const SHARE_MAX_FILE = 4000000;      // characters accepted from a dropped/picked file
+const SHARE_MAX_DECODED = 4000000;   // ceiling on a decompressed payload
+const SHARE_MAX_EXERCISES = 40;
+const SHARE_MAX_ENTRIES = 60;
+const SHARE_MAX_GROUPS = 15;
+const SHARE_MAX_IMAGE = 300000;      // data: URL characters per exercise photo
+const SHARE_MAX_IMAGE_TOTAL = 1200000; // and for all photos in one share
+const SHARE_MAX_TEXT = 900;          // notes / instructions per exercise
+const SHARE_LINK_SOFT_LIMIT = 1800;  // past this, chat apps start trimming links
+const SHARE_UNIT_LB = 2.2046;
+const SHARE_LOAD_SOURCES = { manual:1, ai:1, builtin:1, shared:1 };
+const SHARE_MUSCLE_NAMES = MUSCLES.map(m=>m[1]);
+
+/* ---------- small value guards (untrusted input never gets through raw) ---- */
+function shareCleanText(v, max){
+  return String(v==null ? "" : v)
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max || 80);
+}
+function shareInt(v, min, max, fb){
+  const n = Math.round(Number(v));
+  if (!isFinite(n)) return fb;
+  return Math.max(min, Math.min(max, n));
+}
+function shareNum(v, min, max, fb, step){
+  const n = Number(v);
+  if (!isFinite(n)) return fb;
+  const s = step || 0.5;
+  const r = Math.round(Math.round(n / s) * s * 100) / 100;
+  return Math.max(min, Math.min(max, r));
+}
+function shareRef(v, len){
+  const n = Number(v);
+  if (!isFinite(n) || Math.round(n) !== n || n < 0 || n >= len) return -1;
+  return n;
+}
+function shareNumList(v, n, min, max, step){
+  if (!Array.isArray(v) || !v.length) return null;
+  const out = [];
+  for (let i=0; i<n; i++) out.push(v[i] == null ? 0 : shareNum(v[i], min, max, 0, step));
+  return out.some(x=>x > 0) ? out : null;
+}
+function shareList(v, allowed, max){
+  return (Array.isArray(v) ? v : [])
+    .filter(x=>typeof x==="string" && allowed.indexOf(x) !== -1)
+    .filter((x,i,a)=>a.indexOf(x) === i)
+    .slice(0, max || 12);
+}
+function shareValidUnit(u){ return u === "lb" ? "lb" : "kg"; }
+/* Convert a load between the sharer's unit and this profile's unit. Values
+   travel in whole/half display units, the same granularity the logger takes. */
+function shareConvertWeight(v, from, to){
+  const n = Number(v);
+  if (!isFinite(n)) return 0;
+  if (from === to) return Math.round(n * 2) / 2;
+  const kg = from === "lb" ? n / SHARE_UNIT_LB : n;
+  const out = to === "lb" ? kg * SHARE_UNIT_LB : kg;
+  return Math.round(out * 2) / 2;
+}
+
+/* ---------- bytes <-> text <-> base64url (dependency-free, jsdom-safe) ---- */
+function shareUtf8Bytes(str){
+  const s = String(str==null ? "" : str);
+  const out = [];
+  for (let i=0; i<s.length; i++){
+    let c = s.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i+1 < s.length){
+      const lo = s.charCodeAt(i+1);
+      if (lo >= 0xDC00 && lo <= 0xDFFF){ c = 0x10000 + ((c - 0xD800) << 10) + (lo - 0xDC00); i++; }
+    }
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) out.push(0xC0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0x10000) out.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else out.push(0xF0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+  }
+  return out;
+}
+function shareBytesUtf8(bytes){
+  let out = "", i = 0;
+  while (i < bytes.length){
+    const b = bytes[i++];
+    if (b < 0x80){ out += String.fromCharCode(b); continue; }
+    if (b >= 0xF0){
+      const c = ((b & 7) << 18) | ((bytes[i] & 63) << 12) | ((bytes[i+1] & 63) << 6) | (bytes[i+2] & 63);
+      i += 3;
+      const v = c - 0x10000;
+      out += String.fromCharCode(0xD800 + (v >> 10), 0xDC00 + (v & 1023));
+    } else if (b >= 0xE0){
+      out += String.fromCharCode(((b & 15) << 12) | ((bytes[i] & 63) << 6) | (bytes[i+1] & 63));
+      i += 2;
+    } else {
+      out += String.fromCharCode(((b & 31) << 6) | (bytes[i] & 63));
+      i += 1;
+    }
+  }
+  return out;
+}
+const SHARE_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function shareB64Encode(bytes){
+  let out = "";
+  for (let i=0; i<bytes.length; i+=3){
+    const b0 = bytes[i], b1 = bytes[i+1], b2 = bytes[i+2];
+    out += SHARE_B64[b0 >> 2];
+    out += SHARE_B64[((b0 & 3) << 4) | ((b1 === undefined ? 0 : b1) >> 4)];
+    if (b1 === undefined) break;
+    out += SHARE_B64[((b1 & 15) << 2) | ((b2 === undefined ? 0 : b2) >> 6)];
+    if (b2 === undefined) break;
+    out += SHARE_B64[b2 & 63];
+  }
+  return out;
+}
+function shareB64Decode(str){
+  const sym = String(str==null ? "" : str).replace(/[^A-Za-z0-9\-_]/g, "");
+  const out = [];
+  let acc = 0, bits = 0;
+  for (let i=0; i<sym.length; i++){
+    const v = SHARE_B64.indexOf(sym.charAt(i));
+    if (v < 0) continue;
+    acc = ((acc << 6) | v) & 0xFFFFFF;
+    bits += 6;
+    if (bits >= 8){ bits -= 8; out.push((acc >> bits) & 255); }
+  }
+  return out;
+}
+function shareCanCompress(){
+  try{ return typeof CompressionStream === "function" && typeof DecompressionStream === "function"; }
+  catch(e){ return false; }
+}
+async function shareStreamBytes(stream, cap, tooLargeMsg){
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  for(;;){
+    const r = await reader.read();
+    if (r.done) break;
+    total += r.value.length;
+    if (total > cap) throw new Error(tooLargeMsg);
+    chunks.push(r.value);
+  }
+  const out = [];
+  chunks.forEach(c=>{ for (let j=0; j<c.length; j++) out.push(c[j]); });
+  return out;
+}
+async function shareDeflateBytes(bytes){
+  const cs = new CompressionStream("deflate-raw");
+  const w = cs.writable.getWriter();
+  w.write(Uint8Array.from(bytes));
+  w.close();
+  return shareStreamBytes(cs.readable, SHARE_MAX_DECODED, "That shared workout is too large to send");
+}
+async function shareInflateBytes(bytes){
+  const ds = new DecompressionStream("deflate-raw");
+  const w = ds.writable.getWriter();
+  w.write(Uint8Array.from(bytes));
+  w.close();
+  return shareStreamBytes(ds.readable, SHARE_MAX_DECODED, "That shared workout is too large to open");
+}
+
+/* ---------- payload <-> code ------------------------------------------- */
+async function sharePackPayload(obj){
+  const raw = shareUtf8Bytes(JSON.stringify(obj));
+  if (shareCanCompress()){
+    try{ return SHARE_PREFIX_DEFLATE + shareB64Encode(await shareDeflateBytes(raw)); }catch(e){}
+  }
+  return SHARE_PREFIX_RAW + shareB64Encode(raw);
+}
+async function shareUnpackCode(code){
+  const s = String(code==null ? "" : code).trim();
+  const compressed = s.indexOf(SHARE_PREFIX_DEFLATE) === 0;
+  if (!compressed && s.indexOf(SHARE_PREFIX_RAW) !== 0) throw new Error("That is not a PERSEUS share code");
+  if (compressed && !shareCanCompress()) throw new Error("That code needs a browser with compression support — open the link in a current browser instead");
+  let bytes = shareB64Decode(s.slice(3));
+  if (!bytes.length) throw new Error("That share code is damaged");
+  if (compressed) bytes = await shareInflateBytes(bytes);
+  let obj;
+  try{ obj = JSON.parse(shareBytesUtf8(bytes)); }
+  catch(e){ throw new Error("That share code is damaged"); }
+  return obj;
+}
+function shareFindCode(text){
+  const s = String(text==null ? "" : text).trim();
+  // a code copied out of a wrapped text file may carry line breaks inside it
+  const compact = s.replace(/\s+/g, "");
+  if (/^P[01]\.[A-Za-z0-9\-_]+$/.test(compact)) return compact;
+  const m = s.match(/P[01]\.[A-Za-z0-9\-_]+/);
+  return m ? m[0] : null;
+}
+function shareInstallId(){
+  try{
+    if (hasStorage()){
+      let id = localStorage.getItem(SHARE_INSTALL_KEY);
+      if (!id){
+        id = "ins-" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+        localStorage.setItem(SHARE_INSTALL_KEY, id);
+      }
+      return id;
+    }
+  }catch(e){}
+  return "ins-anon";
+}
+/* Stable fingerprint of a workout's content (FNV-1a): lets the receiver spot
+   the exact same share arriving twice, and lets the sender re-share it without
+   the code changing. Timestamps and install ids are deliberately excluded. */
+function shareContentId(p){
+  const body = JSON.stringify({ u: p.u, n: p.n, t: p.t, ex: p.ex, pr: p.pr, ss: p.ss });
+  let h = 0x811c9dc5;
+  for (let i=0; i<body.length; i++){ h ^= body.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+function sharePayloadLink(code){
+  let base = "";
+  try{ base = String(location.href || "").split("#")[0]; }catch(e){}
+  return (base || "index.html") + "#" + SHARE_HASH_KEY + code;
+}
+function shareSlug(s){
+  const t = String(s==null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return (t || "workout").slice(0, 40);
+}
+
+/* ---------- build a payload from one of this install's routines ---------- */
+function shareBuildPayload(dayId, opts){
+  const day = getDay(dayId);
+  if (!day) throw new Error("That routine no longer exists");
+  const o = opts || {};
+  const used = [];
+  (day.exercises || []).forEach(de=>{ if (getEx(de.exId) && used.indexOf(de.exId) === -1) used.push(de.exId); });
+  if (!used.length) throw new Error("Add an exercise before sharing this routine");
+  const ref = {};
+  used.forEach((id, i)=>{ ref[id] = i; });
+  const ex = used.map(id=>{
+    const x = getEx(id);
+    const out = { n: shareCleanText(x.name, 80), m: x.mode || "reps", eq: (x.equipment || []).slice(0, 6), wa: !!x.weightAvailable,
+      ds: x.defaultSets, dr: x.defaultReps, dt: x.defaultTime, dw: x.defaultWeight };
+    if (o.withNotes !== false){
+      if (x.notes) out.no = shareCleanText(x.notes, SHARE_MAX_TEXT);
+      if (x.instructions) out.ins = shareCleanText(x.instructions, SHARE_MAX_TEXT);
+    }
+    if ((x.bodyParts || []).length) out.bp = x.bodyParts.slice(0, 12);
+    if ((x.primaryMuscles || []).length) out.pm = x.primaryMuscles.slice(0, 12);
+    if ((x.secondaryMuscles || []).length) out.sm = x.secondaryMuscles.slice(0, 12);
+    if (typeof x.loadFactor === "number" && isFinite(x.loadFactor)){ out.lf = Math.round(x.loadFactor); out.ls = x.loadSource || "manual"; }
+    if (o.withImages && x.image) out.img = x.image;
+    const pg = (x.progressions || []).map(id2=>ref[id2]).filter(i=>i != null);
+    if (pg.length) out.pg = pg;
+    return out;
+  });
+  const pr = (day.exercises || []).filter(de=>ref[de.exId] != null).map(de=>{
+    const out = { r: ref[de.exId], s: de.targetSets || 1 };
+    if (de.reps != null) out.rp = de.reps;
+    if (de.time != null) out.ti = de.time;
+    if (de.weight != null) out.w = de.weight;
+    if (Array.isArray(de.setReps)) out.sr = de.setReps.slice(0, 30);
+    if (Array.isArray(de.setTimes)) out.st = de.setTimes.slice(0, 30);
+    if (Array.isArray(de.setTypes)) out.ty = de.setTypes.slice(0, 30);
+    if (Array.isArray(de.setWeights)) out.sw = de.setWeights.slice(0, 30);
+    if (de.focus) out.f = de.focus;
+    return out;
+  });
+  if (!pr.length) throw new Error("Add an exercise before sharing this routine");
+  const ss = supersetGroups(day).map(g=>(g.exIds || []).map(id=>ref[id]).filter(i=>i != null)).filter(g=>g.length >= 2);
+  const payload = { app: SHARE_APP, kind: SHARE_KIND, v: SHARE_VERSION, u: weightUnit(),
+    n: shareCleanText(day.name, 80), t: day.type || "hypertrophy",
+    ex: ex, pr: pr, ss: ss, ts: nowISO(), src: shareInstallId() };
+  payload.pid = shareContentId(payload);
+  return payload;
+}
+
+/* ---------- validate + sanitize whatever arrived ---------------------- */
+function shareParseExercise(raw, imageBudget){
+  if (!raw || typeof raw !== "object") return null;
+  const name = shareCleanText(raw.n, 80);
+  if (!name) return null;
+  const mode = (raw.m === "time" || raw.m === "weight") ? raw.m : "reps";
+  const eq = shareList(raw.eq, ALL_EQUIP, 6);
+  const wa = !!raw.wa || mode === "weight";
+  const ex = {
+    name: name, mode: mode,
+    type: mode === "time" ? "duration" : (wa ? "weight" : "bodyweight"),
+    equipment: eq.length ? eq : ["bodyweight"],
+    weightAvailable: wa,
+    defaultSets: shareInt(raw.ds, 1, 15, 3),
+    defaultReps: shareInt(raw.dr, 0, 100, mode === "time" ? 0 : 8),
+    defaultTime: shareInt(raw.dt, 0, 3600, 30),
+    defaultWeight: shareNum(raw.dw, 0, 1000, 0, 0.5),
+    notes: shareCleanText(raw.no, SHARE_MAX_TEXT),
+    instructions: shareCleanText(raw.ins, SHARE_MAX_TEXT),
+    bodyParts: shareList(raw.bp, BODY_PARTS, 12),
+    primaryMuscles: shareList(raw.pm, SHARE_MUSCLE_NAMES, 12),
+    secondaryMuscles: shareList(raw.sm, SHARE_MUSCLE_NAMES, 12),
+    loadFactor: null, loadSource: null, image: "", progressions: [], _pg: []
+  };
+  if (typeof raw.lf === "number" && isFinite(raw.lf) && raw.lf >= 0 && raw.lf <= 300){
+    ex.loadFactor = Math.round(raw.lf);
+    ex.loadSource = SHARE_LOAD_SOURCES[raw.ls] ? raw.ls : "shared";
+  }
+  const budget = imageBudget || { left: 0 };
+  if (typeof raw.img === "string" && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(raw.img)
+      && raw.img.length <= SHARE_MAX_IMAGE && raw.img.length <= budget.left){
+    ex.image = raw.img;
+    budget.left -= raw.img.length;
+  } else if (raw.img){
+    budget.dropped++;                 // oversized photo, or the share's photo budget is spent
+  }
+  if (Array.isArray(raw.pg)) ex._pg = raw.pg.map(v=>shareRef(v, SHARE_MAX_EXERCISES)).filter(v=>v >= 0).slice(0, 20);
+  return ex;
+}
+function shareParseEntry(raw, pex){
+  if (!raw || typeof raw !== "object" || !pex) return null;
+  const targetSets = shareInt(raw.s, 1, 15, 3);
+  const out = { ref: -1, targetSets: targetSets };
+  if (pex.mode === "time"){
+    out.time = shareInt(raw.ti, 0, 3600, pex.defaultTime || 30);
+    const arr = shareNumList(raw.st, targetSets, 0, 3600, 0.5);
+    if (arr) out.setTimes = arr;
+  } else {
+    out.reps = shareInt(raw.rp, 0, 100, pex.defaultReps || 8);
+    const arr = shareNumList(raw.sr, targetSets, 0, 100, 1);
+    if (arr) out.setReps = arr;
+  }
+  if (pex.weightAvailable){
+    out.weight = shareNum(raw.w, 0, 1000, 0, 0.5);
+    const arr = shareNumList(raw.sw, targetSets, 0, 1000, 0.5);
+    if (arr) out.setWeights = arr;
+  }
+  if (Array.isArray(raw.ty)){
+    // 'regular' is the implicit default, so only an explicit non-regular run is kept
+    const ty = raw.ty.slice(0, targetSets).map(t=>SET_TYPES[t] ? t : "regular");
+    if (ty.some(t=>t !== "regular")) out.setTypes = ty;
+  }
+  if (raw.f === "strength" || raw.f === "hypertrophy") out.focus = raw.f;
+  return out;
+}
+function shareValidatePayload(obj){
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new Error("That is not a PERSEUS workout");
+  if (obj.app !== SHARE_APP || obj.kind !== SHARE_KIND) throw new Error("That is not a PERSEUS workout share");
+  const version = shareInt(obj.v, 0, 99, 0);
+  if (!version) throw new Error("That share code is damaged (no version)");
+  if (version > SHARE_VERSION) throw new Error("This workout was shared by a newer version of PERSEUS — update the app to open it");
+  const rawEx = (Array.isArray(obj.ex) ? obj.ex : []).slice(0, SHARE_MAX_EXERCISES);
+  const imageBudget = { left: SHARE_MAX_IMAGE_TOTAL, dropped: 0 };
+  const parsedEx = rawEx.map(raw=>shareParseExercise(raw, imageBudget));
+  const rawPr = (Array.isArray(obj.pr) ? obj.pr : []).slice(0, SHARE_MAX_ENTRIES);
+  const dropped = [];
+  const entries = [];
+  rawPr.forEach(raw=>{
+    const r = shareRef(raw && raw.r, rawEx.length);
+    if (r < 0) return;
+    const pex = parsedEx[r];
+    if (!pex){
+      const nm = shareCleanText(rawEx[r] && rawEx[r].n, 80) || "(unnamed exercise)";
+      if (dropped.indexOf(nm) === -1) dropped.push(nm);
+      return;
+    }
+    const en = shareParseEntry(raw, pex);
+    if (!en) return;
+    en.ref = r;
+    entries.push(en);
+  });
+  if (!entries.length) throw new Error("That shared workout contains no usable exercises");
+  const usedRef = {};
+  entries.forEach(en=>{ usedRef[en.ref] = true; });
+  const mapIdx = {}, exercises = [];
+  parsedEx.forEach((x, i)=>{ if (x && usedRef[i]){ mapIdx[i] = exercises.length; exercises.push(x); } });
+  entries.forEach(en=>{ en.ref = mapIdx[en.ref]; });
+  // progression chains were shared as indices into the sender's own exercise list
+  parsedEx.forEach((x, i)=>{
+    if (!x || mapIdx[i] == null) return;
+    const self = mapIdx[i];
+    exercises[self].progressions = x._pg.map(j=>mapIdx[j])
+      .filter(j=>j != null && j !== self)
+      .filter((j, k, a)=>a.indexOf(j) === k);
+    delete exercises[self]._pg;
+  });
+  let droppedGroups = 0;
+  const groups = (Array.isArray(obj.ss) ? obj.ss : []).slice(0, SHARE_MAX_GROUPS).map(g=>{
+    const ids = (Array.isArray(g) ? g : []).map(j=>mapIdx[shareRef(j, rawEx.length)]).filter(j=>j != null);
+    return ids.filter((j, k, a)=>a.indexOf(j) === k);
+  }).filter(g=>{
+    if (g.length >= 2) return true;
+    droppedGroups++;
+    return false;
+  });
+  const payload = {
+    name: shareCleanText(obj.n, 80) || "Shared workout",
+    type: SESSION_TYPES[obj.t] ? obj.t : "hypertrophy",
+    unit: shareValidUnit(obj.u),
+    pid: shareCleanText(obj.pid, 16),
+    ts: shareCleanText(obj.ts, 40),
+    src: shareCleanText(obj.src, 40),
+    exercises: exercises, entries: entries, groups: groups,
+    droppedExercises: dropped, droppedEntries: Math.max(0, rawPr.length - entries.length),
+    droppedGroups: droppedGroups, droppedImages: imageBudget.dropped || 0
+  };
+  if (!payload.pid) payload.pid = shareContentId({ u: payload.unit, n: payload.name, t: payload.type, ex: exercises, pr: entries, ss: groups });
+  return payload;
+}
+async function shareDecodeInput(text, opts){
+  const s = String(text==null ? "" : text).trim();
+  if (!s) throw new Error("Paste a share link or code first");
+  const cap = (opts && opts.fromFile) ? SHARE_MAX_FILE : SHARE_MAX_INPUT;
+  if (s.length > cap) throw new Error("That text is far too long to be a share code — use the file instead");
+  if (s.charAt(0) === "{"){
+    let obj;
+    try{ obj = JSON.parse(s); }
+    catch(e){ throw new Error("That file is not valid JSON"); }
+    if (obj && obj.profile && Array.isArray(obj.days) && Array.isArray(obj.exercises)){
+      throw new Error("That looks like a full PERSEUS backup, not a shared workout — restore it from Settings → Backup & data");
+    }
+    return shareValidatePayload(obj);
+  }
+  const code = shareFindCode(s);
+  if (!code) throw new Error("No PERSEUS share link or code found in that text");
+  let obj;
+  try{ obj = await shareUnpackCode(code); }
+  catch(e){ throw new Error((e && e.message) || "That share code is damaged"); }
+  return shareValidatePayload(obj);
+}
+
+/* ---------- merge an already-validated payload into a copy of state ---- */
+/* Loose identity for cross-install matching: to a lifter "Pull-Up", "pull up"
+   and "Pull Up!" are the same movement, so names compare after dropping case,
+   accents, punctuation and spacing. */
+function shareMatchKey(name){
+  let s = String(name==null ? "" : name);
+  try{ if (s.normalize) s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }catch(e){}
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+function shareUniqueDayNameIn(st, base){
+  const want = shareCleanText(base, 80) || "Shared workout";
+  const used = {};
+  (st.days || []).forEach(d=>{ used[normName(d && d.name)] = true; });
+  if (!used[normName(want)]) return want;
+  for (let i=2; i<200; i++){
+    const cand = want + " (" + i + ")";
+    if (!used[normName(cand)]) return cand;
+  }
+  return want + " (copy)";
+}
+/* Ids are minted from this install's own counter, and any id already in use is
+   skipped — a reset or hand-edited counter must never collide with live data. */
+function shareTakenIds(st){
+  // every kind shares one counter ("ex-id-3", "day-id-3", "ss-id-3"), so the
+  // guard works on the core id-<n> and not on the prefixed form
+  const taken = {};
+  const add = id=>{
+    const m = /^(?:ex-|day-|ss-)?(id-\d+)$/.exec(String(id || ""));
+    if (m) taken[m[1]] = true;
+  };
+  [].concat(st.exercises || [], st.days || [], st.sessions || []).forEach(x=>{ if (x) add(x.id); });
+  (st.days || []).forEach(d=>(d.exercises || []).forEach(de=>{ if (de) add(de.id); }));
+  return taken;
+}
+function shareMintId(st, taken){
+  st.counts = st.counts || { nextId: 1 };
+  let n = st.counts.nextId || 1;
+  let id = "id-" + n;
+  while (taken && taken[id]){ n++; id = "id-" + n; }
+  st.counts.nextId = n + 1;
+  if (taken) taken[id] = true;
+  return id;
+}
+function sharePlanImport(payload, opts){
+  const o = opts || {};
+  const next = JSON.parse(JSON.stringify(state));
+  next.exercises = next.exercises || [];
+  next.days = next.days || [];
+  next.sessions = next.sessions || [];
+  const unitNow = weightUnit();
+  const convert = payload.unit !== unitNow;
+  const taken = shareTakenIds(next);
+  const report = { pid: payload.pid, name: "", dayId: "", type: payload.type,
+    added: [], linked: [], dropped: (payload.droppedExercises || []).slice(),
+    sets: 0, groups: 0, groupsDropped: 0, keptTargets: 0, duplicates: 0,
+    converted: convert, unitFrom: payload.unit, unitTo: unitNow, alreadyImported: false };
+  report.droppedEntries = payload.droppedEntries || 0;
+  report.groupsDropped = payload.droppedGroups || 0;
+  report.alreadyImported = next.days.some(d=>d && d.shared && d.shared.pid && d.shared.pid === payload.pid);
+  const index = new Map();
+  next.exercises.forEach(x=>{ const k = shareMatchKey(x && x.name); if (k && !index.has(k)) index.set(k, x); });
+  const refs = payload.exercises.map(pe=>{
+    const k = shareMatchKey(pe.name);
+    const hit = k ? index.get(k) : null;
+    if (hit){
+      report.linked.push({ name: pe.name, existing: hit.name, id: hit.id });
+      return { ex: hit, isNew: false };
+    }
+    const ex = { id: "ex-" + shareMintId(next, taken), name: pe.name, type: pe.type, mode: pe.mode,
+      equipment: pe.equipment.slice(), weightAvailable: pe.weightAvailable,
+      defaultSets: pe.defaultSets, defaultReps: pe.defaultReps, defaultTime: pe.defaultTime,
+      defaultWeight: shareConvertWeight(pe.defaultWeight, payload.unit, unitNow),
+      notes: pe.notes, instructions: pe.instructions,
+      bodyParts: pe.bodyParts.slice(), primaryMuscles: pe.primaryMuscles.slice(),
+      secondaryMuscles: pe.secondaryMuscles.slice(),
+      loadFactor: pe.loadFactor, loadSource: pe.loadSource, image: pe.image || "" };
+    next.exercises.push(ex);
+    if (k && !index.has(k)) index.set(k, ex);
+    report.added.push(pe.name);
+    return { ex: ex, isNew: true };
+  });
+  // only the movements that arrived here get their chains rewired
+  payload.exercises.forEach((pe, i)=>{
+    const r = refs[i];
+    if (!r || !r.isNew || !pe.progressions.length) return;
+    const ids = pe.progressions.map(j=>refs[j] && refs[j].ex ? refs[j].ex.id : null)
+      .filter(id=>id && id !== r.ex.id)
+      .filter((id, k, a)=>a.indexOf(id) === k);
+    r.ex.progressions = ids;
+  });
+  const day = { id: "day-" + shareMintId(next, taken), name: shareUniqueDayNameIn(next, o.name || payload.name),
+    type: payload.type, exercises: [], supersets: [] };
+  const daySeen = {};
+  const copySharedTargets = (de, en, ex)=>{
+    if (en.reps != null) de.reps = en.reps;
+    if (en.time != null) de.time = en.time;
+    if (en.weight != null) de.weight = shareConvertWeight(en.weight, payload.unit, unitNow);
+    if (en.setReps) de.setReps = en.setReps.slice();
+    if (en.setTimes) de.setTimes = en.setTimes.slice();
+    if (en.setTypes) de.setTypes = en.setTypes.slice();
+    if (en.setWeights) de.setWeights = en.setWeights.map(v=>shareConvertWeight(v, payload.unit, unitNow));
+    if (en.focus && day.type === "hybrid") de.focus = en.focus;
+    ex.plan = normalizePlan(ex, de);
+  };
+  payload.entries.forEach(en=>{
+    const r = refs[en.ref];
+    if (!r || !r.ex) return;
+    if (daySeen[r.ex.id]){ report.duplicates++; return; }   // one routine keeps one row per movement
+    daySeen[r.ex.id] = true;
+    const de = { exId: r.ex.id, targetSets: en.targetSets, modifiedAt: Date.now() };
+    if (r.isNew){ copySharedTargets(de, en, r.ex); day.exercises.push(de); return; }
+    // an exercise the user already owns keeps their own prescription: in this
+    // app one movement's sets are shared by every routine that contains it
+    const localCopy = next.days.map(d=>(d.exercises || []).find(x=>x.exId === r.ex.id)).filter(Boolean)[0];
+    const plan = r.ex.plan || (localCopy ? normalizePlan(r.ex, localCopy) : null);
+    if (!plan){ copySharedTargets(de, en, r.ex); day.exercises.push(de); return; }
+    de.targetSets = plan.targetSets;
+    applyPlanToEntry(de, r.ex, plan);
+    de.modifiedAt = Date.now();
+    r.ex.plan = plan;
+    day.exercises.push(de);
+    report.keptTargets++;
+  });
+  if (!day.exercises.length) throw new Error("That shared workout has no exercises this app can use");
+  payload.groups.forEach(g=>{
+    const ids = g.map(j=>refs[j] && refs[j].ex ? refs[j].ex.id : null)
+      .filter(id=>!!id)
+      .filter((id, k, a)=>a.indexOf(id) === k);
+    if (ids.length < 2){ report.groupsDropped++; return; }
+    day.supersets.push({ id: "ss-" + shareMintId(next, taken), exIds: ids });
+    report.groups++;
+  });
+  if (!day.supersets.length) delete day.supersets;
+  report.sets = day.exercises.reduce((a, x)=>a + (x.targetSets || 0), 0);
+  report.name = day.name;
+  report.dayId = day.id;
+  day.shared = { pid: payload.pid, ts: payload.ts, src: payload.src, unit: payload.unit };
+  next.days.push(day);
+  return { next: next, day: day, report: report };
+}
+/* The only place an import touches live state: assign, persist, read back.
+   Anything short of a verified write restores the previous state. */
+function commitState(next){
+  const prev = state;
+  let landed = false;
+  try{
+    state = next;
+    saveState();
+    if (hasStorage()){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      landed = !!raw && raw === JSON.stringify(next);
+    } else landed = true;
+  }catch(e){ landed = false; }
+  if (!landed){
+    state = prev;
+    try{ saveState(); }catch(e){}
+    return false;
+  }
+  return true;
+}
+async function importSharePayload(payload, opts){
+  const plan = sharePlanImport(payload, opts);
+  if (!commitState(plan.next)){
+    return { ok:false, error:"Could not save — this browser is out of storage space. Free some space (or delete old session photos) and try again.", report: plan.report };
+  }
+  return { ok:true, dayId: plan.day.id, report: plan.report };
+}
+
+/* ---------- overlay host (share sheet, import dialog, result) ---------- */
+function shareHostEl(){ return $("#share-host"); }
+function closeShareHost(){
+  const h = shareHostEl();
+  if (h) h.innerHTML = "";
+}
+function shareHostKey(ev){
+  if (!ev || ev.key !== "Escape") return;
+  const h = shareHostEl();
+  if (h && h.childNodes.length && h.firstChild) closeShareHost();
+}
+function shareMount(htmlStr){
+  const h = shareHostEl();
+  if (!h) return null;
+  h.innerHTML = '<div class="sh-card">' + htmlStr + '</div>';
+  h.onclick = ev=>{ if (ev.target === h) closeShareHost(); };
+  const card = h.firstChild;
+  if (card) card.addEventListener("click", ev=>ev.stopPropagation());
+  return card;
+}
+function shareCopyText(text, label){
+  const ok = ()=>toast(label + " copied");
+  try{
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(ok, ()=>shareCopyFallback(text, label));
+      return;
+    }
+  }catch(e){}
+  shareCopyFallback(text, label);
+}
+function shareCopyFallback(text, label){
+  const out = $("#share-host [data-sh-out]") || $("#share-host [data-imp-in]");
+  if (out){
+    out.value = text;
+    try{ out.focus(); out.select(); }catch(e){}
+    toast("Copy is blocked here — press Ctrl/Cmd+C to copy the " + String(label||"text").toLowerCase());
+    return;
+  }
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "readonly");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const done = document.execCommand && document.execCommand("copy");
+    ta.remove();
+    toast(done ? label + " copied" : "Select the text and copy it manually");
+  }catch(e){ toast("Select the text and copy it manually"); }
+}
+function shareSaveFile(dayId, opts){
+  try{
+    const payload = shareBuildPayload(dayId, opts || {});
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "perseus-workout-" + shareSlug(payload.n) + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Workout file saved");
+  }catch(e){ toast((e && e.message) || "Could not save that file"); }
+}
+
+/* ---------- the sender's sheet ---------- */
+function openShareSheet(dayId){
+  const day = getDay(dayId);
+  if (!day){ toast("That routine no longer exists"); return; }
+  const sets = (day.exercises || []).reduce((a, x)=>a + (x.targetSets || 0), 0);
+  const groups = supersetGroups(day).length;
+  const hasImages = (day.exercises || []).some(de=>{ const x = getEx(de.exId); return !!(x && x.image); });
+  const rows = (day.exercises || []).map(de=>{
+    const x = getEx(de.exId);
+    return '<div class="sh-row"><span class="nm">'+esc(x ? x.name : "(deleted exercise)")+'</span>'+
+      '<span class="mt">'+(de.targetSets||0)+' sets</span></div>';
+  }).join("");
+  const canNative = (()=>{ try{ return typeof navigator !== "undefined" && typeof navigator.share === "function"; }catch(e){ return false; } })();
+  const card = shareMount(
+    '<div class="sh-head">'+
+      '<div><h3 class="sh-title">Share “'+esc(day.name)+'”</h3>'+
+      '<p class="micro sh-sub">'+day.exercises.length+' exercises · '+sets+' sets'+(groups?' · '+groups+' superset'+(groups===1?'':'s'):'')+' · only the workout travels — never your history, profile or key.</p></div>'+
+      '<button type="button" class="btn ghost sh-x" data-sh-close aria-label="Close">✕</button>'+
+    '</div>'+
+    '<div class="sh-list">'+rows+'</div>'+
+    (hasImages ? '<label class="sh-opt"><input type="checkbox" data-sh-images/> Include exercise photos <span class="micro">(much longer link)</span></label>' : '')+
+    '<div class="btn-row" style="margin-top:1rem">'+
+      '<button type="button" class="btn primary" data-sh-act="link">Copy link</button>'+
+      '<button type="button" class="btn" data-sh-act="code">Copy code</button>'+
+      '<button type="button" class="btn" data-sh-act="file">Save file</button>'+
+      (canNative ? '<button type="button" class="btn" data-sh-act="native">Share…</button>' : '')+
+    '</div>'+
+    '<label class="field" style="margin-top:1rem"><span>Share link</span><textarea class="sh-out" data-sh-out readonly rows="3" aria-label="Share link"></textarea></label>'+
+    '<p class="micro sh-note" data-sh-note>Preparing…</p>'
+  );
+  if (!card) return;
+  let withImages = false, code = "";
+  const out = $("[data-sh-out]", card), note = $("[data-sh-note]", card);
+  const rebuild = async ()=>{
+    try{
+      code = await sharePackPayload(shareBuildPayload(dayId, { withImages: withImages }));
+    }catch(e){
+      code = "";
+      if (out) out.value = "";
+      if (note) note.textContent = (e && e.message) || "Could not build the share code";
+      return;
+    }
+    const link = sharePayloadLink(code);
+    if (out) out.value = link;
+    if (note){
+      note.textContent = link.length + " characters — send the link, or just the code. " + code.length + " characters"+
+        (link.length > SHARE_LINK_SOFT_LIMIT ? " · Long enough that some chat apps trim it; the file is safer." : "");
+    }
+  };
+  $$("[data-sh-close]", card).forEach(b=>b.addEventListener("click", closeShareHost));
+  const imgBox = $("[data-sh-images]", card);
+  if (imgBox) imgBox.addEventListener("change", ()=>{ withImages = !!imgBox.checked; rebuild(); });
+  $$("[data-sh-act]", card).forEach(b=>b.addEventListener("click", async ()=>{
+    const act = b.dataset.shAct;
+    if (!code){ toast(note && note.textContent ? note.textContent : "Still preparing the link…"); return; }
+    if (act === "link") shareCopyText(sharePayloadLink(code), "Link");
+    else if (act === "code") shareCopyText(code, "Code");
+    else if (act === "file") shareSaveFile(dayId, { withImages: withImages });
+    else if (act === "native"){
+      try{
+        const payload = shareBuildPayload(dayId, { withImages: withImages });
+        await navigator.share({ title: payload.n, text: "A PERSEUS workout: " + payload.n, url: sharePayloadLink(code) });
+      }catch(e){}
+    }
+  }));
+  rebuild();
+}
+
+/* ---------- the receiver's dialog ---------- */
+function openImportDialog(prefill, opts){
+  const card = shareMount(
+    '<div class="sh-head">'+
+      '<div><h3 class="sh-title">Open a shared workout</h3>'+
+      '<p class="micro sh-sub">Paste the link or code a friend sent, or drop their .json file in.</p></div>'+
+      '<button type="button" class="btn ghost sh-x" data-sh-close aria-label="Close">✕</button>'+
+    '</div>'+
+    '<label class="field"><span>Share link, code, or file contents</span><textarea data-imp-in rows="3" placeholder="https://…/#perseus-share=P1.…" aria-label="Share link or code"></textarea></label>'+
+    '<div class="btn-row"><button type="button" class="btn primary" data-imp-go>Preview</button>'+
+      '<button type="button" class="btn" data-imp-file>Choose file…</button>'+
+      '<input type="file" accept=".json,application/json" data-imp-input style="display:none"/></div>'+
+    '<p class="sh-drop" data-imp-drop>Or drop the .json file here</p>'+
+    '<div data-imp-msg></div>'
+  );
+  if (!card) return;
+  const ta = $("[data-imp-in]", card);
+  const msg = $("[data-imp-msg]", card);
+  const drop = $("[data-imp-drop]", card);
+  const fileIn = $("[data-imp-input]", card);
+  if (prefill && ta) ta.value = prefill;
+  $$("[data-sh-close]", card).forEach(b=>b.addEventListener("click", closeShareHost));  const preview = (fromFile)=>{ if (ta) sharePreviewFrom(card, ta.value, { fromFile: !!fromFile }); };
+  if (fileIn){
+    $("[data-imp-file]", card).addEventListener("click", ()=>fileIn.click());
+    fileIn.addEventListener("change", ev=>{
+      const f = ev.target.files && ev.target.files[0];
+      if (f) shareReadFileInto(f, ta, ()=>preview(true));
+    });
+  }
+  card.addEventListener("dragover", ev=>{ ev.preventDefault(); if (drop) drop.classList.add("on"); });
+  card.addEventListener("dragleave", ()=>{ if (drop) drop.classList.remove("on"); });
+  card.addEventListener("drop", ev=>{
+    ev.preventDefault();
+    if (drop) drop.classList.remove("on");
+    const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+    if (f) shareReadFileInto(f, ta, ()=>preview(true));
+  });
+  $("[data-imp-go]", card).addEventListener("click", ()=>preview(false));
+  // a pasted link previews itself — the shortest path from chat message to routine
+  ta.addEventListener("paste", ()=>setTimeout(()=>preview(false), 0));
+  if (opts && opts.auto) preview(false);
+}
+function shareReadFileInto(file, ta, done){
+  if (!file) return;
+  if (file.size > 4000000){ toast("That file is far too large to be a shared workout"); return; }
+  const rd = new FileReader();
+  rd.onerror = ()=>toast("Could not read that file");
+  rd.onload = ()=>{ if (ta) ta.value = String(rd.result || ""); if (done) done(); };
+  rd.readAsText(file);
+}
+async function sharePreviewFrom(card, text, opts){
+  const msg = $("[data-imp-msg]", card);
+  if (msg) msg.innerHTML = '<p class="micro sh-note">Reading…</p>';
+  let payload, plan;
+  try{
+    payload = await shareDecodeInput(text, opts);
+    plan = sharePlanImport(payload, { name: payload.name });
+  }catch(e){
+    if (msg) msg.innerHTML = '<div class="sh-err">'+esc((e && e.message) || "That share did not work")+'</div>';
+    return;
+  }
+  if (!msg) return;
+  msg.innerHTML = sharePreviewHtml(payload, plan.report);
+  shareBindPreview(msg, payload);
+}
+function sharePreviewHtml(payload, report){
+  const rows = [];
+  report.added.forEach(n=>rows.push({ name: n, cls: "new", tag: "new", meta: "" }));
+  report.linked.forEach(l=>rows.push({ name: l.name, cls: "keep", tag: "already yours", meta: "" }));
+  report.dropped.forEach(n=>rows.push({ name: n, cls: "gone", tag: "skipped", meta: "" }));
+  const list = rows.map(r=>'<div class="sh-row"><span class="nm">'+esc(r.name)+'</span>'+
+    (r.meta ? '<span class="mt">'+esc(r.meta)+'</span>' : '')+
+    '<span class="sh-tag '+r.cls+'">'+esc(r.tag)+'</span></div>').join("");
+  const notes = [];
+  notes.push("Your history, settings and AI key stay where they are.");
+  if (report.converted) notes.push("Weights converted from " + report.unitFrom + " to " + report.unitTo + ".");
+  if (report.linked.length) notes.push("Exercises you already have keep your own set, rep and weight targets.");
+  if (report.dropped.length) notes.push("Skipped exercises could not be read from that share.");
+  if (report.droppedEntries) notes.push(report.droppedEntries + (report.droppedEntries === 1 ? " set of targets" : " sets of targets") + " could not be read.");
+  if (report.droppedImages) notes.push(report.droppedImages + " exercise photo" + (report.droppedImages === 1 ? " was" : "s were") + " too large to carry.");
+  if (report.groupsDropped) notes.push(report.groupsDropped + (report.groupsDropped === 1 ? " superset" : " supersets") + " skipped (fewer than two of its exercises arrived).");
+  if (report.duplicates) notes.push(report.duplicates + (report.duplicates === 1 ? " repeated exercise row" : " repeated exercise rows") + " collapsed (a routine keeps one row per movement).");
+  if (report.alreadyImported) notes.push("You already imported this exact workout — importing again adds a second copy.");
+  return '<div class="sh-ok">'+
+      '<h3 class="sh-title">'+esc(payload.name)+'</h3>'+
+      '<p class="micro sh-sub">'+esc(sessionTypeLabel(payload.type))+' · '+report.added.length+' new exercise'+(report.added.length===1?'':'s')+' · '+
+        report.linked.length+' linked · '+report.sets+' sets'+(report.groups?' · '+report.groups+' superset'+(report.groups===1?'':'s'):'')+'</p>'+
+      '<p class="micro" style="margin:.5rem 0 0">'+esc(notes.join(" "))+'</p>'+
+    '</div>'+
+    (list ? '<div class="sh-list">'+list+'</div>' : '')+
+    '<label class="field" style="margin-top:1rem"><span>Name in your routines</span><input type="text" data-imp-name value="'+esc(shareUniqueDayNameIn(state, payload.name))+'" maxlength="80"/></label>'+
+    '<div class="btn-row"><button type="button" class="btn primary" data-imp-add>Add to my routines</button>'+
+      '<button type="button" class="btn ghost" data-imp-cancel>Cancel</button></div>';
+}
+function shareBindPreview(msg, payload){
+  const add = $("[data-imp-add]", msg);
+  const cancel = $("[data-imp-cancel]", msg);
+  if (cancel) cancel.addEventListener("click", closeShareHost);
+  if (!add) return;
+  add.addEventListener("click", async ()=>{
+    const nameIn = $("[data-imp-name]", msg);
+    if (logCtx && !logCtx.finished){
+      if (!confirm("A session is being logged right now. Import this workout anyway?")) return;
+    }
+    add.disabled = true;
+    const res = await importSharePayload(payload, { name: nameIn ? nameIn.value : payload.name });
+    if (!res.ok){
+      msg.innerHTML = '<div class="sh-err">'+esc(res.error)+'</div>';
+      add.disabled = false;
+      return;
+    }
+    shareShowResult(res);
+  });
+}
+function shareShowResult(res){
+  const r = res.report;
+  const bits = [];
+  bits.push(r.added.length + " new exercise" + (r.added.length === 1 ? "" : "s"));
+  bits.push(r.linked.length + " linked to your library");
+  if (r.keptTargets) bits.push(r.keptTargets + " kept your targets");
+  if (r.duplicates) bits.push(r.duplicates + " duplicate row" + (r.duplicates === 1 ? "" : "s") + " collapsed");
+  if (r.groups) bits.push(r.groups + " superset" + (r.groups === 1 ? "" : "s"));
+  if (r.dropped.length) bits.push(r.dropped.length + " skipped");
+  const card = shareMount(
+    '<div class="sh-head">'+
+      '<div><h3 class="sh-title">Added to your routines</h3>'+
+      '<p class="micro sh-sub">'+esc(r.name)+' · '+r.sets+' sets</p></div>'+
+      '<button type="button" class="btn ghost sh-x" data-sh-close aria-label="Close">✕</button>'+
+    '</div>'+
+    '<div class="sh-ok"><p class="micro" style="margin:0">'+esc(bits.join(" · "))+'</p></div>'+
+    '<div class="btn-row" style="margin-top:1rem"><button type="button" class="btn primary" data-sh-open>Open routine</button>'+
+      '<button type="button" class="btn" data-sh-close>Done</button></div>'
+  );
+  if (!card) return;
+  $$("[data-sh-close]", card).forEach(b=>b.addEventListener("click", closeShareHost));
+  const open = $("[data-sh-open]", card);
+  if (open) open.addEventListener("click", ()=>{
+    closeShareHost();
+    switchView("workouts");
+    planMode = "edit";
+    planEditId = res.dayId;
+    render();
+  });
+  toast("Imported “" + r.name + "”");
+}
+/* Opening a #perseus-share=… link: read it, drop the hash (so a refresh or a
+   dismissed dialog never nags again), then preview it. */
+function shareHandleDeepLink(){
+  let hash = "";
+  try{ hash = String((typeof location !== "undefined" && location.hash) || ""); }
+  catch(e){ return; }
+  if (hash.charAt(0) === "#") hash = hash.slice(1);
+  if (hash.indexOf(SHARE_HASH_KEY) !== 0) return;
+  const code = hash.slice(SHARE_HASH_KEY.length);
+  try{
+    if (window.history && window.history.replaceState){
+      window.history.replaceState(null, "", location.pathname + location.search);
+    } else location.hash = "";
+  }catch(e){ try{ location.hash = ""; }catch(e2){} }
+  if (!code) return;
+  openImportDialog(code, { auto: true });
+}
+
 var PROG_KEY = "perseus-programs-v1";
 var PROG_DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function progDraft(){
@@ -10082,6 +11069,13 @@ restoreView();
 function init(){
   $$(".tab-btn").forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.view)));
   render();
+  try{ document.addEventListener("keydown", shareHostKey); }catch(e){}
+  try{
+    if (typeof window.addEventListener === "function"){
+      window.addEventListener("hashchange", ()=>{ try{ shareHandleDeepLink(); }catch(e){} });
+    }
+  }catch(e){}
+  try{ shareHandleDeepLink(); }catch(e){}
   try{ setTimeout(()=>queueFolderBackup(), 1500); }catch(e){}
 }
 init();
