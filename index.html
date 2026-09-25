@@ -784,7 +784,14 @@
   }
   .sh-drop.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink-2); }
   .sh-stat { display: flex; align-items: baseline; gap: .45rem; margin: .55rem 0 0; flex-wrap: wrap; }
-  .routine-share { flex: none; }
+  /* Kebab control on each routine card: opens a small menu for share/delete. */
+  .routine-kebab {
+    width: 34px; height: 34px; flex: none; display: grid; place-items: center;
+    border: 1px solid transparent; border-radius: var(--r-md); background: transparent;
+    color: var(--ink-2); cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+  }
+  .routine-kebab:hover, .routine-kebab[aria-expanded="true"] { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+  .routine-kebab svg { width: 18px; height: 18px; }
   /* Imported routines carry a badge so their origin stays visible. */
   .pill.share { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
 
@@ -860,20 +867,22 @@
   }
   .ex-vis-icon:hover { background: var(--surface-2); color: var(--ink); }
   .ex-vis-icon svg { width: 18px; height: 18px; }
-  .ex-vis-menuwrap { position: relative; flex: 0 0 auto; }
-  .ex-vis-pop {
+  .ex-vis-menuwrap, .routine-menu { position: relative; flex: 0 0 auto; }
+  .ex-vis-pop, .routine-pop {
     position: absolute; top: calc(100% + 6px); right: 0; z-index: 5; min-width: 176px;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
     box-shadow: var(--shadow-2); padding: .35rem; display: none; flex-direction: column;
   }
-  .ex-vis-pop.open { display: flex; }
-  .ex-vis-pop button {
+  .ex-vis-pop.open, .routine-pop.open { display: flex; }
+  .ex-vis-pop button, .routine-pop button {
     text-align: left; padding: .52rem .72rem; border: 0; background: transparent;
     border-radius: var(--r-sm); color: var(--ink-2); font: inherit; font-size: .85rem; cursor: pointer;
   }
-  .ex-vis-pop button:hover { background: var(--surface-2); color: var(--ink); }
-  .ex-vis-pop button.danger { color: var(--red); }
-  .ex-vis-pop button.danger:hover { background: rgba(198,69,49,.1); }
+  .ex-vis-pop button:hover, .routine-pop button:hover { background: var(--surface-2); color: var(--ink); }
+  .ex-vis-pop button.danger, .routine-pop button.danger { color: var(--red); }
+  .ex-vis-pop button.danger:hover, .routine-pop button.danger:hover { background: rgba(198,69,49,.1); }
+  .routine-pop button { display: flex; align-items: center; gap: .55rem; }
+  .routine-pop button svg { width: 16px; height: 16px; flex: 0 0 auto; }
   .ex-vis-tabs {
     flex: 0 0 auto; display: flex; gap: .3rem; overflow-x: auto; padding: .6rem .9rem;
     border-bottom: 1px solid var(--line); scrollbar-width: none;
@@ -4334,6 +4343,7 @@ const VIS_ICO_FS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const VIS_ICO_BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></svg>';
 const VIS_ICO_YT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="m10.2 9.3 4.6 2.7-4.6 2.7Z"/></svg>';
 const VIS_ICO_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13"/><path d="m7 8 5-5 5 5"/></svg>';
+const VIS_ICO_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="m6 6 1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 const VIS_ICO_BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg>';
 
 function seedOf(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "perseus"; }
@@ -4823,7 +4833,13 @@ function renderRoutineList(){
         '<span class="day-num mono">'+String(i+1).padStart(2,"0")+'</span>'+
         '<span class="routine-name">'+esc(d.name)+'</span>'+
         '<div class="spacer"></div>'+
-        '<button type="button" class="btn ghost small routine-share" data-share-day="'+d.id+'" title="Share '+esc(d.name)+'" aria-label="Share '+esc(d.name)+'">Share</button>'+
+        '<div class="routine-menu">'+
+          '<button type="button" class="routine-kebab" data-routine-menu="'+d.id+'" title="More options" aria-label="More options for '+esc(d.name)+'" aria-haspopup="true" aria-expanded="false">'+VIS_ICO_MORE+'</button>'+
+          '<div class="routine-pop" role="menu">'+
+            '<button type="button" role="menuitem" data-routine-act="share">'+VIS_ICO_SHARE+'<span>Share</span></button>'+
+            '<button type="button" role="menuitem" class="danger" data-routine-act="delete">'+VIS_ICO_TRASH+'<span>Delete routine</span></button>'+
+          '</div>'+
+        '</div>'+
         '<span class="routine-open">Open <span class="btn-arrow">→</span></span>'+
       '</div>'+
       '<div class="routine-meta">'+
@@ -4868,10 +4884,34 @@ function renderRoutineList(){
     if (sp) sp.addEventListener("click", ()=>{ try{ stripTrack.scrollBy({left:-step(), behavior:"smooth"}); }catch(e){ stripTrack.scrollLeft -= step(); } });
     if (sn) sn.addEventListener("click", ()=>{ try{ stripTrack.scrollBy({left:step(), behavior:"smooth"}); }catch(e){ stripTrack.scrollLeft += step(); } });
   }
-  $$("[data-share-day]", s).forEach(b=>b.addEventListener("click", ev=>{
-    ev.stopPropagation();
-    openShareSheet(b.dataset.shareDay);
-  }));
+  $$(".routine-menu", s).forEach(wrap=>{
+    const btn = wrap.querySelector("[data-routine-menu]");
+    const pop = wrap.querySelector(".routine-pop");
+    if (!btn || !pop) return;
+    const shut = ()=>{ pop.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); };
+    // the whole menu sits inside the card, so its clicks never open the routine
+    wrap.addEventListener("click", ev=>ev.stopPropagation());
+    btn.addEventListener("click", ev=>{
+      ev.stopPropagation();
+      const on = pop.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(!!on));
+    });
+    pop.addEventListener("click", ev=>{
+      const item = ev.target && ev.target.closest ? ev.target.closest("[data-routine-act]") : null;
+      if (!item) return;
+      ev.stopPropagation();
+      shut();
+      const dayId = btn.dataset.routineMenu;
+      if (item.dataset.routineAct === "share"){ openShareSheet(dayId); return; }
+      if (item.dataset.routineAct === "delete"){
+        const day = getDay(dayId);
+        if (!day) return;
+        if (!confirm('Delete "'+day.name+'" and its plan?')) return;
+        state.days = state.days.filter(x=>x.id!==dayId);
+        saveState(); render(); toast("Routine deleted");
+      }
+    });
+  });
   const impShare = $("#import-share", s);
   if (impShare) impShare.addEventListener("click", ()=>openImportDialog(""));
   $("#add-day", s).addEventListener("click", ()=>{

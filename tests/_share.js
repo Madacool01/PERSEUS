@@ -367,11 +367,17 @@ function makeDom() {
   section("UI: share sheet");
   const codeC = await C.E("sharePackPayload(shareBuildPayload('day-1', {}))");
   C.E("switchView('workouts')");
-  const shareBtns = C.$$("#view-workouts [data-share-day]");
-  check(shareBtns.length === 2, "each routine offers a Share button (" + shareBtns.length + ")");
+  const menus = C.$$("#view-workouts [data-routine-menu]");
+  check(menus.length === 2, "each routine offers a kebab menu (" + menus.length + ")");
   check(C.$$("#view-workouts #import-share").length === 1, "the workout list offers 'Open a shared workout'");
-  C.click(shareBtns[0]);
+  C.click(menus[0]);
+  check(C.$$("#view-workouts .routine-pop.open").length === 1, "the kebab opens the routine menu");
+  check(Boolean(C.$("#view-workouts .routine-pop.open [data-routine-act='share']")), "the menu offers Share");
+  check(Boolean(C.$("#view-workouts .routine-pop.open [data-routine-act='delete']")), "the menu offers Delete routine");
+  check(C.E("planMode") === "list", "opening the menu does not open the routine");
+  C.click(C.$("#view-workouts .routine-pop.open [data-routine-act='share']"));
   await C.sleep(40);
+  check(C.$$("#view-workouts .routine-pop.open").length === 0, "picking an item closes the menu");
   check(C.$$("#share-host .sh-card").length === 1, "share sheet opens");
   const sheetOut = C.$("#share-host [data-sh-out]");
   check(Boolean(sheetOut && sheetOut.value.indexOf("#perseus-share=P") !== -1), "sheet shows a ready share link");
@@ -425,6 +431,18 @@ function makeDom() {
   check(C.E("document.querySelector('#share-host').textContent.indexOf('already imported') !== -1") === true, "an already-imported share says so");
   C.E("shareHandleDeepLink()");
   check(C.E("location.hash") === "" || C.E("location.hash") === "#", "an unrelated hash stays untouched");
+
+  section("UI: the routine menu deletes a routine");
+  C.E("closeShareHost(); switchView('workouts')");
+  const delBefore = C.E("state.days.length");
+  const delId = C.$("#view-workouts [data-routine-menu]").dataset.routineMenu;
+  C.click(C.$("#view-workouts [data-routine-menu]"));
+  C.click(C.$("#view-workouts .routine-pop.open [data-routine-act='delete']"));
+  await C.sleep(20);
+  check(C.E("state.days.length") === delBefore - 1, "Delete routine removes the routine (" + delBefore + " -> " + C.E("state.days.length") + ")");
+  check(C.E("getDay(" + JSON.stringify(delId) + ")") == null, "the deleted routine is gone from state");
+  check(C.$$("#view-workouts [data-routine-menu]").length === delBefore - 1, "its card left the list");
+  check(C.E("planMode") === "list", "deleting from the menu stays on the list");
 
   section("Runtime errors");
   const errs = A.errors.concat(B.errors, C.errors);
