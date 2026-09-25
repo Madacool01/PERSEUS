@@ -224,7 +224,8 @@ function makeDom() {
   const codeB = await B.E("sharePackPayload(shareBuildPayload('day-1', {}))");
   const payloadB = await B.E("shareDecodeInput(" + JSON.stringify(codeB) + ")");
   const importPayload = (p, opts) => B.E("importSharePayload(" + JSON.stringify(p) + ", " + JSON.stringify(opts || {}) + ")");
-  const sendBack = () => importPayload(payloadB, {});
+  let sendSeq = 0;
+  const sendBack = () => importPayload(payloadB, { name: "Imported " + (++sendSeq) });
 
   section("Import: duplicate exercises are linked, not duplicated");
   const beforeDays = B.E("state.days.length");
@@ -255,15 +256,20 @@ function makeDom() {
   check(planSet === true, "a new exercise's canonical plan is written so routine sync stays coherent");
   check(B.E("state.days.every(d=>new Set(d.exercises.map(x=>x.exId)).size === d.exercises.length)"), "no duplicate exercise entries inside the new routine");
 
-  section("Import: routine-name collisions are suffixed");
-  const res2 = await sendBack();
-  check(res1.report.name === "Workout A (2)", "the imported routine is named 'Workout A (2)' (got " + res1.report.name + ")");
-  check(res2.report.name === "Workout A (3)", "a later copy keeps counting ('" + res2.report.name + "')");
-  check(res2.report.alreadyImported === true, "the same share arriving twice is reported as already imported");
-  const res3 = await sendBack();
-  check(res3.report.name === "Workout A (4)", "a third copy keeps counting ('" + res3.report.name + "')");
+  section("Import: a routine named exactly like the incoming one is refused");
+  const collBefore = B.E("state.days.length");
+  const resDup = await importPayload(payloadB, {});   // the seed already owns "Workout A"
+  check(resDup.ok === false, "importing under the seeded name 'Workout A' is refused");
+  check(Boolean(resDup.report && resDup.report.nameTaken), "the report flags the name as taken");
+  check(/already have a routine named/i.test(resDup.error || ""), "the user is told about the clash: " + JSON.stringify(resDup.error));
+  check(B.E("state.days.length") === collBefore, "a refused import adds no routine");
+  const resNew = await importPayload(payloadB, { name: "Workout A Shared" });
+  check(resNew.ok === true && resNew.report.name === "Workout A Shared", "renaming the routine on import succeeds ('" + resNew.report.name + "')");
+  check(resNew.report.alreadyImported === true, "the same share arriving again is reported as already imported");
+  const resAgain = await importPayload(payloadB, { name: "Workout A Shared" });
+  check(resAgain.ok === false && resAgain.report.nameTaken === true, "a second copy under the same name is refused too");
   const res4 = await B.E("importSharePayload(" + JSON.stringify(payloadB) + ", { name:'My Legs' })");
-  check(res4.report.name === "My Legs", "the receiver can rename the routine on import");
+  check(res4.ok === true && res4.report.name === "My Legs", "the receiver can still name the routine however they like");
 
   section("Import: units are converted for the receiver");
   const kgNow = B.E("weightUnit()");
@@ -284,6 +290,7 @@ function makeDom() {
 
   section("Import: supersets, unknown refs and dead exercises");
   const groupWire = decodeWire(codeB);
+  groupWire.n = "Group Probe";
   groupWire.ss = [[0, 1], [0, 99]];
   groupWire.pr.push({ r: 42, s: 3 });
   groupWire.ex.push({ n: "Ghost Press", m: "reps" });
@@ -348,7 +355,7 @@ function makeDom() {
   check(typeof B.E("state.counts.nextId") === "number" && B.E("state.counts.nextId") > 0, "the id counter stays a healthy number (" + B.E("state.counts.nextId") + ")");
   const profFile = B.E("JSON.stringify(state.profile)");
   const fileValid = await B.E("shareDecodeInput(" + JSON.stringify(fileJson) + ", { fromFile:true })");
-  const resFile = await importPayload(fileValid, {});
+  const resFile = await importPayload(fileValid, { name: "From the file" });
   check(resFile.ok === true, "the sender's .json file imports through the same path");
   check(B.E("JSON.stringify(state.profile)") === profFile, "importing from a .json file leaves the profile untouched too");
   check(B.E("JSON.stringify(state.sessions)") === sessBefore, "importing from a .json file leaves the history untouched too");
@@ -391,11 +398,18 @@ function makeDom() {
   check(tags.length === 4, "preview tags every incoming exercise (" + tags.length + ")");
   check(C.$$("#share-host .sh-tag.keep").length === 4, "a same-install share shows all four as already yours");
   const nameIn = C.$("#share-host [data-imp-name]");
-  check(Boolean(nameIn) && nameIn.value.indexOf("Workout A") === 0 && nameIn.value !== "Workout A", "preview pre-fills a non-colliding name ('" + (nameIn && nameIn.value) + "')");
+  check(Boolean(nameIn) && nameIn.value === "Workout A", "preview pre-fills the incoming name ('" + (nameIn && nameIn.value) + "')");
+  check(C.$$("#share-host .sh-err").length === 1, "a routine-name clash is shown as an error");
+  check(Boolean(C.$("#share-host [data-imp-add]").disabled), "Add is blocked while the name clashes");
   const daysBeforeUI = C.E("state.days.length");
+  C.E("(()=>{ const el=document.querySelector('#share-host [data-imp-name]'); el.value='Workout A Shared'; el.dispatchEvent(new Event('input',{bubbles:true})); })()");
+  await C.sleep(10);
+  check(C.$$("#share-host .sh-err").length === 0, "the error clears once the name is free");
+  check(C.$("#share-host [data-imp-add]").disabled === false, "Add unlocks for a free name");
   C.click(C.$("#share-host [data-imp-add]"));
   await C.sleep(60);
   check(C.E("state.days.length") === daysBeforeUI + 1, "clicking Add imported the routine");
+  check(C.E("state.days[state.days.length-1].name") === "Workout A Shared", "the routine lands under the chosen name");
   check(C.$$("#share-host [data-sh-open]").length === 1, "result view offers to open the new routine");
   check(C.E("state.exercises.some(x=>x.name==='Ring Dip')") === true, "the shared exercises landed in the receiver's library");
   C.click(C.$("#share-host [data-sh-open]"));

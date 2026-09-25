@@ -9405,16 +9405,13 @@ function shareMatchKey(name){
   try{ if (s.normalize) s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }catch(e){}
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
-function shareUniqueDayNameIn(st, base){
-  const want = shareCleanText(base, 80) || "Shared workout";
-  const used = {};
-  (st.days || []).forEach(d=>{ used[normName(d && d.name)] = true; });
-  if (!used[normName(want)]) return want;
-  for (let i=2; i<200; i++){
-    const cand = want + " (" + i + ")";
-    if (!used[normName(cand)]) return cand;
-  }
-  return want + " (copy)";
+/* A shared routine never lands on a name this install already uses: rather than
+   quietly renaming it, the receiver is told and picks a name of their own. The
+   comparison is exact — a clash means the very same name, not a lookalike. */
+function shareDayNameTaken(st, name){
+  const want = shareCleanText(name, 80);
+  if (!want) return false;
+  return (st.days || []).some(d=>d && shareCleanText(d.name, 80) === want);
 }
 /* Ids are minted from this install's own counter, and any id already in use is
    skipped — a reset or hand-edited counter must never collide with live data. */
@@ -9486,7 +9483,9 @@ function sharePlanImport(payload, opts){
       .filter((id, k, a)=>a.indexOf(id) === k);
     r.ex.progressions = ids;
   });
-  const day = { id: "day-" + shareMintId(next, taken), name: shareUniqueDayNameIn(next, o.name || payload.name),
+  const wantName = shareCleanText(o.name || payload.name, 80) || "Shared workout";
+  report.nameTaken = shareDayNameTaken(next, wantName);
+  const day = { id: "day-" + shareMintId(next, taken), name: wantName,
     type: payload.type, exercises: [], supersets: [] };
   const daySeen = {};
   const copySharedTargets = (de, en, ex)=>{
@@ -9558,6 +9557,9 @@ function commitState(next){
 }
 async function importSharePayload(payload, opts){
   const plan = sharePlanImport(payload, opts);
+  if (plan.report.nameTaken){
+    return { ok:false, error:"You already have a routine named \u201c" + plan.report.name + "\u201d. Rename that one, or give this import a different name.", report: plan.report };
+  }
   if (!commitState(plan.next)){
     return { ok:false, error:"Could not save — this browser is out of storage space. Free some space (or delete old session photos) and try again.", report: plan.report };
   }
@@ -9786,24 +9788,41 @@ function sharePreviewHtml(payload, report){
       '<p class="micro" style="margin:.5rem 0 0">'+esc(notes.join(" "))+'</p>'+
     '</div>'+
     (list ? '<div class="sh-list">'+list+'</div>' : '')+
-    '<label class="field" style="margin-top:1rem"><span>Name in your routines</span><input type="text" data-imp-name value="'+esc(shareUniqueDayNameIn(state, payload.name))+'" maxlength="80"/></label>'+
+    '<label class="field" style="margin-top:1rem"><span>Name in your routines</span><input type="text" data-imp-name value="'+esc(shareCleanText(payload.name, 80) || "Shared workout")+'" maxlength="80"/></label>'+
+    '<div data-imp-nameerr></div>'+
     '<div class="btn-row"><button type="button" class="btn primary" data-imp-add>Add to my routines</button>'+
       '<button type="button" class="btn ghost" data-imp-cancel>Cancel</button></div>';
 }
 function shareBindPreview(msg, payload){
   const add = $("[data-imp-add]", msg);
   const cancel = $("[data-imp-cancel]", msg);
+  const nameIn = $("[data-imp-name]", msg);
+  const nameErr = $("[data-imp-nameerr]", msg);
+  const chosenName = ()=> shareCleanText(nameIn ? nameIn.value : payload.name, 80) || "Shared workout";
+  const syncName = ()=>{
+    const taken = shareDayNameTaken(state, chosenName());
+    if (nameErr){
+      nameErr.innerHTML = taken
+        ? '<div class="sh-err">You already have a routine named \u201c'+esc(chosenName())+'\u201d. Rename that one, or give this import a different name.</div>'
+        : "";
+    }
+    if (add) add.disabled = taken;
+  };
+  if (nameIn) nameIn.addEventListener("input", syncName);
+  syncName();
   if (cancel) cancel.addEventListener("click", closeShareHost);
   if (!add) return;
   add.addEventListener("click", async ()=>{
-    const nameIn = $("[data-imp-name]", msg);
+    const name = chosenName();
+    if (shareDayNameTaken(state, name)){ syncName(); return; }
     if (logCtx && !logCtx.finished){
       if (!confirm("A session is being logged right now. Import this workout anyway?")) return;
     }
     add.disabled = true;
-    const res = await importSharePayload(payload, { name: nameIn ? nameIn.value : payload.name });
+    const res = await importSharePayload(payload, { name: name });
     if (!res.ok){
-      msg.innerHTML = '<div class="sh-err">'+esc(res.error)+'</div>';
+      if (nameErr) nameErr.innerHTML = '<div class="sh-err">'+esc(res.error)+'</div>';
+      else msg.innerHTML = '<div class="sh-err">'+esc(res.error)+'</div>';
       add.disabled = false;
       return;
     }
