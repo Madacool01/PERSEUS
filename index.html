@@ -731,14 +731,14 @@
   /* ---------- Shared workouts: share sheet + import preview ----------
      One overlay host for both directions (send / receive). Colours reuse the
      token pairs already contrast-checked in tests/_contrast.js. */
-  #share-host {
+  #share-host, #prog-start-host {
     position: fixed; inset: 0; z-index: 72;
     display: grid; place-items: center; padding: 1.2rem;
     background: rgba(23,19,12,.5);
     -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35);
     animation: modalBack .25s ease;
   }
-  #share-host:empty { display: none; }
+  #share-host:empty, #prog-start-host:empty { display: none; }
   .sh-card {
     width: min(620px, 100%); max-height: 90vh; overflow-y: auto;
     background: var(--glass-lite);
@@ -1943,6 +1943,32 @@
   .prog-step + .prog-step { margin-top: .6rem; }
   .prog-cta-band { text-align: center; padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1.2rem, 4vw, 3rem); }
   .prog-cta-band .big { font-family: var(--font-display); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; font-size: clamp(2rem, 4.4vw, 3.4rem); color: var(--ink); max-width: 22ch; margin: 0 auto; }
+  /* ---------- The shelf: saved programs beside the working week ----------
+     A saved program carries its own seven-day shape; starting one re-anchors
+     that shape around the first day the user picks, distances intact. */
+  .prog-card.saved { cursor: default; }
+  .prog-card.saved:hover { transform: none; border-color: var(--line-2); box-shadow: var(--shadow-1); }
+  /* Empty-shelf companion: sits in the 5-column remainder of the week's row. */
+  .prog-card.ghost { cursor: default; border-style: dashed; background: var(--surface-2); justify-content: center; }
+  .prog-card.ghost:hover { transform: none; border-color: var(--line-2); box-shadow: var(--shadow-1); }
+  .prog-card.ghost .prog-body { justify-content: center; gap: .7rem; }
+  .prog-card.saved .prog-media { height: 148px; }
+  .prog-gaps { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .prog-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .35rem; }
+  .prog-save { border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: 1.1rem 1.2rem 1.3rem; margin-top: 1.1rem; display: flex; flex-direction: column; gap: .85rem; }
+  .prog-save-row { display: flex; gap: .7rem; flex-wrap: wrap; }
+  .prog-save-row .field { flex: 1 1 220px; margin: 0; }
+  .pstart-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4rem; margin-top: .3rem; }
+  .pstart-day {
+    font: inherit; font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+    padding: .7rem .2rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+    color: var(--ink-2); cursor: pointer; transition: background .2s, color .2s, border-color .2s, transform .2s;
+  }
+  .pstart-day:hover, .pstart-day:focus-visible { border-color: var(--accent-line); color: var(--ink); transform: translateY(-2px); }
+  .pstart-day.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .pstart-preview { border: 1px dashed var(--accent-line); background: var(--accent-soft); border-radius: var(--r-md); padding: .75rem .85rem; margin-top: .9rem; }
+  .pstart-week { display: flex; flex-wrap: wrap; gap: .32rem; margin-top: .55rem; }
+  @media (max-width: 560px) { .pstart-days { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .prog-overlay { position: fixed; inset: 0; z-index: 70; background: rgba(18,15,11,.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.6rem); animation: modalBack .25s ease; }
   .prog-sheet { width: min(680px, 100%); max-height: 86vh; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); }
   .prog-sheet-media { height: 170px; background-size: cover; background-position: center; filter: grayscale(.7) contrast(1.08) brightness(.8); border-radius: var(--r-xl) var(--r-xl) 0 0; }
@@ -2404,6 +2430,7 @@
 
 <div id="toast" class="toast"></div>
 <div id="share-host"></div>
+<div id="prog-start-host"></div>
 <nav id="m-tabs" aria-label="Primary">
   <button data-view="home" class="tab-btn active" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
   <button data-view="workouts" class="tab-btn" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
@@ -9641,7 +9668,9 @@ function closeShareHost(){
 function shareHostKey(ev){
   if (!ev || ev.key !== "Escape") return;
   const h = shareHostEl();
-  if (h && h.childNodes.length && h.firstChild) closeShareHost();
+  if (h && h.childNodes.length && h.firstChild){ closeShareHost(); return; }
+  const p = progStartHostEl();
+  if (p && p.childNodes.length && p.firstChild) closeProgStart();
 }
 function shareMount(htmlStr){
   const h = shareHostEl();
@@ -9962,6 +9991,66 @@ function progSaveDraft(d){
     memStore[PROG_KEY] = raw;
   }catch(e){}
 }
+
+/* ---------- The shelf of saved programs -------------------------------
+   A saved program is a name, a description and a seven-day shape. It is the
+   shape that matters: the training days and the distance between them travel
+   with the program, so it can be re-anchored to any starting weekday. */
+var PROG_SAVED_KEY = "perseus-programs-saved-v1";
+function progSavedList(){
+  try{
+    const raw = (hasStorage() ? localStorage.getItem(PROG_SAVED_KEY) : null) || memStore[PROG_SAVED_KEY];
+    const arr = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(arr)) return arr.filter(p=>p && typeof p === "object" && Array.isArray(p.slots) && p.slots.length === 7);
+  }catch(e){}
+  return [];
+}
+function progSaveList(arr){
+  try{
+    const raw = JSON.stringify(arr || []);
+    if (hasStorage()){ try{ localStorage.setItem(PROG_SAVED_KEY, raw); return; }catch(e){} }
+    memStore[PROG_SAVED_KEY] = raw;
+  }catch(e){}
+}
+/* Training-day indices in week order (Monday first). */
+function progSessionIdx(slots){
+  const out = [];
+  (slots || []).forEach((id, i)=>{ if (id) out.push(i); });
+  return out;
+}
+/* Rest days between each pair of neighbouring sessions, wrapping the week.
+   This is the distance a program remembers: Tue / Thu / Sun -> 1, 2, 1. */
+function progGaps(slots){
+  const idx = progSessionIdx(slots);
+  if (idx.length < 2) return [];
+  return idx.map((v, i)=>{
+    const nxt = idx[(i + 1) % idx.length];
+    return (nxt - v - 1 + 7) % 7;
+  });
+}
+/* Rotate the whole week so the first session lands on firstIdx. The sessions
+   move; the distance between them never changes. */
+function progOffsetFor(slots, firstIdx){
+  const idx = progSessionIdx(slots);
+  if (!idx.length) return 0;
+  return (firstIdx - idx[0] + 7) % 7;
+}
+function progShiftSlots(slots, offset){
+  const out = [null, null, null, null, null, null, null];
+  (slots || []).forEach((id, i)=>{ if (id) out[(((i + offset) % 7) + 7) % 7] = id; });
+  return out;
+}
+function progSessionLabel(slots){
+  const idx = progSessionIdx(slots);
+  if (!idx.length) return "No training days yet";
+  return idx.length + (idx.length === 1 ? " session" : " sessions") + " \u00b7 " + idx.map(i=>PROG_DAYS[i]).join(" / ");
+}
+function progGapLabel(slots){
+  const gaps = progGaps(slots);
+  if (!gaps.length) return "";
+  const most = Math.max.apply(null, gaps);
+  return "Distance between sessions: " + gaps.join(" \u00b7 ") + " day" + (most === 1 ? "" : "s");
+}
 function progRoutineName(id){
   if (!id) return "Rest";
   const d = getDay(id);
@@ -10007,15 +10096,44 @@ function renderPrograms(){
   if (!s) return;
   const draft = progDraft();
   const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
-  const shells = [
-    { span: "span-7", seed: "perseus-custom-week", name: "Your custom week", blurb: "Seven slots filled with your saved routines. Pick your own training days below, then start it.", live: true }
-  ];
-  const cards = shells.map(c=>
-    '<article class="prog-card ' + c.span + ' fx-in" data-prog-goto="prog-builder" tabindex="0" role="button" aria-label="' + esc(c.name) + '">' +
-      '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + c.seed + '/1200/800)"></span></div>' +
-      '<div class="prog-body"><div class="prog-name">' + esc(c.name) + '</div><p class="prog-blurb">' + esc(c.blurb) + '</p>' +
+  const saved = progSavedList();
+  const customCard =
+    '<article class="prog-card span-7 fx-in" data-prog-goto="prog-builder" tabindex="0" role="button" aria-label="Your custom week">' +
+      '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/perseus-custom-week/1200/800)"></span></div>' +
+      '<div class="prog-body"><div class="prog-name">Your custom week</div><p class="prog-blurb">Seven slots filled with your saved routines. Pick your own training days below, then start it.</p>' +
       '<div class="prog-week" aria-hidden="true">' + progWeekDots(draft.slots) + '</div>' +
-      '<span class="routine-open">Open <span class="btn-arrow">→</span></span></div></article>').join("");
+      '<div class="micro">' + esc(progSessionLabel(draft.slots)) + '</div>' +
+      '<span class="routine-open">Open <span class="btn-arrow">→</span></span></div></article>';
+  /* The shelf is a 7+5 bento. The working week keeps its own width (span-7)
+     and is completed either by the first saved program (span-5) or, while
+     nothing is saved, by a card that says so. Later programs pair up at
+     span-6; an odd one left over takes the whole row. Every row sums to 12. */
+  const emptyCard =
+    '<article class="prog-card ghost span-5 fx-in">' +
+      '<div class="prog-body">' +
+        '<div class="prog-name">Nothing saved yet</div>' +
+        '<p class="prog-blurb">Build a week below, give it a name, and it waits for you here — training days and distances intact.</p>' +
+        '<div class="prog-actions"><button type="button" class="btn small" data-prog-scroll="prog-builder">Build a week <span class="btn-arrow">→</span></button></div>' +
+      '</div></article>';
+  const savedCards = saved.map((p, i)=>{
+    const span = i === 0 ? "span-5"
+      : (i === saved.length - 1 && (saved.length - 1) % 2 === 1) ? "span-12" : "span-6";
+    const gapLine = progGapLabel(p.slots);
+    return '<article class="prog-card saved ' + span + ' fx-in" data-prog-saved="' + esc(p.id) + '">' +
+      '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + esc(seedOf(p.name || "program")) + '/1200/800)"></span></div>' +
+      '<div class="prog-body">' +
+        '<div class="prog-name">' + esc(p.name) + '</div>' +
+        (p.description ? '<p class="prog-blurb">' + esc(p.description) + '</p>' : '') +
+        '<div class="prog-week" aria-hidden="true">' + progWeekDots(p.slots) + '</div>' +
+        '<div class="micro">' + esc(progSessionLabel(p.slots)) + '</div>' +
+        (gapLine ? '<div class="prog-gaps">' + esc(gapLine) + '</div>' : '') +
+        '<div class="prog-actions">' +
+          '<button type="button" class="btn primary small" data-prog-start-saved="' + esc(p.id) + '">Start <span class="btn-arrow">→</span></button>' +
+          '<button type="button" class="btn ghost small" data-prog-remove="' + esc(p.id) + '">Remove</button>' +
+        '</div>' +
+      '</div></article>';
+  }).join("");
+  const cards = customCard + (saved.length ? savedCards : emptyCard);
   const acc = PROG_DAYS.map((d, i)=>{
     const sel = draft.slots[i] || "";
     return '<div class="prog-slice' + (i === 0 ? ' open' : '') + '" data-prog-day="' + i + '" tabindex="0" role="button" aria-label="' + d + '">' +
@@ -10062,11 +10180,21 @@ function renderPrograms(){
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
-      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Your saved routines, arranged into a repeating week. Nothing here is final until you start it.</p>' +
+      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Your working week, plus every program you have saved. A saved program remembers its training days and the distance between them.</p>' +
       '<div class="bento">' + cards + '</div></div>' +
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
       '<div class="prog-acc prog-acc-desktop" role="list">' + acc + '</div>' +
       '<div class="pm-picker" data-pm-picker>' + pmSummary + pmRows + '</div>' +
+      '<div class="prog-save">' +
+        '<div><div class="prog-name" style="font-size:1.05rem">Save this week to the shelf</div>' +
+        '<p class="micro" style="margin:.3rem 0 0">Name it, describe it, and start it whenever you like — it keeps its own training days and distances.</p></div>' +
+        '<div class="prog-save-row">' +
+          '<label class="field"><span>Program name</span><input type="text" data-prog-name maxlength="60" placeholder="Three-day strength"/></label>' +
+          '<label class="field"><span>Description</span><input type="text" data-prog-desc maxlength="140" placeholder="Base week, barbell focus"/></label>' +
+        '</div>' +
+        '<div class="btn-row"><button type="button" class="btn primary" data-prog-save>Save to the shelf</button></div>' +
+        '<div data-prog-save-msg></div>' +
+      '</div>' +
       '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
       '<div class="section-block" id="prog-active"><div class="prog-split"><div class="prog-sticky"><h2 class="section">How a week flows</h2><p class="subtitle fx-scrub">Your draft read top to bottom. Training days carry sets, rest days carry recovery.</p></div>' +
@@ -10074,7 +10202,12 @@ function renderPrograms(){
       '<div class="section-block"><div class="card prog-cta-band fx-in"><div class="big">Ready when your week <em class="serif-i">reads right</em></div>' +
       '<div class="hero-cta" style="margin-top:1.6rem"><button class="btn btn-xl primary" data-prog-start>Start this week <span class="btn-arrow">→</span></button></div></div></div>' +
     '</div>';
-  const go = id=>{ const el = document.getElementById(id); if (el){ try{ el.scrollIntoView({ behavior: "smooth", block: "start" }); }catch(e){ el.scrollIntoView(); } } };
+  const go = id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    try{ el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    catch(e){ try{ el.scrollIntoView(); }catch(e2){} }
+  };
   $$("[data-prog-scroll]", s).forEach(b=>b.addEventListener("click", ()=>go(b.dataset.progScroll)));
   $$("[data-prog-goto]", s).forEach(c=>{
     const h = ()=>go(c.dataset.progGoto);
@@ -10163,6 +10296,106 @@ function renderPrograms(){
     switchView("home");
     toast("Week saved \u2014 starting on Home");
   });
+  const saveB = $("[data-prog-save]", s);
+  if (saveB) saveB.addEventListener("click", ()=>{
+    const nameIn = $("[data-prog-name]", s), descIn = $("[data-prog-desc]", s);
+    const msg = $("[data-prog-save-msg]", s);
+    const d = progDraft();
+    const name = String((nameIn && nameIn.value) || "").trim();
+    if (!progSessionIdx(d.slots).length){
+      if (msg) msg.innerHTML = '<div class="sh-err">Give the week at least one routine day before saving it.</div>';
+      return;
+    }
+    if (!name){
+      if (msg) msg.innerHTML = '<div class="sh-err">Give the program a name first.</div>';
+      if (nameIn) nameIn.focus();
+      return;
+    }
+    const list = progSavedList();
+    list.push({ id: uid(), name: name.slice(0, 60),
+      description: String((descIn && descIn.value) || "").trim().slice(0, 140),
+      slots: d.slots.slice(), ts: Date.now() });
+    progSaveList(list);
+    renderPrograms();
+    go("prog-library");
+    toast("Saved \u201c" + name + "\u201d to the shelf");
+  });
+  $$("[data-prog-start-saved]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    openProgStart(b.dataset.progStartSaved);
+  }));
+  $$("[data-prog-remove]", s).forEach(b=>b.addEventListener("click", ev=>{
+    ev.stopPropagation();
+    const p = progSavedList().find(x=>x.id === b.dataset.progRemove);
+    if (!p) return;
+    if (!confirm('Remove "' + p.name + '" from the shelf?')) return;
+    progSaveList(progSavedList().filter(x=>x.id !== p.id));
+    renderPrograms();
+    toast("Program removed");
+  }));
+}
+
+/* ---------- Starting a saved program ----------------------------------
+   The user says when the first session should land; the stored week rotates
+   around that day and the shifted shape becomes the active week. */
+function progStartHostEl(){ return $("#prog-start-host"); }
+function closeProgStart(){
+  const h = progStartHostEl();
+  if (h) h.innerHTML = "";
+}
+function openProgStart(id){
+  const p = progSavedList().find(x=>x.id === id);
+  if (!p) return;
+  const host = progStartHostEl();
+  if (!host) return;
+  const idx = progSessionIdx(p.slots);
+  const start = idx.length ? idx[0] : 0;
+  const dayBtns = PROG_DAYS.map((d, i)=>'<button type="button" class="pstart-day' + (i === start ? ' on' : '') +
+    '" data-pstart-day="' + i + '" aria-pressed="' + (i === start ? "true" : "false") + '">' + d + '</button>').join("");
+  host.innerHTML = '<div class="sh-card">' +
+    '<div class="sh-head"><div>' +
+      '<h3 class="sh-title">When do you want your first session to be?</h3>' +
+      '<p class="micro sh-sub">' + esc(p.name) + ' keeps its distances — the whole week rotates around the day you pick.</p>' +
+    '</div><button type="button" class="btn ghost sh-x" data-pstart-close aria-label="Close">\u2715</button></div>' +
+    '<div class="pstart-days" role="group" aria-label="First session day">' + dayBtns + '</div>' +
+    '<div class="pstart-preview" data-pstart-preview></div>' +
+    '<div class="btn-row" style="margin-top:1rem">' +
+      '<button type="button" class="btn primary" data-pstart-go>Start the program</button>' +
+      '<button type="button" class="btn ghost" data-pstart-cancel>Cancel</button>' +
+    '</div>' +
+  '</div>';
+  host.onclick = ev=>{ if (ev.target === host) closeProgStart(); };
+  const card = host.firstChild;
+  if (card) card.addEventListener("click", ev=>ev.stopPropagation());
+  let chosen = start;
+  const paint = ()=>{
+    const shifted = progShiftSlots(p.slots, progOffsetFor(p.slots, chosen));
+    const gapLine = progGapLabel(shifted);
+    const prev = $("[data-pstart-preview]", host);
+    if (prev) prev.innerHTML =
+      '<div class="micro" style="margin:0">First session <b>' + PROG_DAYS[chosen] + '</b> — ' + esc(progSessionLabel(shifted)) + '</div>' +
+      '<div class="pstart-week" aria-hidden="true">' + progWeekDots(shifted) + '</div>' +
+      (gapLine ? '<div class="prog-gaps" style="margin-top:.5rem">' + esc(gapLine) + '</div>' : '');
+    $$("[data-pstart-day]", host).forEach(b=>{
+      const on = +b.dataset.pstartDay === chosen;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  };
+  $$("[data-pstart-day]", host).forEach(b=>{
+    const pick = ()=>{ chosen = +b.dataset.pstartDay; paint(); };
+    b.addEventListener("click", pick);
+    b.addEventListener("mouseenter", pick);
+  });
+  $$("[data-pstart-close], [data-pstart-cancel]", host).forEach(b=>b.addEventListener("click", closeProgStart));
+  const goB = $("[data-pstart-go]", host);
+  if (goB) goB.addEventListener("click", ()=>{
+    progSaveDraft({ slots: progShiftSlots(p.slots, progOffsetFor(p.slots, chosen)) });
+    closeProgStart();
+    switchView("home");
+    toast("Started \u201c" + p.name + "\u201d — first session " + PROG_DAYS[chosen]);
+  });
+  paint();
 }
 
 /* =========================================================================
