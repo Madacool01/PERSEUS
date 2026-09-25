@@ -446,8 +446,122 @@ function makeDom() {
   check(C.$$("#view-workouts [data-routine-menu]").length === delBefore - 1, "its card left the list");
   check(C.E("planMode") === "list", "deleting from the menu stays on the list");
 
+  /* ------------------------------------------------------------------ D */
+  /* Every carrier and import path the UI exposes, each driven end to end. */
+  const D = makeDom();
+  const codeD = await D.E("sharePackPayload(shareBuildPayload('day-1', {}))");
+  const pidD = decodeWire(codeD).pid;
+  const linkIn = () => D.E("shareFindCode(document.querySelector('#share-host [data-sh-out]').value)");
+  const openShareMenu = ()=>{
+    D.E("switchView('workouts')");
+    D.click(D.$("#view-workouts [data-routine-menu]"));
+    D.click(D.$("#view-workouts .routine-pop.open [data-routine-act='share']"));
+  };
+
+  section("Carrier: Copy link");
+  D.E("Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText: function(t){ window.__copied = t; return Promise.resolve(); } } });");
+  openShareMenu();
+  await D.sleep(50);
+  D.click(D.$("#share-host [data-sh-act='link']"));
+  await D.sleep(10);
+  const copiedLink = D.E("window.__copied") || "";
+  check(copiedLink.indexOf("#perseus-share=P") !== -1, "Copy link copies a deep link");
+  const copiedCode = D.E("shareFindCode(" + JSON.stringify(copiedLink) + ")");
+  check(Boolean(copiedCode) && decodeWire(copiedCode).pid === pidD, "the copied link resolves to the same workout as the code");
+  check(Boolean(copiedCode) && copiedCode === linkIn(), "the copied link is exactly the one shown in the sheet");
+  D.click(D.$("#share-host [data-sh-close]"));
+
+  section("Carrier: Save file");
+  const fileOut = await D.E(`(async ()=>{
+    const RealBlob = window.Blob, c0 = URL.createObjectURL, r0 = URL.revokeObjectURL, click0 = HTMLAnchorElement.prototype.click;
+    let parts = null, name = "";
+    window.Blob = function(list, opt){ parts = list; return new RealBlob(list, opt); };
+    URL.createObjectURL = ()=> "blob:test";
+    URL.revokeObjectURL = ()=>{};
+    HTMLAnchorElement.prototype.click = function(){ name = this.getAttribute("download") || ""; };
+    switchView('workouts');
+    document.querySelector('#view-workouts [data-routine-menu]').click();
+    document.querySelector('#view-workouts .routine-pop.open [data-routine-act="share"]').click();
+    await new Promise(r=>setTimeout(r, 60));
+    document.querySelector("#share-host [data-sh-act='file']").click();
+    const out = parts ? String(parts[0]) : "";
+    window.Blob = RealBlob; URL.createObjectURL = c0; URL.revokeObjectURL = r0; HTMLAnchorElement.prototype.click = click0;
+    return JSON.stringify({ out: out, name: name });
+  })()`);
+  const savedFile = JSON.parse(fileOut);
+  let savedPayload = null;
+  try { savedPayload = JSON.parse(savedFile.out); } catch (e) {}
+  check(Boolean(savedPayload && savedPayload.app === "perseus"), "Save file writes a share payload to disk");
+  check(savedFile.name.indexOf("perseus-workout-") === 0 && savedFile.name.slice(-5) === ".json", "the file is named after the routine (" + savedFile.name + ")");
+  check(Boolean(savedPayload && savedPayload.pid === pidD), "the saved file is the same workout as the link");
+  D.click(D.$("#share-host [data-sh-close]"));
+
+  section("Carrier: native Share...");
+  D.E("Object.defineProperty(navigator, 'share', { configurable:true, value: function(data){ window.__shared = data; return Promise.resolve(); } });");
+  openShareMenu();
+  await D.sleep(50);
+  check(D.$$("#share-host [data-sh-act='native']").length === 1, "a native share button appears when the browser supports it");
+  D.click(D.$("#share-host [data-sh-act='native']"));
+  await D.sleep(10);
+  const shared = D.E("window.__shared");
+  check(Boolean(shared) && String(shared.url).indexOf("#perseus-share=P") !== -1, "the native share hands the OS a working link");
+  check(Boolean(shared) && String(shared.title).indexOf("Workout A") !== -1, "the native share carries the routine name");
+  D.click(D.$("#share-host [data-sh-close]"));
+
+  section("Carrier: include exercise photos");
+  D.E("(()=>{ const ex = getEx(getDay('day-1').exercises[0].exId); ex.image = 'data:image/jpeg;base64,' + 'A'.repeat(4000); saveState(); })()");
+  openShareMenu();
+  await D.sleep(50);
+  const imgBox = D.$("#share-host [data-sh-images]");
+  check(Boolean(imgBox), "the sheet offers to include photos when the routine has one");
+  const plainWire = decodeWire(linkIn());
+  check(plainWire.ex.every(e=>!e.img), "photos stay out of the share until asked for");
+  imgBox.checked = true;
+  imgBox.dispatchEvent(new D.W.Event("change", { bubbles:true }));
+  await D.sleep(70);
+  const photoWire = decodeWire(linkIn());
+  check(photoWire.ex.some(e=>typeof e.img === "string" && e.img.indexOf("data:image/") === 0), "ticking the box puts the photo in the payload");
+  D.click(D.$("#share-host [data-sh-close]"));
+
+  section("Import: choosing a .json file");
+  const fileJsonD = await D.E("JSON.stringify(shareBuildPayload('day-2', {}))");
+  D.E("switchView('workouts'); document.querySelector('#view-workouts #import-share').click();");
+  check(D.$$("#share-host [data-imp-input]").length === 1, "the import dialog has a hidden file input");
+  D.E("(()=>{ const f = new File([" + JSON.stringify(fileJsonD) + "], 'perseus-workout.json', { type:'application/json' }); const inp = document.querySelector('#share-host [data-imp-input]'); Object.defineProperty(inp, 'files', { configurable:true, value:[f] }); inp.dispatchEvent(new Event('change', { bubbles:true })); })()");
+  await D.sleep(120);
+  check(D.$$("#share-host [data-imp-add]").length === 1, "choosing a file previews the workout");
+  check(D.E("document.querySelector('#share-host [data-imp-in]').value.indexOf('perseus') !== -1"), "the chosen file's contents land in the paste box");
+  D.E("(()=>{ const el=document.querySelector('#share-host [data-imp-name]'); el.value='From a file'; el.dispatchEvent(new Event('input',{bubbles:true})); })()");
+  await D.sleep(10);
+  D.click(D.$("#share-host [data-imp-add]"));
+  await D.sleep(70);
+  check(D.E("state.days[state.days.length-1].name") === "From a file", "the file import lands the routine under the chosen name");
+  D.E("closeShareHost()");
+
+  section("Import: dropping a .json file");
+  D.E("switchView('workouts'); document.querySelector('#view-workouts #import-share').click();");
+  D.E("(()=>{ const f = new File([" + JSON.stringify(fileJsonD) + "], 'drop.json', { type:'application/json' }); const card = document.querySelector('#share-host .sh-card'); const ev = new Event('drop', { bubbles:true, cancelable:true }); ev.dataTransfer = { files: [f] }; card.dispatchEvent(ev); })()");
+  await D.sleep(120);
+  check(D.$$("#share-host [data-imp-add]").length === 1, "dropping a file previews the workout");
+  check(D.E("document.querySelector('#share-host [data-imp-in]').value.indexOf('perseus') !== -1"), "the dropped file's contents land in the paste box");
+  D.E("closeShareHost()");
+
+  section("Import: pasting a code previews itself");
+  D.E("switchView('workouts'); document.querySelector('#view-workouts #import-share').click();");
+  D.E("(()=>{ const ta=document.querySelector('#share-host [data-imp-in]'); ta.value=" + JSON.stringify(codeD) + "; ta.dispatchEvent(new Event('paste', { bubbles:true })); })()");
+  await D.sleep(120);
+  check(D.$$("#share-host [data-imp-add]").length === 1, "a pasted code previews with no click");
+  D.E("closeShareHost()");
+
+  section("UI: Escape closes the share sheet");
+  openShareMenu();
+  await D.sleep(50);
+  check(D.$$("#share-host .sh-card").length === 1, "sheet is open before Escape");
+  D.E("document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true }))");
+  check(D.$$("#share-host .sh-card").length === 0, "Escape closes the sheet");
+
   section("Runtime errors");
-  const errs = A.errors.concat(B.errors, C.errors);
+  const errs = A.errors.concat(B.errors, C.errors, D.errors);
   check(errs.length === 0, "no window errors" + (errs.length ? " -> " + errs.join(" | ") : ""));
 
   console.log("\n===================================");
