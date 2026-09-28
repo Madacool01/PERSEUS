@@ -5012,7 +5012,7 @@ function renderRoutineList(){
       if (item.dataset.routineAct === "delete"){
         const day = getDay(dayId);
         if (!day) return;
-        if (!confirm('Delete "'+day.name+'" and its plan?')) return;
+        if (!confirm(progDeletePrompt(day.name, day.id))) return;
         state.days = state.days.filter(x=>x.id!==dayId);
         progForgetRoutine(dayId);
         saveState(); render(); toast("Routine deleted");
@@ -5306,7 +5306,7 @@ function renderWorkoutEditor(){
   }));
   $("#plan-back", s).addEventListener("click", ()=>{ planMode="list"; planEditId=null; render(); });
   $("#plan-del-day", s).addEventListener("click", ()=>{
-    if(!confirm("Delete this routine and its plan?")) return;
+    if(!confirm(progDeletePrompt(d.name, d.id))) return;
     state.days = state.days.filter(x=>x.id!==d.id);
     progForgetRoutine(d.id);
     saveState();
@@ -10090,6 +10090,34 @@ function progForgetRoutine(id){
     return Object.assign({}, p, { slots: drop(p.slots) });
   });
   if (changed) progSaveList(next);
+}
+/* Everything that still points at a routine. Deleting one is a one-way door:
+   the days it filled go back to rest, so the confirm has to say so first. */
+function progRoutineUsage(id){
+  const out = { current: false, saved: [] };
+  if (!id) return out;
+  out.current = (progDraft().slots || []).indexOf(id) !== -1;
+  progSavedList().forEach(p=>{
+    if ((p.slots || []).indexOf(id) !== -1) out.saved.push(p.name);
+  });
+  return out;
+}
+/* The confirm copy for a routine delete, naming every program that loses a
+   training day. Falls back to the plain question when nothing references it. */
+function progDeletePrompt(name, id){
+  const u = progRoutineUsage(id);
+  const plain = 'Delete "' + name + '" and its plan?';
+  if (!u.current && !u.saved.length) return plain;
+  const refs = [];
+  if (u.current) refs.push("your current week");
+  if (u.saved.length){
+    const shown = u.saved.slice(0, 3);
+    const more = u.saved.length - shown.length;
+    const list = '"' + shown.join('", "') + "\"" + (more ? " and " + more + " more" : "");
+    refs.push(u.saved.length === 1 ? "the saved program " + list : u.saved.length + " saved programs: " + list);
+  }
+  return plain + "\n\n" + "This routine is a training day in " + refs.join(" and ") +
+    ". Those days will go back to rest \u2014 only the routine itself is deleted.";
 }
 /* Training-day indices in week order (Monday first). */
 function progSessionIdx(slots){

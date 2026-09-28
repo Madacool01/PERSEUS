@@ -243,9 +243,16 @@ check(staleCard.querySelectorAll(".prog-week .prog-dot.on").length === 1, "its c
 check(/1 session \u00b7 Thu/.test(staleCard.textContent), "its card counts one session, not two");
 check(!/2 sessions/.test(staleCard.textContent), "no ghost session is claimed");
 
-section("Deleting from Workouts forgets the reference at the source");
+/* =========================================================================
+   Deleting a routine that is still in use must warn before it happens.
+   ========================================================================= */
+section("Deleting a routine warns when a program still uses it");
 E("switchView('workouts')");
-E("const dk=progDraft(); dk.slots=[null,'day-t-a',null,null,null,null,null]; progSaveDraft(dk);");
+E("const dk=progDraft(); dk.slots=[null,'day-t-a',null,null,null,null,null]; progSaveDraft(dk);" +
+  "const lw=progSavedList(); lw.push({id:'id-warn',name:'Warned week',description:''," +
+  "slots:[null,'day-t-a',null,null,null,null,null],ts:4}); progSaveList(lw);");
+const prompts = [];
+W.confirm = (msg) => { prompts.push(String(msg)); return false; };
 const menuBtn = $("#view-workouts [data-routine-menu='day-t-a']");
 check(!!menuBtn, "the routine has a menu button");
 if (menuBtn){
@@ -254,8 +261,51 @@ if (menuBtn){
   check(!!delBtn, "the menu offers Delete routine");
   if (delBtn) delBtn.click();
 }
+check(prompts.length === 1, "deleting a used routine asks first");
+check(/current week/.test(prompts[0]), "the warning names the current week: " + JSON.stringify(prompts[0]));
+check(/Warned week/.test(prompts[0]), "the warning names the saved program that uses it");
+check(/Reloaded/.test(prompts[0]), "and every other program that references it (" + E("progRoutineUsage('day-t-a').saved.join(', ')") + ")");
+check(/2 saved programs/.test(prompts[0]), "counting them rather than listing one");
+check(/go back to rest/.test(prompts[0]), "the warning says what happens to those days");
+check(/only the routine itself is deleted/.test(prompts[0]), "and that nothing else is removed");
+check(E("getDay('day-t-a')") != null, "cancelling the warning keeps the routine");
+check(E("JSON.stringify(progDraft().slots)") === "[null,\"day-t-a\",null,null,null,null,null]", "cancelling changes nothing");
+check(E("progSavedList().find(p=>p.id==='id-warn').slots[1]") === "day-t-a", "the saved program still holds it");
+
+section("Accepting the warning forgets the reference at the source");
+W.confirm = (msg) => { prompts.push(String(msg)); return true; };
+$("#view-workouts [data-routine-menu='day-t-a']").click();
+$("#view-workouts .routine-pop.open [data-routine-act='delete']").click();
 check(E("getDay('day-t-a')") == null, "the routine is gone from state");
 check(E("JSON.stringify(progDraft().slots)") === "[null,null,null,null,null,null,null]", "the working week was scrubbed of the deleted routine (" + E("JSON.stringify(progDraft().slots)") + ")");
+check(E("JSON.stringify(progSavedList().find(p=>p.id==='id-warn').slots)") === "[null,null,null,null,null,null,null]", "and so was the saved program that referenced it");
+
+section("A routine nothing points at gets the plain question");
+prompts.length = 0;
+E("state.days.push({id:'day-lonely',name:'Lonely routine',type:'strength',exercises:[]}); render();");
+$("#view-workouts [data-routine-menu='day-lonely']").click();
+$("#view-workouts .routine-pop.open [data-routine-act='delete']").click();
+check(prompts.length === 1, "a routine in no program is still confirmed");
+check(prompts[0] === 'Delete "Lonely routine" and its plan?', "with no warning attached: " + JSON.stringify(prompts[0]));
+
+section("The plan editor warns the same way");
+W.confirm = (msg) => { prompts.push(String(msg)); return false; };
+E("state.days.push({id:'day-plan',name:'Planned routine',type:'strength',exercises:[]});" +
+  "const lp=progDraft(); lp.slots=['day-plan',null,null,null,null,null,null]; progSaveDraft(lp);" +
+  "currentView='workouts'; planMode='edit'; planEditId='day-plan'; render();");
+prompts.length = 0;
+const planDel = $("#plan-del-day");
+check(!!planDel, "the plan editor offers Delete routine");
+if (planDel) planDel.click();
+check(prompts.length === 1, "it asks before deleting");
+check(/current week/.test(prompts[0] || ""), "it warns about the current week too: " + JSON.stringify(prompts[0] || ""));
+check(E("getDay('day-plan')") != null, "and cancelling keeps the routine");
+W.confirm = (msg) => { prompts.push(String(msg)); return true; };
+E("currentView='workouts'; planMode='list'; planEditId=null; render();");
+prompts.length = 0;
+$("#view-workouts [data-routine-menu='day-plan']").click();
+$("#view-workouts .routine-pop.open [data-routine-act='delete']").click();
+check(prompts.length === 1 && E("getDay('day-plan')") == null, "accepting from either entry point deletes it");
 
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
