@@ -5014,6 +5014,7 @@ function renderRoutineList(){
         if (!day) return;
         if (!confirm('Delete "'+day.name+'" and its plan?')) return;
         state.days = state.days.filter(x=>x.id!==dayId);
+        progForgetRoutine(dayId);
         saveState(); render(); toast("Routine deleted");
       }
     });
@@ -5306,7 +5307,9 @@ function renderWorkoutEditor(){
   $("#plan-back", s).addEventListener("click", ()=>{ planMode="list"; planEditId=null; render(); });
   $("#plan-del-day", s).addEventListener("click", ()=>{
     if(!confirm("Delete this routine and its plan?")) return;
-    state.days = state.days.filter(x=>x.id!==d.id); saveState();
+    state.days = state.days.filter(x=>x.id!==d.id);
+    progForgetRoutine(d.id);
+    saveState();
     planMode="list"; planEditId=null; render();
   });
   $$("input[data-dayname]", s).forEach(inp => inp.addEventListener("change", ev=>{
@@ -10067,10 +10070,31 @@ function progSaveList(arr){
     memStore[PROG_SAVED_KEY] = raw;
   }catch(e){}
 }
+/* A slot counts as a training day only while the routine it names still
+   exists. Deleting a routine in Workouts leaves its id behind in the draft
+   and in every saved program, so every read of a slot goes through here: a
+   program never reports a day that is not really there. */
+function progSlotLive(id){ return !!(id && getDay(id)); }
+/* Deleting a routine drops its id everywhere it was remembered. Only the
+   reference is forgotten — the routines themselves are never touched from a
+   shelf card, which is why Remove stays non-destructive. */
+function progForgetRoutine(id){
+  if (!id) return;
+  const drop = slots => (slots || []).map(x=>x === id ? null : x);
+  const d = progDraft();
+  if (d.slots.indexOf(id) !== -1) progSaveDraft({ slots: drop(d.slots) });
+  let changed = false;
+  const next = progSavedList().map(p=>{
+    if (p.slots.indexOf(id) === -1) return p;
+    changed = true;
+    return Object.assign({}, p, { slots: drop(p.slots) });
+  });
+  if (changed) progSaveList(next);
+}
 /* Training-day indices in week order (Monday first). */
 function progSessionIdx(slots){
   const out = [];
-  (slots || []).forEach((id, i)=>{ if (id) out.push(i); });
+  (slots || []).forEach((id, i)=>{ if (progSlotLive(id)) out.push(i); });
   return out;
 }
 /* Rest days between each pair of neighbouring sessions, wrapping the week.
@@ -10092,7 +10116,7 @@ function progOffsetFor(slots, firstIdx){
 }
 function progShiftSlots(slots, offset){
   const out = [null, null, null, null, null, null, null];
-  (slots || []).forEach((id, i)=>{ if (id) out[(((i + offset) % 7) + 7) % 7] = id; });
+  (slots || []).forEach((id, i)=>{ if (progSlotLive(id)) out[(((i + offset) % 7) + 7) % 7] = id; });
   return out;
 }
 function progSessionLabel(slots){
@@ -10118,7 +10142,7 @@ function progRoutineSets(id){
 }
 function progWeekDots(slots){
   return slots.map((id, i)=>{
-    const on = !!id;
+    const on = progSlotLive(id);
     return '<span class="prog-dot' + (on ? ' on' : '') + '" title="' + esc(PROG_DAYS[i] + ": " + progRoutineName(id)) + '">' + PROG_DAYS[i][0] + '</span>';
   }).join("");
 }
@@ -10126,7 +10150,7 @@ function progWeekDots(slots){
 function progSuggestHtml(){
   const d = progDraft();
   const idx = [];
-  d.slots.forEach((id, i)=>{ if (id) idx.push(i); });
+  d.slots.forEach((id, i)=>{ if (progSlotLive(id)) idx.push(i); });
   if (idx.length < 2) return "";
   const gaps = idx.map((v, i)=>{
     const nxt = idx[(i + 1) % idx.length];
@@ -10143,13 +10167,19 @@ function progBindSuggest(s){
 }
 /* Phone builder header: how many of the seven days carry a routine. */
 function progSummaryHtml(slots){
-  const n = (slots || []).filter(Boolean).length;
+  const n = (slots || []).filter(progSlotLive).length;
   return '<b>' + n + '</b> training day' + (n === 1 ? '' : 's') + ' \u00b7 ' + (7 - n) + ' rest';
 }
 function renderPrograms(){
   const s = $("#view-programs");
   if (!s) return;
   const draft = progDraft();
+  /* Heal a draft stored before a routine was deleted: a slot survives only
+     while its routine does, so the selects and the shelf agree from the off. */
+  if (draft.slots.some(id=>id && !getDay(id))){
+    draft.slots = draft.slots.map(id=>progSlotLive(id) ? id : null);
+    progSaveDraft(draft);
+  }
   const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
   const saved = progSavedList();
   const customCard =

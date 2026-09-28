@@ -198,6 +198,65 @@ E("switchView('programs')");
 check($$("#view-programs [data-prog-saved]").length === 1, "a stored program renders on the shelf after a re-render");
 check(/Distance between sessions: 4 \u00b7 1 days/.test($("#view-programs [data-prog-saved] .prog-gaps").textContent), "distances are recomputed from the stored shape (" + $("#view-programs [data-prog-saved] .prog-gaps").textContent + ")");
 
+/* =========================================================================
+   Deleting a routine must not leave a ghost training day behind.
+   A slot is only a session while the routine it names still exists: the
+   draft and every saved program hold references, never copies.
+   ========================================================================= */
+section("A slot with no routine behind it is not a training day");
+
+// Seed a routine that exists only for this section, so nothing above shifts.
+E("state.days.push({id:'day-ghost',name:'Ghost routine',type:'strength',exercises:[{exId:'x',targetSets:4}]});" +
+  "const lg=progSavedList(); lg.push({id:'id-ghost',name:'Ghost week',description:'loses a routine'," +
+  "slots:[null,'day-ghost',null,'day-t-b',null,null,'day-ghost'],ts:2}); progSaveList(lg);" +
+  "const dgg=progDraft(); dgg.slots=[null,'day-ghost',null,null,null,null,'day-t-b']; progSaveDraft(dgg);");
+const ghostSlots = "progSavedList().find(p=>p.id==='id-ghost').slots";
+check(E("JSON.stringify(progSessionIdx(" + ghostSlots + "))") === "[1,3,6]", "three sessions while the routine exists");
+check(E("progWeekDots(" + ghostSlots + ").split('prog-dot on').length - 1") === 3, "three dots light while it exists");
+
+// An id already on disk with nothing behind it reads honestly, no pruning needed.
+E("const ls=progSavedList(); ls.push({id:'id-stale',name:'Stale',description:''," +
+  "slots:[null,'day-gone',null,'day-t-b',null,null,null],ts:3}); progSaveList(ls);");
+const staleSlots = "progSavedList().find(p=>p.id==='id-stale').slots";
+check(E("progRoutineName('day-gone')") === "Rest", "a missing routine reads as Rest");
+check(E("progRoutineSets('day-gone')") === 0, "and carries no sets");
+check(E("JSON.stringify(progSessionIdx(" + staleSlots + "))") === "[3]", "it is not counted as a session");
+check(E("progWeekDots(" + staleSlots + ").split('prog-dot on').length - 1") === 1, "and its dot is not lit");
+check(E("progSessionLabel(" + staleSlots + ")") === "1 session \u00b7 Thu", "the card label tells the truth: " + JSON.stringify(E("progSessionLabel(" + staleSlots + ")")));
+check(E("progGaps(" + staleSlots + ").length") === 0, "a lone session reports no distance");
+
+section("Deleting the routine forgets the reference everywhere");
+E("progForgetRoutine('day-ghost')");
+check(E("JSON.stringify(" + ghostSlots + ")") === "[null,null,null,\"day-t-b\",null,null,null]", "the saved program drops the deleted routine");
+check(E("JSON.stringify(progSessionIdx(" + ghostSlots + "))") === "[3]", "one session remains");
+check(E("progWeekDots(" + ghostSlots + ").split('prog-dot on').length - 1") === 1, "only the surviving dot stays lit");
+check(E("progSessionLabel(" + ghostSlots + ")") === "1 session \u00b7 Thu", "the label follows the shape");
+check(E("JSON.stringify(progDraft().slots)") === "[null,null,null,null,null,null,\"day-t-b\"]", "the working week drops it too");
+check(E("progSavedList().length") === 3, "no program was removed, only its reference (" + E("progSavedList().length") + ")");
+check(!!E("getDay('day-t-b')"), "the routines themselves are untouched");
+
+section("The shelf renders the truth");
+E("switchView('programs')");
+const staleCard = $("#view-programs [data-prog-saved='id-stale']");
+check(!!staleCard, "the program with a dead reference still renders");
+check(staleCard.querySelectorAll(".prog-week .prog-dot.on").length === 1, "its card lights only the live day");
+check(/1 session \u00b7 Thu/.test(staleCard.textContent), "its card counts one session, not two");
+check(!/2 sessions/.test(staleCard.textContent), "no ghost session is claimed");
+
+section("Deleting from Workouts forgets the reference at the source");
+E("switchView('workouts')");
+E("const dk=progDraft(); dk.slots=[null,'day-t-a',null,null,null,null,null]; progSaveDraft(dk);");
+const menuBtn = $("#view-workouts [data-routine-menu='day-t-a']");
+check(!!menuBtn, "the routine has a menu button");
+if (menuBtn){
+  menuBtn.click();
+  const delBtn = $("#view-workouts .routine-pop.open [data-routine-act='delete']");
+  check(!!delBtn, "the menu offers Delete routine");
+  if (delBtn) delBtn.click();
+}
+check(E("getDay('day-t-a')") == null, "the routine is gone from state");
+check(E("JSON.stringify(progDraft().slots)") === "[null,null,null,null,null,null,null]", "the working week was scrubbed of the deleted routine (" + E("JSON.stringify(progDraft().slots)") + ")");
+
 check(errors.length === 0, "no window errors (" + errors.length + ")");
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
