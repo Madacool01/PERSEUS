@@ -46,7 +46,8 @@ const sel0 = $("#view-programs [data-prog-slot='0']");
 check(!!sel0 && sel0.options.length >= 3, "day select offers Rest + saved routines (" + (sel0 ? sel0.options.length : 0) + " options)");
 check($$("#view-programs [data-prog-flow]").length === 7, "pinned flow has 7 steps");
 check(!!$("[data-prog-start]"), "action band still starts the working week");
-check(!!$("[data-prog-save]") && !!$("[data-prog-name]") && !!$("[data-prog-desc]"), "the builder can save the week with a name and a description");
+check(!!$("[data-prog-save]"), "the builder carries a Save Program trigger");
+check(!$("#view-programs .prog-save") && !$("[data-prog-name]") && !$("[data-prog-desc]"), "no permanent save panel sits in the builder");
 check(!/Starting is a prototype/.test($("#view-programs").textContent), "prototype note removed from the CTA band");
 
 // interaction: change Tuesday slot to first routine, flow + dots update
@@ -86,19 +87,34 @@ check(E("JSON.stringify(progGaps(progDraft().slots))") === "[1,2,1]", "Tuesday /
 check(/3 sessions \u00b7 Tue \/ Thu \/ Sun/.test($("#view-programs").textContent), "the builder names the training days");
 
 E("document.querySelector('[data-prog-save]').click()");
+check(!!$("#prog-save-host .psave-card"), "Save Program opens the glass sheet");
+check(!!$("#prog-save-host [data-prog-name]") && !!$("#prog-save-host [data-prog-desc]"), "the sheet sets a name and a description");
+check(/3 sessions \u00b7 Tue \/ Thu \/ Sun/.test($("#prog-save-host .psave-preview").textContent), "the sheet previews the week it will save");
+check(!!$("#prog-save-host .psave-inline"), "the sheet title carries an inline image");
+check($$("#prog-save-host [data-psave-idea]").length > 0, "the sheet suggests names drawn from the week (" + $$("#prog-save-host [data-psave-idea]").length + ")");
+
+E("document.querySelector('[data-progsave-go]').click()");
 check(E("progSavedList().length") === 0, "saving without a name is refused");
-check(/name/i.test($("[data-prog-save-msg]").textContent), "the builder asks for a name: " + JSON.stringify($("[data-prog-save-msg]").textContent));
+check(/name/i.test($("[data-prog-save-msg]").textContent), "the sheet asks for a name: " + JSON.stringify($("[data-prog-save-msg]").textContent));
+check(!!$("#prog-save-host .psave-card"), "the sheet stays open after a refusal");
 
 // a week with no training day cannot be saved, even with a name
-E("const dd0=progDraft(); dd0.slots=[null,null,null,null,null,null,null]; progSaveDraft(dd0); renderPrograms();" +
-  "document.querySelector('[data-prog-name]').value='Empty week'; document.querySelector('[data-prog-save]').click();");
+E("const dd0=progDraft(); dd0.slots=[null,null,null,null,null,null,null]; progSaveDraft(dd0); renderPrograms();");
+E("document.querySelector('[data-prog-save]').click()");
+E("document.querySelector('[data-prog-name]').value='Empty week'; document.querySelector('[data-progsave-go]').click()");
 check(E("progSavedList().length") === 0, "a week with no training day is refused");
-check(/routine day/i.test($("[data-prog-save-msg]").textContent), "the builder explains it needs a training day: " + JSON.stringify($("[data-prog-save-msg]").textContent));
+check(/routine day/i.test($("[data-prog-save-msg]").textContent), "the sheet explains it needs a training day: " + JSON.stringify($("[data-prog-save-msg]").textContent));
 E("const dd1=progDraft(); dd1.slots=[null,'day-t-a',null,'day-t-b',null,null,'day-t-a']; progSaveDraft(dd1); renderPrograms();");
+
+E("document.querySelector('[data-prog-save]').click()");
+E("const chip=document.querySelector('#prog-save-host [data-psave-idea]'); if (chip) chip.click();");
+check(E("document.querySelector('[data-prog-name]').value").length > 0, "a suggested name fills the field in one click");
+check(/\d\/60/.test($("[data-psave-count]").textContent), "the name counter tracks the field: " + JSON.stringify($("[data-psave-count]").textContent));
 
 E("document.querySelector('[data-prog-name]').value='The 3-day split';" +
   "document.querySelector('[data-prog-desc]').value='Tuesday, Thursday, Sunday';" +
-  "document.querySelector('[data-prog-save]').click()");
+  "document.querySelector('[data-progsave-go]').click()");
+check(!$("#prog-save-host .psave-card"), "a successful save closes the sheet");
 const savedList = JSON.parse(E("JSON.stringify(progSavedList())"));
 check(savedList.length === 1, "one program saved (found " + savedList.length + ")");
 check(savedList[0].name === "The 3-day split" && savedList[0].description === "Tuesday, Thursday, Sunday", "name and description are stored");
@@ -106,6 +122,17 @@ check(JSON.stringify(dowIdx(savedList[0].slots)) === "[1,3,6]", "the three train
 check(savedList[0].slots[1] === "day-t-a" && savedList[0].slots[3] === "day-t-b" && savedList[0].slots[6] === "day-t-a", "each session keeps the routine that was on it");
 check(E("JSON.stringify(progGaps(progSavedList()[0].slots))") === "[1,2,1]", "the program remembers its distances");
 check(/Saved/.test(W.document.querySelector("#toast").textContent), "saving shows a toast");
+
+section("The save sheet can be dismissed");
+E("switchView('programs')");
+E("document.querySelector('[data-prog-save]').click()");
+check(!!$("#prog-save-host .psave-card"), "the sheet reopens");
+E("document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true }))");
+check(!$("#prog-save-host .psave-card"), "Escape closes the save sheet");
+E("document.querySelector('[data-prog-save]').click()");
+E("document.querySelector('[data-psave-cancel]').click()");
+check(!$("#prog-save-host .psave-card"), "Cancel closes the save sheet");
+check(E("progSavedList().length") === 1, "dismissing the sheet saves nothing new");
 
 section("The saved program shows on the shelf");
 check($$("#view-programs [data-prog-saved]").length === 1, "the shelf lists the saved program");

@@ -731,14 +731,14 @@
   /* ---------- Shared workouts: share sheet + import preview ----------
      One overlay host for both directions (send / receive). Colours reuse the
      token pairs already contrast-checked in tests/_contrast.js. */
-  #share-host, #prog-start-host {
+  #share-host, #prog-start-host, #prog-save-host {
     position: fixed; inset: 0; z-index: 72;
     display: grid; place-items: center; padding: 1.2rem;
     background: rgba(23,19,12,.5);
     -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35);
     animation: modalBack .25s ease;
   }
-  #share-host:empty, #prog-start-host:empty { display: none; }
+  #share-host:empty, #prog-start-host:empty, #prog-save-host:empty { display: none; }
   .sh-card {
     width: min(620px, 100%); max-height: 90vh; overflow-y: auto;
     background: var(--glass-lite);
@@ -1955,9 +1955,61 @@
   .prog-card.saved .prog-media { height: 148px; }
   .prog-gaps { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .prog-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .35rem; }
-  .prog-save { border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); padding: 1.1rem 1.2rem 1.3rem; margin-top: 1.1rem; display: flex; flex-direction: column; gap: .85rem; }
-  .prog-save-row { display: flex; gap: .7rem; flex-wrap: wrap; }
-  .prog-save-row .field { flex: 1 1 220px; margin: 0; }
+  /* ---------- Save Program: one compact trigger, one glass sheet ---------
+     The builder used to carry a permanent name/description panel. Now a
+     single button opens a sheet that previews the week while you name it. */
+  .prog-save-cta {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    margin-top: 1.1rem; padding: .85rem 1.1rem;
+    border: 1px dashed var(--accent-line); border-radius: var(--r-lg);
+    background: linear-gradient(115deg, var(--accent-soft), transparent 72%), var(--surface);
+  }
+  .prog-save-cta .t { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; letter-spacing: -.015em; color: var(--ink); }
+  .prog-save-cta .micro { margin: .22rem 0 0; max-width: 48ch; }
+  .prog-save-cta .btn { margin-left: auto; transition: transform .28s cubic-bezier(.34,1.56,.64,1); }
+  .prog-save-cta .btn:hover { transform: translateY(-2px); }
+  @media (max-width: 620px) { .prog-save-cta .btn { margin-left: 0; width: 100%; justify-content: center; } }
+  .psave-card {
+    position: relative; width: min(600px, 100%); max-height: 90vh; overflow-y: auto;
+    padding: 1.5rem 1.55rem 1.55rem; border-radius: 22px;
+    border: 1px solid rgba(255,255,255,.55);
+    background:
+      radial-gradient(115% 85% at 8% 0%, var(--accent-soft), transparent 58%),
+      radial-gradient(85% 65% at 100% 100%, var(--glass-faint), transparent 66%),
+      var(--glass-lite);
+    -webkit-backdrop-filter: blur(28px) saturate(1.7); backdrop-filter: blur(28px) saturate(1.7);
+    box-shadow: 0 30px 76px -20px rgba(23,19,12,.45), inset 0 1px 0 rgba(255,255,255,.6);
+    animation: modalIn .34s cubic-bezier(.22,1,.36,1);
+  }
+  .psave-rule { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 22px 22px 0 0; background: linear-gradient(90deg, var(--accent), var(--accent-line) 52%, transparent); }
+  .psave-head { display: flex; align-items: flex-start; gap: 1rem; margin: .35rem 0 1rem; }
+  .psave-eyebrow { font-family: var(--font-mono); font-size: .58rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+  .psave-title { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; line-height: 1.04; font-size: clamp(1.5rem, 3.4vw, 2rem); color: var(--ink); margin: .4rem 0 0; }
+  .psave-inline {
+    display: inline-block; width: 60px; height: 28px; border-radius: 999px; vertical-align: middle;
+    margin: 0 .4rem; background-size: cover; background-position: center;
+    filter: grayscale(.55) contrast(1.15); box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+  }
+  .psave-sub { margin: .55rem 0 0; font-size: .82rem; color: var(--ink-2); max-width: 52ch; }
+  .psave-preview { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--glass-faint); padding: .75rem .85rem; margin: 0 0 1.05rem; }
+  .psave-preview .prog-week { margin-top: .5rem; }
+  .psave-fields { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: .7rem; }
+  .psave-fields .field { margin: 0; }
+  .psave-count { float: right; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .08em; text-transform: none; color: var(--ink-3); }
+  .psave-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin: .8rem 0 0; }
+  .psave-chip {
+    font: inherit; font-size: .74rem; padding: .32rem .62rem; cursor: pointer;
+    border: 1px dashed var(--line); border-radius: 999px; background: transparent; color: var(--ink-2);
+    transition: border-color .2s, color .2s, background .2s, transform .2s;
+  }
+  .psave-chip:hover, .psave-chip:focus-visible { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); transform: translateY(-2px); }
+  .psave-foot { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: 1.15rem; padding-top: 1rem; border-top: 1px dashed var(--line); }
+  .psave-foot .spacer { margin-left: auto; }
+  @media (max-width: 560px) {
+    .psave-fields { grid-template-columns: 1fr; }
+    .psave-foot .btn { flex: 1 1 auto; justify-content: center; }
+    .psave-foot .spacer { display: none; }
+  }
   .pstart-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4rem; margin-top: .3rem; }
   .pstart-day {
     font: inherit; font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
@@ -2431,6 +2483,7 @@
 <div id="toast" class="toast"></div>
 <div id="share-host"></div>
 <div id="prog-start-host"></div>
+<div id="prog-save-host"></div>
 <nav id="m-tabs" aria-label="Primary">
   <button data-view="home" class="tab-btn active" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
   <button data-view="workouts" class="tab-btn" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
@@ -9670,7 +9723,9 @@ function shareHostKey(ev){
   const h = shareHostEl();
   if (h && h.childNodes.length && h.firstChild){ closeShareHost(); return; }
   const p = progStartHostEl();
-  if (p && p.childNodes.length && p.firstChild) closeProgStart();
+  if (p && p.childNodes.length && p.firstChild){ closeProgStart(); return; }
+  const sv = progSaveHostEl();
+  if (sv && sv.childNodes.length && sv.firstChild) closeProgSave();
 }
 function shareMount(htmlStr){
   const h = shareHostEl();
@@ -10185,15 +10240,10 @@ function renderPrograms(){
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
       '<div class="prog-acc prog-acc-desktop" role="list">' + acc + '</div>' +
       '<div class="pm-picker" data-pm-picker>' + pmSummary + pmRows + '</div>' +
-      '<div class="prog-save">' +
-        '<div><div class="prog-name" style="font-size:1.05rem">Save this week to the shelf</div>' +
-        '<p class="micro" style="margin:.3rem 0 0">Name it, describe it, and start it whenever you like — it keeps its own training days and distances.</p></div>' +
-        '<div class="prog-save-row">' +
-          '<label class="field"><span>Program name</span><input type="text" data-prog-name maxlength="60" placeholder="Three-day strength"/></label>' +
-          '<label class="field"><span>Description</span><input type="text" data-prog-desc maxlength="140" placeholder="Base week, barbell focus"/></label>' +
-        '</div>' +
-        '<div class="btn-row"><button type="button" class="btn primary" data-prog-save>Save to the shelf</button></div>' +
-        '<div data-prog-save-msg></div>' +
+      '<div class="prog-save-cta">' +
+        '<div><div class="t">Keep this week</div>' +
+        '<p class="micro">Name it and it joins the shelf — its training days and the distance between them travel with it.</p></div>' +
+        '<button type="button" class="btn primary" data-prog-save>Save Program <span class="btn-arrow">→</span></button>' +
       '</div>' +
       '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
       '<div class="ticker log-ticker" aria-hidden="true"><div class="ticker-track">' + half + half + '</div></div></div>' +
@@ -10297,29 +10347,7 @@ function renderPrograms(){
     toast("Week saved \u2014 starting on Home");
   });
   const saveB = $("[data-prog-save]", s);
-  if (saveB) saveB.addEventListener("click", ()=>{
-    const nameIn = $("[data-prog-name]", s), descIn = $("[data-prog-desc]", s);
-    const msg = $("[data-prog-save-msg]", s);
-    const d = progDraft();
-    const name = String((nameIn && nameIn.value) || "").trim();
-    if (!progSessionIdx(d.slots).length){
-      if (msg) msg.innerHTML = '<div class="sh-err">Give the week at least one routine day before saving it.</div>';
-      return;
-    }
-    if (!name){
-      if (msg) msg.innerHTML = '<div class="sh-err">Give the program a name first.</div>';
-      if (nameIn) nameIn.focus();
-      return;
-    }
-    const list = progSavedList();
-    list.push({ id: uid(), name: name.slice(0, 60),
-      description: String((descIn && descIn.value) || "").trim().slice(0, 140),
-      slots: d.slots.slice(), ts: Date.now() });
-    progSaveList(list);
-    renderPrograms();
-    go("prog-library");
-    toast("Saved \u201c" + name + "\u201d to the shelf");
-  });
+  if (saveB) saveB.addEventListener("click", openProgSave);
   $$("[data-prog-start-saved]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     openProgStart(b.dataset.progStartSaved);
@@ -10396,6 +10424,131 @@ function openProgStart(id){
     toast("Started \u201c" + p.name + "\u201d — first session " + PROG_DAYS[chosen]);
   });
   paint();
+}
+
+/* ---------- Saving the working week: the glass "Save Program" sheet -----
+   The builder keeps only a compact trigger. Naming, describing and the
+   week's live preview all happen in a glass sheet that closes on Escape,
+   backdrop click, Cancel or the X. */
+function progSaveHostEl(){ return $("#prog-save-host"); }
+function closeProgSave(){
+  const h = progSaveHostEl();
+  if (h) h.innerHTML = "";
+}
+/* Name ideas derived from the week itself, so a suggestion is always true. */
+function progNameIdeas(slots){
+  const idx = progSessionIdx(slots);
+  const routines = [];
+  idx.forEach(i=>{
+    const n = progRoutineName(slots[i]);
+    if (n && n !== "Rest" && routines.indexOf(n) === -1) routines.push(n);
+  });
+  const out = [];
+  if (routines.length) out.push(routines.join(" / "));
+  if (idx.length > 1) out.push(idx.length + "-day split");
+  if (idx.length) out.push(idx.length + "-day cycle \u00b7 " + idx.map(i=>PROG_DAYS[i]).join("/"));
+  return out.filter((x, i)=>x && out.indexOf(x) === i).slice(0, 3);
+}
+/* Nudge an error into view: motion when GSAP is available, focus when not. */
+function psaveError(msg){
+  if (!msg) return;
+  try{
+    const g = window.gsap;
+    if (g && FX.ok && !FX.reduced()) g.fromTo(msg, { x: -7 }, { x: 0, duration: .5, ease: "elastic.out(1, .42)", overwrite: "auto" });
+  }catch(e){}
+}
+function openProgSave(){
+  const host = progSaveHostEl();
+  if (!host) return;
+  const d = progDraft();
+  const idx = progSessionIdx(d.slots);
+  const ideas = progNameIdeas(d.slots);
+  const gapLine = progGapLabel(d.slots);
+  host.innerHTML = '<div class="psave-card" role="dialog" aria-modal="true" aria-labelledby="psave-title">' +
+    '<span class="psave-rule" aria-hidden="true"></span>' +
+    '<div class="psave-head"><div>' +
+      '<div class="psave-eyebrow">The shelf</div>' +
+      '<h3 class="psave-title" id="psave-title">Save your <span class="psave-inline" aria-hidden="true" style="background-image:url(https://picsum.photos/seed/perseus-save-week/240/120)"></span> week</h3>' +
+      '<p class="psave-sub">Give it a name you will still recognise in a month. A saved program remembers its training days and the distance between them.</p>' +
+    '</div><button type="button" class="btn ghost sh-x" data-psave-close aria-label="Close">\u2715</button></div>' +
+    '<div class="psave-preview">' +
+      '<div class="micro" style="margin:0">' + esc(progSessionLabel(d.slots)) + '</div>' +
+      '<div class="prog-week" aria-hidden="true" data-psave-week>' + progWeekDots(d.slots) + '</div>' +
+      (gapLine ? '<div class="prog-gaps" style="margin-top:.5rem">' + esc(gapLine) + '</div>' : '') +
+    '</div>' +
+    '<div class="psave-fields">' +
+      '<label class="field"><span>Program name <b class="psave-count" data-psave-count>0/60</b></span>' +
+        '<input type="text" data-prog-name maxlength="60" placeholder="Three-day strength" autocomplete="off"/></label>' +
+      '<label class="field"><span>Description</span>' +
+        '<input type="text" data-prog-desc maxlength="140" placeholder="Base week, barbell focus" autocomplete="off"/></label>' +
+    '</div>' +
+    (ideas.length ? '<div class="psave-chips" data-psave-chips aria-label="Name suggestions">' +
+      ideas.map(t=>'<button type="button" class="psave-chip" data-psave-idea="' + esc(t) + '">' + esc(t) + '</button>').join("") + '</div>' : '') +
+    '<div data-prog-save-msg></div>' +
+    '<div class="psave-foot">' +
+      '<button type="button" class="btn primary" data-progsave-go>Save Program <span class="btn-arrow">\u2192</span></button>' +
+      '<button type="button" class="btn ghost" data-psave-cancel>Cancel</button>' +
+      '<span class="micro spacer" data-psave-hint>' +
+        (idx.length ? idx.length + ' training day' + (idx.length === 1 ? '' : 's') + ' ready' : 'No training days yet') +
+      '</span>' +
+    '</div>' +
+  '</div>';
+  host.onclick = ev=>{ if (ev.target === host) closeProgSave(); };
+  const card = host.firstChild;
+  if (card) card.addEventListener("click", ev=>ev.stopPropagation());
+  const nameIn = $("[data-prog-name]", host), descIn = $("[data-prog-desc]", host);
+  const countEl = $("[data-psave-count]", host), msg = $("[data-prog-save-msg]", host);
+  const syncCount = ()=>{ if (countEl && nameIn) countEl.textContent = (nameIn.value || "").length + "/60"; };
+  if (nameIn){
+    syncCount();
+    nameIn.addEventListener("input", syncCount);
+    nameIn.focus();
+  }
+  $$("[data-psave-idea]", host).forEach(b=>b.addEventListener("click", ()=>{
+    if (!nameIn) return;
+    nameIn.value = b.dataset.psaveIdea || "";
+    syncCount();
+    nameIn.focus();
+  }));
+  $$("[data-psave-close], [data-psave-cancel]", host).forEach(b=>b.addEventListener("click", closeProgSave));
+  const goB = $("[data-progsave-go]", host);
+  if (goB) goB.addEventListener("click", ()=>{
+    const draft = progDraft();
+    const name = String((nameIn && nameIn.value) || "").trim();
+    if (!progSessionIdx(draft.slots).length){
+      if (msg) msg.innerHTML = '<div class="sh-err">Give the week at least one routine day before saving it.</div>';
+      psaveError(msg);
+      return;
+    }
+    if (!name){
+      if (msg) msg.innerHTML = '<div class="sh-err">Give the program a name first.</div>';
+      psaveError(msg);
+      if (nameIn) nameIn.focus();
+      return;
+    }
+    const list = progSavedList();
+    list.push({ id: uid(), name: name.slice(0, 60),
+      description: String((descIn && descIn.value) || "").trim().slice(0, 140),
+      slots: draft.slots.slice(), ts: Date.now() });
+    progSaveList(list);
+    closeProgSave();
+    renderPrograms();
+    const lib = document.getElementById("prog-library");
+    if (lib){
+      try{ lib.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      catch(e){ try{ lib.scrollIntoView(); }catch(e2){} }
+    }
+    toast("Saved \u201c" + name + "\u201d to the shelf");
+  });
+  /* Entrance: the sheet settles, then the training dots tick in one by one. */
+  try{
+    const g = window.gsap;
+    if (g && card && FX.ok && !FX.reduced()){
+      g.fromTo(card, { y: 16, opacity: 0, scale: .97 }, { y: 0, opacity: 1, scale: 1, duration: .42, ease: "power3.out", overwrite: "auto" });
+      const dots = card.querySelectorAll("[data-psave-week] .prog-dot.on");
+      if (dots.length) g.fromTo(dots, { scale: .4, opacity: 0 }, { scale: 1, opacity: 1, duration: .34, stagger: .05, ease: "back.out(2.4)", overwrite: "auto", delay: .12 });
+    }
+  }catch(e){}
 }
 
 /* =========================================================================
