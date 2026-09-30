@@ -6787,11 +6787,11 @@ function feedbackHint(fb){
   const out = [];
   if (fb.performance===3 && (fb.difficulty==null || fb.difficulty<=2)) out.push("Above plan at low effort — the coach looks at adding a rep or a small load step.");
   if (fb.performance===1) out.push("Below plan — the coach holds the targets and checks the readiness check-in before cutting anything.");
-  if (fb.difficulty>=4) out.push("A session taken to the limit holds progression even when the targets were met.");
-  if (fb.fatigue>=4) out.push("Very spent — volume stays where it is instead of going up.");
+  if (fb.difficulty>=4) out.push("A session taken to the limit is logged as context, not a brake: hit your targets and recover well and the coach still progresses you.");
+  if (fb.fatigue>=4) out.push("Very spent today — kept as recovery context so the coach understands you, never as a reason to hold your progression back.");
   if (fb.pump===0 && fb.difficulty!=null && fb.difficulty<=2) out.push("No pump on a session that felt easy usually means the load or reps can move.");
   if (fb.pain && String(fb.pain).trim()) out.push("Pain noted — the coach holds or reduces the movements involved, never increases them.");
-  if (!out.length) return "Rate how hard it felt and how it landed against the plan — that pair decides the next step.";
+  if (!out.length) return "Rate how it landed against the plan — that, plus your readiness, decides the next step. How hard it felt is context the coach reads, not a brake.";
   return out.join(" ");
 }
 function verdictHtml(v){ return '<b>'+esc(v.title)+'</b><p>'+esc(v.body)+'</p>'; }
@@ -7512,11 +7512,14 @@ const CHECKIN_PROMPT = [
   "  clearest case for a normal step up.",
   "- 'feedback' was collected right AFTER the last set: difficulty 1-5 (easy..all",
   "  out), performance 1-3 (below plan..above plan), pump 0-2 (none..strong),",
-  "  fatigue 1-5 (fresh..wrecked), pain and note free text. difficulty + performance",
-  "  are the progression signal: 4+ difficulty or 'below plan' argues for holding",
-  "  even when the targets were met; 'above plan' at 1-2 earns a step. feedback.pain",
-  "  means hold or reduce the movements that caused it. fatigue 4+ argues against",
-  "  adding volume.",
+  "  fatigue 1-5 (fresh..wrecked), pain and note free text. 'performance' (against",
+  "  plan) plus readiness are the progression signals: 'below plan' argues for",
+  "  holding, 'above plan' at 1-2 earns a step. difficulty and fatigue are CONTEXT",
+  "  only — how one session felt says nothing about capacity once the athlete has",
+  "  rested and recovered, so NEVER hold or reduce next session's targets just",
+  "  because it was hard or the athlete felt spent. Cite them only to explain a",
+  "  below-plan session, never to cap progression. feedback.pain means hold or",
+  "  reduce the movements that caused it.",
   "- Either check-in may be missing fields because the user skipped it: never",
   "  invent, assume, or read a missing field as a signal in either direction.",
 ];
@@ -7561,7 +7564,7 @@ const SYSTEM_PROMPT = [
   ...CHECKIN_PROMPT,
   "Rules you MUST respect:",
   "- NEVER change number of sets; only reps, hold-time, or weight.",
-  "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
+  "- Be conservative: prefer holding when a set was missed or readiness was poor. Felt effort and fatigue are context, never by themselves a reason to hold progression.",
   "- Treat pain reports as a hold or small reduction, never a big increase.",
   "- Do not invent exercises or fields; reuse exId values verbatim.",
   "- Keep magnitudes modest (a couple reps, 5s, one small weight step).",
@@ -7614,7 +7617,7 @@ function systemPrompt(){
       ...CHECKIN_PROMPT,
       "Rules you MUST respect:",
       "- NEVER change number of sets; only reps, hold-time, or weight.",
-      "- Be conservative: prefer holding when a set was missed or recovery/effort was high.",
+      "- Be conservative: prefer holding when a set was missed or readiness was poor. Felt effort and fatigue are context, never by themselves a reason to hold progression.",
       "- Treat pain reports as a hold or small reduction, never a big increase.",
       "- Do not invent exercises or fields; reuse exId values verbatim.",
       "- Keep magnitudes modest (a couple reps, 5s, one small weight step).",

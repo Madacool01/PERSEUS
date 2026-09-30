@@ -118,7 +118,7 @@ check(!/Sleep last night/.test($("#view-log .log-step").textContent), "sleep is 
 tap("fb", "performance", "3"); tap("fb", "difficulty", "1");
 check(/adding a rep/i.test($("#fb-hint").textContent), "above plan at low effort tells the user a step is coming");
 tap("fb", "difficulty", "5");
-check(/holds progression/i.test($("#fb-hint").textContent), "an all-out session reads as a reason to hold");
+check(/not a brake/i.test($("#fb-hint").textContent), "an all-out session reads as context, not a reason to hold");
 
 section("Both check-ins survive save, history and the coach payload");
 tap("fb", "performance", "1"); tap("fb", "difficulty", "4"); tap("fb", "pump", "0"); tap("fb", "fatigue", "4");
