@@ -4037,11 +4037,6 @@ function openExEditor(id){
 
       '<div class="field-head"><span>Notes</span></div>'+
       '<label class="field" style="margin-top:.4rem"><input id="ex-notes" type="text" value="'+esc(e.notes||"")+'" placeholder="optional, any extra context"/></label>'+
-      '<label class="field"><span>Harder progressions (optional, ordered easiest to hardest)</span>'+
-        '<select id="ex-progressions" multiple size="4">'+
-          state.exercises.filter(x=>x.id!==e.id).map(x=>'<option value="'+x.id+'"'+(Array.isArray(e.progressions)&&e.progressions.includes(x.id)?" selected":"")+'>'+esc(x.name)+'</option>').join("")+
-        '</select>'+
-        '<div class="micro">When a bodyweight exercise drifts past the session rep zone, the coach can suggest stepping up to the next variation you list here (e.g. Push-Up → Archer Push-Up).</div></label>'+
       '<div class="btn-row">'+
         '<button class="btn primary" id="ex-save">'+(isEdit?"Save changes":"Add exercise")+"</button>"+
         '<button class="btn" id="ex-cancel">Cancel</button>'+
@@ -4251,17 +4246,13 @@ function openExEditor(id){
       data.loadFactor = lfVal;
       data.loadSource = (lfVal==null ? null : "manual");
     }
-    const progSel = $("#ex-progressions", host);
-    const selected = progSel ? Array.from(progSel.selectedOptions).map(o=>o.value) : null;
     if (ex){
-      // existing: reflect current selection (empty = cleared), defaulting to prior chain
-      data.progressions = (selected!=null && selected.length) ? selected : ((Array.isArray(ex.progressions)&&ex.progressions.length) ? ex.progressions.slice() : []);
+      if (Array.isArray(ex.progressions) && ex.progressions.length) data.progressions = ex.progressions.slice();
       Object.assign(ex, data);
     } else {
-      if (selected && selected.length) data.progressions = selected; // explicit override
       data.id = "ex-"+uid();
       state.exercises.push(data);
-      // otherwise auto-resolve the new variation's harder progression from its chain
+      // auto-resolve the new variation's harder progression from its chain
       resolveProgressions(state.exercises);
     }
     document.removeEventListener("keydown", onKey);
