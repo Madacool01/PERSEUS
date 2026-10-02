@@ -2737,7 +2737,7 @@ function restSourceLabel(de, ex, day){
 /* Rest countdown state. One global timer: starting a new rest replaces the
    old one, and navigation re-renders clear it. Pure countdown math lives in
    restTick() so jsdom tests can drive it without waiting. */
-var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false, started: false, kind: "set", next: "" };
+var restTimer = { total: 0, left: 0, label: "", timer: 0, running: false, started: false, kind: "set", next: "", cued: false };
 function restClear(){
   if (restTimer.timer){ try{ clearInterval(restTimer.timer); }catch(e){} restTimer.timer = 0; }
   restTimer.running = false; restTimer.started = false;
@@ -2759,8 +2759,9 @@ function restResume(){
 }
 function restTick(){
   if (restTimer.left > 0) restTimer.left--;
-  if (restTimer.left <= 0){ restClear(); restDone(); }
-  else restPaint();
+  if (restTimer.left <= 0){ restClear(); restDone(); return; }
+  if (restTimer.left <= REST_CUE_LEAD_SEC) restCueTick();
+  restPaint();
 }
 function restStart(sec, label, opts){
   restClear();
@@ -2769,7 +2770,12 @@ function restStart(sec, label, opts){
   const o = opts || {};
   restTimer.total = s; restTimer.left = s; restTimer.label = label || "Rest";
   restTimer.kind = o.kind || "set"; restTimer.next = o.next || "";
+  restTimer.cued = false;
   try{ restAudio(); }catch(e){ /* audio is optional; timer still runs */ }
+  try{ primeRestCue(); }catch(e){ /* cue is optional; timer still runs */ }
+  // Short rest (shorter than the cue itself): fire the countdown at once so
+  // the user still hears the beep-beep-beep-boop instead of silence.
+  if (s <= REST_CUE_LEAD_SEC) restCueTick();
   restTimer.running = true; restTimer.started = true;
   restPaint();
   try{
@@ -2807,35 +2813,67 @@ function restAudio(){
     return restAudioCtx;
   }catch(e){ return null; }
 }
-/* Ringtone/alarm for a finished rest while logging. Each pattern repeats so
-   it rings for a few seconds and is easy to hear across the gym: a rising
-   three-note chime (x4) for the next exercise, a two-tone ping (x5) for the
-   next set, and a four-note fanfare (x3) for the wrap-up. */
-function playRestAlarm(kind){
+/* Rest-end countdown cue: audio/rest-end.mp3 is a beep-beep-beep-boop that
+   runs about three to four seconds. It starts when the countdown reaches the
+   lead-in (3… 2… 1… go lands exactly on zero). Web Audio beeps remain only
+   as a fallback when the file cannot play. */
+var REST_CUE_SRC = "audio/rest-end.mp3";
+var REST_CUE_LEAD_SEC = 4;
+var restCueAudio = null;
+function primeRestCue(){
+  try{
+    if (!restCueAudio && typeof Audio !== "undefined"){
+      restCueAudio = new Audio(REST_CUE_SRC);
+      restCueAudio.preload = "auto";
+      try{ restCueAudio.load(); }catch(e){}
+    }
+  }catch(e){}
+  return restCueAudio;
+}
+function playRestCue(){
+  if (!state.profile.loggingMode) return false;
+  try{
+    const a = primeRestCue();
+    if (a){
+      try{ a.currentTime = 0; }catch(e){}
+      try{
+        const p = a.play();
+        if (p && typeof p.catch === "function") p.catch(function(){ playRestBeepFallback(); });
+      }catch(e){ playRestBeepFallback(); }
+      return true;
+    }
+  }catch(e){}
+  playRestBeepFallback();
+  return true;
+}
+/* Fire the countdown cue once per rest, as soon as we enter the lead-in. */
+function restCueTick(){
+  if (!state.profile.loggingMode) return false;
+  if (restTimer.cued) return false;
+  restTimer.cued = true;
+  return playRestCue();
+}
+/* Fallback beeps when the MP3 is missing or blocked: one oscillator per note. */
+function playRestBeepFallback(){
   const ctx = restAudio();
   if (!ctx) return;
   try{
     const t0 = ctx.currentTime + 0.02;
-    const STEP = 0.28, LEN = 0.32;
-    const pattern = kind === "exercise" ? [659.25, 880, 1174.66]
-      : kind === "finish" ? [523.25, 659.25, 783.99, 1046.5]
-      : [880, 1174.66];
-    const repeats = kind === "exercise" ? 4 : kind === "finish" ? 3 : 5;
-    let n = 0;
-    for (let r = 0; r < repeats; r++){
-      for (let i = 0; i < pattern.length; i++){
-        const at = t0 + (n++) * STEP;
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = "triangle";
-        o.frequency.value = pattern[i];
-        o.connect(g); g.connect(ctx.destination);
-        g.gain.setValueAtTime(0.0001, at);
-        g.gain.exponentialRampToValueAtTime(0.32, at + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, at + LEN);
-        o.start(at); o.stop(at + LEN + 0.02);
-      }
-    }
+    [880, 880, 880, 1174.66].forEach(function(f, i){
+      const at = t0 + i * 0.9;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = f;
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.32, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+      o.start(at); o.stop(at + 0.32);
+    });
   }catch(e){}
+}
+function playRestAlarm(kind){
+  playRestCue();
 }
 /* Name of the step that follows the one being logged, for the "on to X" cue.
    Null when the current step is the last (session wrap-up). */
@@ -2859,7 +2897,9 @@ function restDone(){
   if (!state.profile.loggingMode) return;
   const kind = restTimer.kind || "set";
   const next = restTimer.next || "";
-  playRestAlarm(kind);
+  // The cue normally fired 4s before the end; if the rest was skipped,
+  // paused through the lead-in, or too short to schedule, play it now.
+  if (!restTimer.cued) restCueTick();
   try{ if (navigator.vibrate) navigator.vibrate(kind === "exercise" ? [200, 90, 200] : 200); }catch(e){}
   if (typeof toast === "function"){
     toast(kind === "exercise" ? "Rest over — on to " + next
