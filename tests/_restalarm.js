@@ -1,5 +1,5 @@
 /* Rest-end countdown cue: while logging mode is on, audio/rest-end.mp3
-   (beep-beep-beep-boop) starts 4s before the rest ends so 3-2-1-go lands on
+   (beep-beep-beep-boop) starts 3s before the rest ends so 3-2-1-go lands on
    zero. Toasts still say where to go next. Logging mode off is silent. */
 const fs = require("fs");
 const path = require("path");
@@ -50,7 +50,7 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   // Capture toasts the app raises when a rest ends.
   W.eval("window.__toasts = []; toast = function(m){ window.__toasts.push(m); };");
 
-  console.log("\n== between-set rest: cue 4s before the end ==\n");
+  console.log("\n== between-set rest: cue 3s before the end ==\n");
   E("state.profile.loggingMode = true");
   E("getDay('day-1').defaultRestSec = 60");
   E("switchView('log')");
@@ -67,9 +67,9 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   check(W.__cuePlays === 0, "no cue while the rest is still long");
   check(/rest-end\.mp3/.test(W.__cueSrc), "cue uses audio/rest-end.mp3 (" + W.__cueSrc + ")");
 
-  E("restTimer.left = 5"); E("restTick()");
-  check(E("restTimer.left") === 4, "countdown reaches the 4s lead-in");
-  check(W.__cuePlays === 1, "beep-beep-beep-boop starts 4s before the end");
+  E("restTimer.left = 4"); E("restTick()");
+  check(E("restTimer.left") === 3, "countdown reaches the 3s lead-in");
+  check(W.__cuePlays === 1, "beep-beep-beep-boop starts 3s before the end");
   check(E("restTimer.running") === true, "timer keeps running during the cue");
 
   E("restTimer.left = 1"); E("restTick()");
@@ -88,8 +88,8 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   check(W.__cuePlays === 1, "long transition rest starts silent");
 
   const before = W.__cuePlays;
-  E("restTimer.left = 5"); E("restTick()");
-  check(W.__cuePlays - before === 1, "transition cue starts at the 4s lead-in");
+  E("restTimer.left = 4"); E("restTick()");
+  check(W.__cuePlays - before === 1, "transition cue starts at the 3s lead-in");
   E("restTimer.left = 1"); E("restTick()");
   check(W.__cuePlays - before === 1, "transition cue plays once");
   check(/on to /.test(lastToast()) && lastToast().indexOf(nextName) !== -1, "transition alarm names the next exercise (" + lastToast() + ")");
@@ -99,8 +99,8 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   E("maybeAutoStartRest(90, true)");
   check(E("restTimer.kind") === "finish", "the final rest has no next exercise ('finish')");
   const finBefore = W.__cuePlays;
-  E("restTimer.left = 5"); E("restTick()");
-  check(W.__cuePlays - finBefore === 1, "final cue starts at the 4s lead-in");
+  E("restTimer.left = 4"); E("restTick()");
+  check(W.__cuePlays - finBefore === 1, "final cue starts at the 3s lead-in");
   E("restTimer.left = 1"); E("restTick()");
   check(W.__cuePlays - finBefore === 1, "final cue plays once");
   check(/wrap up/i.test(lastToast()), "final rest cues the session wrap-up");
@@ -118,7 +118,7 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   const off = W.__cuePlays;
   const offOsc = W.__osc;
   E("restStart(30, 'Rest', { kind:'exercise', next:'X' });");
-  E("restTimer.left = 5"); E("restTick()");
+  E("restTimer.left = 4"); E("restTick()");
   E("restTimer.left = 1"); E("restTick()");
   check(W.__cuePlays === off, "no cue plays when logging mode is off");
   check(W.__osc === offOsc, "no fallback beeps when logging mode is off");

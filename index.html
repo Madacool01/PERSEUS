@@ -2814,11 +2814,11 @@ function restAudio(){
   }catch(e){ return null; }
 }
 /* Rest-end countdown cue: audio/rest-end.mp3 is a beep-beep-beep-boop that
-   runs about three to four seconds. It starts when the countdown reaches the
+   runs about three seconds. It starts when the countdown reaches the
    lead-in (3… 2… 1… go lands exactly on zero). Web Audio beeps remain only
    as a fallback when the file cannot play. */
 var REST_CUE_SRC = "audio/rest-end.mp3";
-var REST_CUE_LEAD_SEC = 4;
+var REST_CUE_LEAD_SEC = 3;
 var restCueAudio = null;
 function primeRestCue(){
   try{
@@ -2897,7 +2897,7 @@ function restDone(){
   if (!state.profile.loggingMode) return;
   const kind = restTimer.kind || "set";
   const next = restTimer.next || "";
-  // The cue normally fired 4s before the end; if the rest was skipped,
+  // The cue normally fired 3s before the end; if the rest was skipped,
   // paused through the lead-in, or too short to schedule, play it now.
   if (!restTimer.cued) restCueTick();
   try{ if (navigator.vibrate) navigator.vibrate(kind === "exercise" ? [200, 90, 200] : 200); }catch(e){}
