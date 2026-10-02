@@ -2347,6 +2347,8 @@
   .home-day .hname { max-width: 100%; font-size: .6rem; line-height: 1.1; text-align: center; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .home-day .hcheck { display: inline-flex; color: var(--green); }
   .home-day .hcheck svg { width: 11px; height: 11px; }
+  .home-week-card { cursor: pointer; }
+  .home-week-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .home-stat { justify-content: space-between; }
   .home-stat .ico { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent); }
   .home-stat .ico svg { width: 30px; height: 30px; }
@@ -10757,10 +10759,10 @@ function homeWeekCardHtml(){
       (stats.days[i] ? '<span class="hcheck" aria-hidden="true">' + STREAK_ICO_CHECK + '</span>' : '') +
     '</button>';
   }).join("");
-  return '<article class="home-card span-5 fx-in">' +
+  return '<article class="home-card home-week-card span-5 fx-in" data-home-goto="programs" role="button" tabindex="0" aria-label="Open Programs to reshape your week">' +
     '<div class="hc-head"><h3>Your week</h3><span class="hc-spacer"></span><span class="hc-kicker">' + stats.n + ' / ' + planned + ' done</span></div>' +
     '<div class="home-week">' + cells + '</div>' +
-    '<p class="home-empty">Program days come from the Programs tab. Tap a day to reshape it.</p></article>';
+    '<p class="home-empty">Program days come from the Programs tab. Tap anywhere to reshape the week.</p></article>';
 }
 function homeStatsHtml(){
   const stats = homeWeekStats();
@@ -10892,6 +10894,13 @@ function renderHome(){
       '</div>' +
     '</div>';
   $$("[data-home-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.homeGoto)));
+  /* Card-level goto targets (e.g. the Your Week box) are articles, so they
+     need keyboard support that native buttons get for free. */
+  $$("article[data-home-goto]", s).forEach(b=>{
+    b.addEventListener("keydown", ev=>{
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); switchView(b.dataset.homeGoto); }
+    });
+  });
   $$("[data-home-start]", s).forEach(b=>b.addEventListener("click", ()=>homeStartSession(b.dataset.homeStart)));
   /* Streak card opens the same expanded streak screen as the You tab. */
   $$("[data-home-streak]", s).forEach(b=>{

@@ -40,6 +40,11 @@ check(spans === "7+5+4+4+4+5+7", "card spans interlock 7+5 / 4+4+4 / 5+7 (found 
 // Today card + week rail + stats + coach + recent
 check(!!$("#view-home .home-today"), "today card present");
 check($$("#view-home .home-day").length === 7, "week rail shows all 7 days");
+const weekCard = $("#view-home .home-week-card");
+check(Boolean(weekCard && weekCard.dataset.homeGoto === "programs"), "whole Your Week box links to Programs");
+weekCard.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+check(E("currentView") === "programs", "clicking the box itself opens Programs");
+E("switchView('home')");
 check($$("#view-home .home-stat").length === 3, "three stat cards");
 check(!!$("#view-home .home-coach"), "coach card present");
 check(!!$("#view-home .home-card .home-recent") || !!$("#view-home .home-empty"), "recent activity card present");
