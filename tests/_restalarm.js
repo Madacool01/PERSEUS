@@ -1,7 +1,8 @@
-/* Rest-end ringtone: while logging mode is on, a finished rest plays an alarm
-   and says where to go next. A between-set rest uses a short ping; the last
-   set of an exercise uses a longer chime that names the next exercise, and
-   the very last set cues the wrap-up. Logging mode off is silent. */
+/* Rest-end ringtone: while logging mode is on, a finished rest plays a
+   multi-second repeating alarm and says where to go next. A between-set rest
+   uses a repeated two-tone ping; the last set of an exercise uses a longer
+   repeated rising chime that names the next exercise, and the very last set
+   plays a repeated fanfare cueing the wrap-up. Logging mode off is silent. */
 const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
@@ -61,7 +62,7 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   E("restTimer.left = 1"); E("restTick()");
   check(E("restTimer.running") === false, "the rest runs out");
   check(E("restTimer.kind") === "set", "a between-set rest is a 'set' rest");
-  check(W.__osc === 2, "two-note ping plays for a between-set rest");
+  check(W.__osc === 10, "repeated two-tone ping rings for a few seconds (" + W.__osc + " notes)");
   check(lastToast() === "Rest over — next set", "between-set rest cues the next set");
 
   console.log("\n== last set of an exercise → next exercise ==\n");
@@ -73,14 +74,16 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
 
   const before = W.__osc;
   E("restTimer.left = 1"); E("restTick()");
-  check(W.__osc - before === 3, "three-note chime plays for the exercise transition");
+  check(W.__osc - before === 12, "repeated rising chime rings for a few seconds (" + (W.__osc - before) + " notes)");
   check(/on to /.test(lastToast()) && lastToast().indexOf(nextName) !== -1, "transition alarm names the next exercise (" + lastToast() + ")");
 
   console.log("\n== last set of the session → wrap up ==\n");
   E("restClear(); logCtx.idx = logStepsForDay(getDay('day-1')).length - 1;");
   E("maybeAutoStartRest(90, true)");
   check(E("restTimer.kind") === "finish", "the final rest has no next exercise ('finish')");
+  const finBefore = W.__osc;
   E("restTimer.left = 1"); E("restTick()");
+  check(W.__osc - finBefore === 12, "repeated fanfare rings for a few seconds (" + (W.__osc - finBefore) + " notes)");
   check(/wrap up/i.test(lastToast()), "final rest cues the session wrap-up");
 
   console.log("\n== logging mode off is silent ==\n");

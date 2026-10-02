@@ -2807,26 +2807,34 @@ function restAudio(){
     return restAudioCtx;
   }catch(e){ return null; }
 }
-/* Ringtone/alarm for a finished rest while logging. A rising three-note chime
-   marks the transition into the next exercise; a shorter two-tone ping marks
-   the next set of the current exercise. */
+/* Ringtone/alarm for a finished rest while logging. Each pattern repeats so
+   it rings for a few seconds and is easy to hear across the gym: a rising
+   three-note chime (x4) for the next exercise, a two-tone ping (x5) for the
+   next set, and a four-note fanfare (x3) for the wrap-up. */
 function playRestAlarm(kind){
   const ctx = restAudio();
   if (!ctx) return;
   try{
     const t0 = ctx.currentTime + 0.02;
-    const notes = kind === "exercise" ? [659, 880, 1175] : [880, 1175];
-    notes.forEach((f, i)=>{
-      const at = t0 + i * 0.18;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = f;
-      o.connect(g); g.connect(ctx.destination);
-      g.gain.setValueAtTime(0.0001, at);
-      g.gain.exponentialRampToValueAtTime(0.18, at + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
-      o.start(at); o.stop(at + 0.26);
-    });
+    const STEP = 0.28, LEN = 0.32;
+    const pattern = kind === "exercise" ? [659.25, 880, 1174.66]
+      : kind === "finish" ? [523.25, 659.25, 783.99, 1046.5]
+      : [880, 1174.66];
+    const repeats = kind === "exercise" ? 4 : kind === "finish" ? 3 : 5;
+    let n = 0;
+    for (let r = 0; r < repeats; r++){
+      for (let i = 0; i < pattern.length; i++){
+        const at = t0 + (n++) * STEP;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "triangle";
+        o.frequency.value = pattern[i];
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(0.32, at + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + LEN);
+        o.start(at); o.stop(at + LEN + 0.02);
+      }
+    }
   }catch(e){}
 }
 /* Name of the step that follows the one being logged, for the "on to X" cue.
