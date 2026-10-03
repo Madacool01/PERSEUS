@@ -8328,7 +8328,6 @@ function renderSettings(){
       '</div>'+
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
-        '<div class="btn-row" style="margin-top:.6rem"><button class="btn" id="set-share-open">Open a shared workout</button><span class="micro">A link, code or file another lifter sent you.</span></div>' +
         '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
           '<p class="micro" id="set-folder-status">Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
           '<div class="btn-row"><button class="btn" id="set-folder-pick">Pick backup folder</button><button class="btn" id="set-folder-now">Backup now</button><button class="btn ghost" id="set-folder-forget">Disconnect</button></div></div>' +
@@ -8409,8 +8408,6 @@ function renderSettings(){
   $("#set-folder-now", s).addEventListener("click", ()=>writeBackupToFolder({ manual:true, force:true }));
   $("#set-folder-forget", s).addEventListener("click", ()=>forgetBackupFolder());
   $("#set-import", s).addEventListener("click", ()=>$("#import-file", s).click());
-  const setShareOpen = $("#set-share-open", s);
-  if (setShareOpen) setShareOpen.addEventListener("click", ()=>openImportDialog(""));
   $("#import-file", s).addEventListener("change", ev=>{
     const f = ev.target.files[0]; if(!f) return;
     const rd = new FileReader();
