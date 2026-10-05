@@ -1,0 +1,20 @@
+Step 1: Sign Up or Log In
+	Go to the GroqCloud page.
+	Click Continue with Google (or choose your preferred sign-in method) to create or log in to your free account.
+Step 2: Go to API Keys
+	Once signed in, look at the top right header menu.
+	Click on API Keys.
+Step 3: Create a New Key
+	Click the red + Create API Key button located in the top right corner.
+Step 4: Name Your Key
+	Type a name in the Display Name box (e.g., perseus).
+	Set Expiration to No expiration.
+	Click Submit.
+Step 5: Copy Your Key
+	Click the Copy button to copy your new API key to your clipboard.
+	Click Done.
+	(Note: Make sure to copy it now, as it won't be shown again!)
+Step 6: Paste and Save in the App
+	In the app, click Settings at the top right.
+	Paste your copied key into the GROQCLOUD API KEY text field.
+	Click Save key to activate your AI coach.
