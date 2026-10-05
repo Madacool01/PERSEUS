@@ -2130,7 +2130,7 @@
      Sequence numbering is intentional here — order carries information. */
   #api-guide-host { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.4rem); background: rgba(23,19,12,.58); -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35); animation: modalBack .25s ease; }
   #api-guide-host:empty { display: none; }
-  .api-card { position: relative; width: min(980px, 100%); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); }
+  .api-card { position: relative; width: min(980px, 100%); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); overscroll-behavior: contain; }
   .api-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); z-index: 2; }
   .api-top { display: flex; align-items: flex-start; gap: 1rem; padding: 1.05rem 1.25rem .9rem; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--surface), transparent); }
   .api-eyebrow { font-family: var(--font-mono); font-size: .58rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
@@ -2151,7 +2151,7 @@
   .api-step-tx b { display: block; font-size: .82rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
   .api-step-tx span { display: block; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-top: .15rem; }
   .api-stage { min-width: 0; display: flex; flex-direction: column; padding: 1.1rem 1.25rem 1.15rem; overflow-y: auto; }
-  .api-shot { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: auto; background: #fff; box-shadow: var(--shadow-1); display: grid; place-items: center; max-height: 62vh; }
+  .api-shot { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: auto; background: #fff; box-shadow: var(--shadow-1); display: grid; place-items: center; max-height: 62vh; overscroll-behavior: contain; }
   .api-shot img { display: block; width: auto; max-width: 100%; height: auto; max-height: 62vh; object-fit: contain; background: #fff; }
   .api-stage h4 { font-family: var(--font-display); font-size: 1.12rem; letter-spacing: -.015em; margin: 1rem 0 .35rem; color: var(--ink); }
   .api-stage h4 .mono-n { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .14em; color: var(--accent); vertical-align: middle; margin-right: .5rem; }
@@ -8582,6 +8582,16 @@ function renderApiGuide(){
   const next = $("[data-api-next]", host); if (next) next.addEventListener("click", ()=>{ apiGuideIdx = Math.min(API_GUIDE_STEPS.length - 1, apiGuideIdx + 1); renderApiGuide(); });
   const close = $("[data-api-close]", host); if (close) close.addEventListener("click", closeApiGuide);
   host.onclick = (ev)=>{ if (ev.target === host) closeApiGuide(); };
+  /* Mouse wheel: swallowing on the card keeps the page behind still, while the
+     screenshot keeps its own scroll. The blurred backdrop (host itself) is left
+     alone so a wheel there still scrolls the page behind. */
+  host.onwheel = (ev)=>{
+    const t = ev.target;
+    const inShot = t && t.closest && t.closest(".api-shot");
+    if (inShot){ ev.stopPropagation(); return; }
+    const inCard = t && t.closest && t.closest(".api-card");
+    if (inCard){ ev.preventDefault(); ev.stopPropagation(); }
+  };
   const fin = $("[data-api-finish]", host);
   if (fin) fin.addEventListener("click", ()=>{
     closeApiGuide();
