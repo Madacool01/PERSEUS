@@ -2125,6 +2125,56 @@
   .kv .lbl { font-weight: 600; }
   .kv .desc { font-size: .8rem; color: var(--ink-3); }
 
+  /* ---------- API key guide: the key ritual (GroqCloud walkthrough) ----------
+     Passport-stamp stepper: left rail is the journey, right stage is the proof.
+     Sequence numbering is intentional here — order carries information. */
+  #api-guide-host { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.4rem); background: rgba(23,19,12,.58); -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35); animation: modalBack .25s ease; }
+  #api-guide-host:empty { display: none; }
+  .api-card { position: relative; width: min(980px, 100%); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); }
+  .api-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); z-index: 2; }
+  .api-top { display: flex; align-items: flex-start; gap: 1rem; padding: 1.05rem 1.25rem .9rem; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--surface), transparent); }
+  .api-eyebrow { font-family: var(--font-mono); font-size: .58rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+  .api-title { font-family: var(--font-display); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; font-size: clamp(1.4rem, 3vw, 1.9rem); color: var(--ink); margin: .35rem 0 0; }
+  .api-title .serif-i { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--headline-accent); }
+  .api-sub { margin: .45rem 0 0; font-size: .85rem; color: var(--ink-2); max-width: 56ch; }
+  .api-facts { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .65rem; }
+  .api-progress { height: 3px; background: var(--surface-2); border-top: 1px solid var(--line-2); }
+  .api-progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-deep)); transition: width .35s cubic-bezier(.22,1,.36,1); }
+  .api-body { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 0; flex: 1 1 auto; }
+  .api-rail { border-right: 1px solid var(--line); background: var(--surface-2); padding: .9rem .7rem; overflow-y: auto; display: flex; flex-direction: column; gap: .3rem; }
+  .api-step-btn { display: flex; align-items: center; gap: .65rem; width: 100%; text-align: left; font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: var(--r-md); background: transparent; color: var(--ink-2); padding: .55rem .6rem; transition: background .18s, border-color .18s, color .18s, transform .15s; }
+  .api-step-btn:hover { background: var(--surface); border-color: var(--line); color: var(--ink); }
+  .api-step-btn.on { background: var(--surface); border-color: var(--accent-line); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent-line); }
+  .api-step-btn.done .api-num { background: var(--green); border-color: var(--green); color: #fff; }
+  .api-num { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-family: var(--font-mono); font-size: .68rem; font-weight: 700; color: var(--ink-3); }
+  .api-step-btn.on .api-num { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .api-step-tx b { display: block; font-size: .82rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
+  .api-step-tx span { display: block; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-top: .15rem; }
+  .api-stage { min-width: 0; display: flex; flex-direction: column; padding: 1.1rem 1.25rem 1.15rem; overflow-y: auto; }
+  .api-shot { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: var(--dark-2); box-shadow: var(--shadow-1); }
+  .api-shot img { display: block; width: 100%; height: auto; max-height: 46vh; object-fit: contain; background: #fff; }
+  .api-stage h4 { font-family: var(--font-display); font-size: 1.12rem; letter-spacing: -.015em; margin: 1rem 0 .35rem; color: var(--ink); }
+  .api-stage h4 .mono-n { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .14em; color: var(--accent); vertical-align: middle; margin-right: .5rem; }
+  .api-do { margin: .2rem 0 0; padding-left: 1.1rem; color: var(--ink-2); font-size: .9rem; line-height: 1.6; }
+  .api-do li + li { margin-top: .25rem; }
+  .api-tip { margin: .85rem 0 0; padding: .65rem .8rem; border: 1px dashed var(--accent-line); border-radius: var(--r-md); background: var(--accent-soft); font-size: .82rem; color: var(--ink-2); }
+  .api-tip b { color: var(--accent-deep); }
+  .api-foot { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .95rem 1.25rem 1.15rem; border-top: 1px solid var(--line); background: var(--surface); }
+  .api-foot .spacer { margin-left: auto; }
+  .api-count { font-family: var(--font-mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .api-dots { display: flex; gap: .35rem; }
+  .api-dots button { width: 22px; height: 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; padding: 0; transition: background .2s, border-color .2s, width .25s; }
+  .api-dots button.on { width: 30px; background: var(--accent); border-color: var(--accent); }
+  .api-cta { display: inline-flex; align-items: center; gap: .4rem; }
+  @media (max-width: 820px) {
+    .api-body { grid-template-columns: 1fr; overflow-y: auto; }
+    .api-rail { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: .6rem; }
+    .api-step-btn { flex: 0 0 auto; width: auto; }
+    .api-step-tx span { display: none; }
+    .api-stage { overflow: visible; }
+  }
+  @media (prefers-reduced-motion: reduce) { .api-progress i, .api-step-btn, .api-dots button { transition: none; } }
+
   /* ---------- Toast ---------- */
   .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px);
@@ -2484,6 +2534,7 @@
 
 <div id="toast" class="toast"></div>
 <div id="share-host"></div>
+<div id="api-guide-host"></div>
 <div id="prog-start-host"></div>
 <div id="prog-save-host"></div>
 <nav id="m-tabs" aria-label="Primary">
@@ -8308,6 +8359,9 @@ function renderSettings(){
           '<button class="btn" id="set-ai-model-save">Save model</button>'+
           '<a class="btn small" target="_blank" rel="noopener" href="https://console.groq.com/keys" style="text-decoration:none">Get a key →</a>'+
         '</div>'+
+        '<div class="btn-row" style="margin-top:.6rem">'+
+          '<button class="btn primary api-cta" id="set-ai-guide" type="button">Show me how — 6-step key ritual <span aria-hidden="true">→</span></button>'+
+        '</div>'+
         (prof.apiKey?'<div class="micro" style="margin-top:8px;color:var(--green)">✓ Key is set (•••'+prof.apiKey.slice(-4)+').</div>':'<div class="micro" style="margin-top:8px">No key. Rule-based explanations are in use.</div>')+
       '</div>'+
       '</div>'+
@@ -8358,6 +8412,8 @@ function renderSettings(){
     const d = $("#set-ai-model-desc", s);
     if (d) d.textContent = AI_MODELS[$("#set-ai-model", s).value].pros;
   });
+  const guideBtn = $("#set-ai-guide", s);
+  if (guideBtn) guideBtn.addEventListener("click", ()=>openApiGuide());
   $("#set-logging-save", s).addEventListener("click", ()=>{
     prof.loggingMode = !!$("#set-logging", s).checked;
     saveState(); toast(prof.loggingMode ? "Logging mode on — rest timers enabled" : "Logging mode off — quiet data entry"); renderSettings();
@@ -8434,6 +8490,106 @@ function renderSettings(){
     if(!confirm("Are you sure? Type of reset wipes everything.")) return;
     localStorage.removeItem(STORAGE_KEY); state=seedDefaultState(); saveState(); render();
   });
+}
+
+/* =========================================================================
+   API KEY GUIDE — the key ritual (GroqCloud walkthrough)
+   One overlay host (#api-guide-host). Screenshots live in
+   api-instructions-ss/s1.png … s6.png and mirror api-instructions.txt.
+   Keyboard: ←/→ move, Esc closes. Last step returns focus to Settings.
+   ========================================================================= */
+const API_GUIDE_STEPS = [
+  { short: "Sign in", tag: "GroqCloud · free", title: "Sign up or log in",
+    img: "api-instructions-ss/s1.png", alt: "GroqCloud login screen with Continue with Google",
+    do: ["Go to the <b>GroqCloud</b> page.", "Click <b>Continue with Google</b> — or your preferred sign-in — to create or open your free account."],
+    tip: "Free tier is enough. No card needed." },
+  { short: "API Keys", tag: "Top-right menu", title: "Go to API Keys",
+    img: "api-instructions-ss/s2.png", alt: "Header menu highlighting API Keys",
+    do: ["Once signed in, look at the <b>top-right header menu</b>.", "Click <b>API Keys</b>."],
+    tip: "Lost? The keys page also lives at <b>console.groq.com/keys</b>." },
+  { short: "Create", tag: "Red button", title: "Create a new key",
+    img: "api-instructions-ss/s3.png", alt: "Create API Key button in the top right corner",
+    do: ["Click the red <b>+ Create API Key</b> button in the top-right corner."],
+    tip: "One key per app is the tidy way — call it <b>perseus</b> next." },
+  { short: "Name it", tag: "No expiration", title: "Name your key",
+    img: "api-instructions-ss/s4.png", alt: "Display name and expiration fields with Submit",
+    do: ["Type <b>perseus</b> in the <b>Display Name</b> box.", "Set <b>Expiration</b> to <b>No expiration</b>.", "Click <b>Submit</b>."],
+    tip: "No expiration means the coach keeps working — revoke anytime in GroqCloud." },
+  { short: "Copy", tag: "Shown once", title: "Copy your key",
+    img: "api-instructions-ss/s5.png", alt: "New key with Copy and Done buttons",
+    do: ["Click <b>Copy</b> to copy the key to your clipboard.", "Click <b>Done</b>."],
+    tip: "<b>Copy it now</b> — GroqCloud never shows it again." },
+  { short: "Paste", tag: "Back in Perseus", title: "Paste and save in the app",
+    img: "api-instructions-ss/s6.png", alt: "Perseus Settings with GroqCloud API key field",
+    do: ["In Perseus, open <b>Settings</b> (top right).", "Paste the key into the <b>GROQCLOUD API KEY</b> field.", "Click <b>Save key</b> to light up your AI coach."],
+    tip: "Key starting with <b>gsk_</b>? You did it right." },
+];
+let apiGuideIdx = 0;
+function openApiGuide(step){
+  apiGuideIdx = Math.min(Math.max(+step || 0, 0), API_GUIDE_STEPS.length - 1);
+  renderApiGuide();
+}
+function closeApiGuide(){ const h = $("#api-guide-host"); if (h) h.innerHTML = ""; document.removeEventListener("keydown", apiGuideKeys); }
+function apiGuideKeys(ev){
+  if (!$("#api-guide-host") || !$("#api-guide-host").firstChild) return;
+  if (ev.key === "Escape") closeApiGuide();
+  else if (ev.key === "ArrowRight") { apiGuideIdx = Math.min(apiGuideIdx + 1, API_GUIDE_STEPS.length - 1); renderApiGuide(); }
+  else if (ev.key === "ArrowLeft") { apiGuideIdx = Math.max(apiGuideIdx - 1, 0); renderApiGuide(); }
+}
+function renderApiGuide(){
+  const host = $("#api-guide-host");
+  if (!host) return;
+  const st = API_GUIDE_STEPS[apiGuideIdx];
+  const pct = Math.round(((apiGuideIdx + 1) / API_GUIDE_STEPS.length) * 100);
+  const rail = API_GUIDE_STEPS.map((s, i)=>
+    '<button type="button" class="api-step-btn'+(i===apiGuideIdx?" on":"")+(i<apiGuideIdx?" done":"")+'" data-api-step="'+i+'" aria-current="'+(i===apiGuideIdx)+'">'+
+    '<span class="api-num">'+(i < apiGuideIdx ? "✓" : String(i+1).padStart(2,"0"))+'</span>'+
+    '<span class="api-step-tx"><b>'+esc(s.short)+'</b><span>'+esc(s.tag)+'</span></span></button>'
+  ).join("");
+  const dots = API_GUIDE_STEPS.map((s, i)=>'<button type="button" data-api-step="'+i+'" class="'+(i===apiGuideIdx?"on":"")+'" aria-label="Go to step '+(i+1)+'"></button>').join("");
+  const list = st.do.map(d=>"<li>"+d+"</li>").join("");
+  const isLast = apiGuideIdx === API_GUIDE_STEPS.length - 1;
+  const isFirst = apiGuideIdx === 0;
+  host.innerHTML =
+    '<div class="api-card" role="dialog" aria-modal="true" aria-label="How to get a GroqCloud API key">'+
+      '<div class="api-top"><div style="min-width:0">'+
+        '<div class="api-eyebrow">GroqCloud · the key ritual · step '+String(apiGuideIdx+1).padStart(2,"0")+' / '+String(API_GUIDE_STEPS.length).padStart(2,"0")+'</div>'+
+        '<h3 class="api-title">Light the <em class="serif-i">oracle</em> in ~2 minutes</h3>'+
+        '<p class="api-sub">Six small stamps and your AI coach wakes up. Key stays in your browser — never sent anywhere but Groq.</p>'+
+        '<div class="api-facts"><span class="pill reps">Free</span><span class="pill time">~2 min</span><span class="pill weight">No card</span></div>'+
+      '</div>'+
+      '<button type="button" class="btn ghost sh-x" data-api-close aria-label="Close guide">✕</button></div>'+
+      '<div class="api-progress" aria-hidden="true"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="api-body"><div class="api-rail" role="tablist" aria-label="Steps">'+rail+'</div>'+
+      '<div class="api-stage"><div class="api-shot"><img src="'+st.img+'" alt="'+esc(st.alt)+'" loading="lazy"/></div>'+
+        '<h4><span class="mono-n">'+String(apiGuideIdx+1).padStart(2,"0")+' — '+esc(st.tag)+'</span><br/>'+esc(st.title)+'</h4>'+
+        '<ol class="api-do">'+list+'</ol>'+
+        '<p class="api-tip">Seal’s tip — '+st.tip+'</p>'+
+      '</div></div>'+
+      '<div class="api-foot">'+
+        '<span class="api-count">'+String(apiGuideIdx+1).padStart(2,"0")+' / '+String(API_GUIDE_STEPS.length).padStart(2,"0")+'</span>'+
+        '<div class="api-dots">'+dots+'</div>'+
+        '<a class="btn small" target="_blank" rel="noopener" href="https://console.groq.com/keys">Open GroqCloud ↗</a>'+
+        '<span class="spacer"></span>'+
+        (isFirst ? "" : '<button type="button" class="btn" data-api-prev>← Back</button>')+
+        (isLast
+          ? '<button type="button" class="btn primary" data-api-finish>Back to Settings & paste →</button>'
+          : '<button type="button" class="btn primary" data-api-next>Next step →</button>')+
+      '</div>'+
+    '</div>';
+  $$("[data-api-step]", host).forEach(b=>b.addEventListener("click", ()=>{ apiGuideIdx = +b.dataset.apiStep; renderApiGuide(); }));
+  const prev = $("[data-api-prev]", host); if (prev) prev.addEventListener("click", ()=>{ apiGuideIdx = Math.max(0, apiGuideIdx - 1); renderApiGuide(); });
+  const next = $("[data-api-next]", host); if (next) next.addEventListener("click", ()=>{ apiGuideIdx = Math.min(API_GUIDE_STEPS.length - 1, apiGuideIdx + 1); renderApiGuide(); });
+  const close = $("[data-api-close]", host); if (close) close.addEventListener("click", closeApiGuide);
+  host.onclick = (ev)=>{ if (ev.target === host) closeApiGuide(); };
+  const fin = $("[data-api-finish]", host);
+  if (fin) fin.addEventListener("click", ()=>{
+    closeApiGuide();
+    try{ switchView("settings"); }catch(e){}
+    setTimeout(()=>{ const inp = $("#set-ai-key"); if (inp){ inp.focus(); inp.scrollIntoView({ behavior: "smooth", block: "center" }); } }, 120);
+  });
+  document.removeEventListener("keydown", apiGuideKeys);
+  document.addEventListener("keydown", apiGuideKeys);
 }
 
 /* =========================================================================
