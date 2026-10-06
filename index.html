@@ -8356,7 +8356,7 @@ function renderSettings(){
           '<div class="micro" id="set-ai-model-desc" style="margin-top:8px">'+esc(AI_MODELS[curModel].pros)+'</div></label>'+
         '<div class="btn-row">'+
           '<button class="btn" id="set-ai-save">Save key</button>'+
-          (prof.apiKey?'<button class="btn ghost" id="set-ai-clear">Remove</button>':'')+
+          (prof.apiKey?'<button class="btn ghost" id="set-ai-clear">Clear API key</button>':'')+
           '<button class="btn" id="set-ai-model-save">Save model</button>'+
           '<a class="btn small" target="_blank" rel="noopener" href="https://console.groq.com/keys" style="text-decoration:none">Get a key →</a>'+
         '</div>'+
@@ -8403,7 +8403,7 @@ function renderSettings(){
   $("#set-ai-save", s).addEventListener("click", ()=>{
     const v = $("#set-ai-key", s).value.trim();
     if (!v){
-      toast(prof.apiKey ? "Key unchanged — existing key kept (use Remove to clear it)" : "Enter a key first — nothing saved");
+      toast(prof.apiKey ? "Key unchanged — existing key kept (use Clear API key to delete it)" : "Enter a key first — nothing saved");
       return;
     }
     prof.apiKey = v;
@@ -8411,10 +8411,10 @@ function renderSettings(){
   });
   const aiClearBtn = $("#set-ai-clear", s);
   if (aiClearBtn) aiClearBtn.addEventListener("click", ()=>{
-    if (!prof.apiKey){ toast("No key to remove"); return; }
-    if (!confirm("Remove the saved GroqCloud API key from this browser?")) return;
+    if (!prof.apiKey){ toast("No API key to clear"); return; }
+    if (!confirm("Clear the saved GroqCloud API key from this browser?")) return;
     prof.apiKey = "";
-    saveState(); toast("AI key removed"); renderSettings();
+    saveState(); toast("API key cleared"); renderSettings();
   });
   $("#set-ai-model-save", s).addEventListener("click", ()=>{
     prof.aiModel = $("#set-ai-model", s).value;
