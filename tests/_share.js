@@ -93,7 +93,7 @@ function makeDom() {
   check(valid1.unit === "kg", "unit travels with the payload");
 
   section("Payload: the sender's own data never leaves");
-  const EX_KEYS = ["n", "m", "eq", "wa", "ds", "dr", "dt", "dw", "no", "ins", "bp", "pm", "sm", "lf", "ls", "img", "pg"];
+  const EX_KEYS = ["n", "m", "eq", "wa", "ps", "ds", "dr", "dt", "dw", "no", "ins", "bp", "pm", "sm", "lf", "ls", "img", "pg"];
   const PR_KEYS = ["r", "s", "rp", "ti", "w", "sr", "st", "ty", "sw", "f"];
   const WIRE_TOP = "app,ex,kind,n,pid,pr,src,ss,t,ts,u,v";
   // give the sender a key, a name, a theme, a session note and a coach record

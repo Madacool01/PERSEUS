@@ -3145,7 +3145,7 @@ function seedDefaultState() {
     { name:"Diamond Push-Up",         mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Triceps","Shoulders"] },
     { name:"Ring Dip",                mode:"reps",   equipment:["rings"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt / ankle", bodyParts:["Chest","Shoulders","Triceps"] },
     { name:"Ring Row",                mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
-    { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps"] },
+    { name:"Archer Push-Up",          mode:"reps",   equipment:["bodyweight"], weightAvailable:false, perSide:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps"] },
     { name:"Pull-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt", bodyParts:["Back","Biceps"] },
     { name:"Chin-Up",                 mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, notes:"weighted = vest / belt", bodyParts:["Back","Biceps"] },
     { name:"Strict Pull-Up",          mode:"reps",   equipment:["pullup"], weightAvailable:true, defaultSets:3, defaultReps:5, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
@@ -3157,7 +3157,7 @@ function seedDefaultState() {
     { name:"Hollow-Body Hold",        mode:"time",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0, bodyParts:["Core"] },
     { name:"Ring Support Hold",       mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:20, defaultWeight:0, bodyParts:["Shoulders","Chest","Triceps"] },
     { name:"Squat (Bodyweight)",      mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, bodyParts:["Thighs","Glutes"] },
-    { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held", bodyParts:["Thighs","Glutes"] },
+    { name:"Bulgarian Split Squat",   mode:"reps",   equipment:["bodyweight","dumbbell"], weightAvailable:true, perSide:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"weighted = dumbbell held", bodyParts:["Thighs","Glutes"] },
     { name:"Hang (Dead Grip)",        mode:"time",   equipment:["pullup"], weightAvailable:false, defaultSets:2, defaultReps:5, defaultTime:30, defaultWeight:0, bodyParts:["Forearms","Back","Shoulders"] },
     { name:"Hindu Squat",             mode:"reps",   equipment:["bodyweight"], weightAvailable:false, defaultSets:3, defaultReps:15, defaultTime:30, defaultWeight:0, bodyParts:["Thighs","Glutes"] },
     { name:"Ring Rollout",            mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Core","Shoulders"] },
@@ -3165,9 +3165,9 @@ function seedDefaultState() {
     { name:"Ring False-Grip Row",     mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps","Forearms"] },
     { name:"Back Lever Hold",         mode:"time",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:10, defaultWeight:0, bodyParts:["Back","Shoulders","Core"] },
     { name:"Front Lever Hold",        mode:"time",   equipment:["rings","pullup"], weightAvailable:false, defaultSets:3, defaultReps:5, defaultTime:8, defaultWeight:0, bodyParts:["Back","Shoulders","Core"] },
-    { name:"Renegade Push-Up",        mode:"reps",   equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps","Core"] },
-    { name:"Dumbbell Curl",           mode:"weight", equipment:["dumbbell"], weightAvailable:true, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:8, bodyParts:["Biceps","Forearms"] },
-    { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
+    { name:"Renegade Push-Up",        mode:"reps",   equipment:["dumbbell"], weightAvailable:true, perSide:true, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, bodyParts:["Chest","Shoulders","Triceps","Core"] },
+    { name:"Dumbbell Curl",           mode:"weight", equipment:["dumbbell"], weightAvailable:true, perSide:true, defaultSets:3, defaultReps:10, defaultTime:30, defaultWeight:8, bodyParts:["Biceps","Forearms"] },
+    { name:"One-Arm Ring Row",        mode:"reps",   equipment:["rings"], weightAvailable:false, perSide:true, defaultSets:3, defaultReps:6, defaultTime:30, defaultWeight:0, bodyParts:["Back","Biceps"] },
   ];
   const exercises = defaultExercises.map((e,i) => {
     e.id = "ex-"+(i+1);
@@ -3548,8 +3548,9 @@ function setPlanTxt(de, ex, i, dayId){
   }
   if (st==="warmup") return "light warm-up";
   const w = setWeightOf(de, i);
+  const ps = perSideSuffix(ex);
   const base = ex.mode==="time" ? (setTarget(de,"time",i)+'s')
-    : (w ? (setTarget(de,"reps",i)+'×'+fmtWeight(w)+' '+weightUnit()) : (setTarget(de,"reps",i)+' reps'));
+    : (w ? (setTarget(de,"reps",i)+'×'+fmtWeight(w)+' '+weightUnit()+ps) : (setTarget(de,"reps",i)+' reps'+ps));
   const baseTxt = st==="drop" ? base+" · drop" : base;
   // Any set type: when the last session on this routine beat the stored target,
   // show the PR to beat (same in the logger and the Workouts editor).
@@ -3633,6 +3634,10 @@ function equipmentTags(ex){
   const map = {bodyweight:"BW", rings:"rings", pullup:"pull-up bar", dumbbell:"dumbbell", barbell:"barbell", kettlebell:"kettlebell", ezbar:"ez-bar", plates:"plates", machine:"machine", bands:"bands", trapbar:"trap-bar", suspension:"suspension", vest:"vest"};
   return (ex.equipment||[]).map(e=>'<span class="pill">'+esc(map[e]||e)+'</span>').join(" ");
 }
+function perSidePill(ex){
+  return (ex && ex.perSide && ex.mode!=="time") ? ' <span class="pill" title="Reps are per side — 6 means 6 left + 6 right, volume counts both sides">per side</span>' : '';
+}
+function perSideSuffix(ex){ return (ex && ex.perSide && ex.mode!=="time") ? " /side" : ""; }
 
 /* =========================================================================
    EXERCISES LIBRARY
@@ -3689,9 +3694,9 @@ function musclePills(sel){
 }
 const LIB_EMPTY = '<div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></div>No exercises match. Adjust the filter or add one.</div>';
 function exerciseRow(e){
-  const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()) : (e.defaultReps+" reps");  return '<div class="exercise-item" data-open="'+e.id+'">' +
+  const unit = e.mode==="time" ? (e.defaultTime+"s") : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()+perSideSuffix(e)) : (e.defaultReps+" reps"+perSideSuffix(e));  return '<div class="exercise-item" data-open="'+e.id+'">' +
     '<button type="button" class="ex-edit-btn" data-edit="'+e.id+'" title="Edit '+esc(e.name)+'" aria-label="Edit '+esc(e.name)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>' +
-    '<div class="name">'+esc(e.name)+modePill(e)+"</div>"+
+    '<div class="name">'+esc(e.name)+modePill(e)+perSidePill(e)+"</div>"+
     '<div class="meta">'+equipmentTags(e)+(e.weightAvailable?'<span class="pill weight">weight</span>':"")+'</div>'+
     '<div class="attr">Defaults: <b>'+esc(unit)+"</b> · "+esc(e.targetSets||(e.mode==="time"?3:3))+" sets</div>"+
     (e.notes?'<div class="attr micro">'+"↳ "+esc(e.notes)+"</div>":"")+
@@ -4053,7 +4058,7 @@ function openExEditor(id){
   }
   if (!host) host = document.body;
   const isEdit = !!ex;
-  const e = ex || { id:null, name:"", mode:"reps", equipment:["bodyweight"], weightAvailable:false,
+  const e = ex || { id:null, name:"", mode:"reps", equipment:["bodyweight"], weightAvailable:false, perSide:false,
     defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:"", instructions:"", type:"bodyweight", bodyParts:[], primaryMuscles:[], secondaryMuscles:[], image:"" };
   // Body-part / muscle selections are made in pop-up pickers; keep them here
   // until the form is saved (or the editor is dismissed).
@@ -4113,6 +4118,11 @@ function openExEditor(id){
         '<span>Weighted: this exercise can add load later</span>'+
       '</label>'+
       '<p class="micro" id="ex-weight-note" style="margin:-.1rem 0 1rem">Weight is handled separately from the exercise type: leave it at 0 until you actually load the movement, and the coach can offer load increases once you are repping it easily.</p>'+
+      '<label class="ex-weightable-row" id="ex-perside-row" style="display:'+(curType==="duration"?"none":"flex")+'">'+
+        '<input type="checkbox" id="ex-perside"'+(e.perSide?" checked":"")+'/>'+
+        '<span>Per side: reps count each side (e.g. 6 = 6 left + 6 right, dumbbell weight is per hand)</span>'+
+      '</label>'+
+      '<p class="micro" id="ex-perside-note" style="display:'+(curType==="duration"?"none":"block")+';margin:-.1rem 0 1rem">Off = bilateral (pull-up, barbell): reps are the total. On = unilateral / one dumbbell per hand (lateral raise, one-arm row, split squat): volume counts both sides, so 10 × 5 kg = 100 kg.</p>'+
 
       '<div class="field-head" style="margin-top:.6rem"><span>Body-weight load</span><span class="hint">% of your body weight the movement works against — feeds Total volume</span></div>'+
       '<div class="lf-chips" role="group" aria-label="Body-weight load percent">'+lfChipsHtml+'</div>'+
@@ -4157,6 +4167,10 @@ function openExEditor(id){
     if (note) note.textContent = EX_TYPES[t].desc;
     const wr = $("#ex-weightable-row", host);
     if (wr) wr.style.display = (t==="weight") ? "none" : "flex";
+    const pr = $("#ex-perside-row", host);
+    if (pr) pr.style.display = (t==="duration") ? "none" : "flex";
+    const pn = $("#ex-perside-note", host);
+    if (pn) pn.style.display = (t==="duration") ? "none" : "block";
   }
   $$(".ex-type-card", host).forEach(c=>c.addEventListener("click", ()=>pickType(c.dataset.type)));
   /* ---- pop-up pickers for body parts / primary & secondary muscles ---- */
@@ -4332,6 +4346,7 @@ function openExEditor(id){
       mode: curType==="duration" ? "time" : "reps",
       equipment: eqs().length ? eqs() : ["bodyweight"],
       weightAvailable: curType==="weight" ? true : $("#ex-weightable", host).checked,
+      perSide: curType==="duration" ? false : !!($("#ex-perside", host) && $("#ex-perside", host).checked),
       defaultSets: ex ? (ex.defaultSets||3) : 3,
       defaultReps: ex ? (ex.defaultReps||0) : (curType==="duration" ? 0 : 8),
       defaultTime: ex ? (ex.defaultTime||30) : 30,
@@ -4599,8 +4614,8 @@ function exSessionBest(ex, cs){
 }
 function setValTxt(ex, c){
   if (ex.mode==="time") return (c.time!=null ? c.time+"s" : "—");
-  if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit();
-  return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()) : (c.reps!=null ? c.reps+" reps" : "—");
+  if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit()+perSideSuffix(ex);
+  return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()+perSideSuffix(ex)) : (c.reps!=null ? c.reps+" reps"+perSideSuffix(ex) : "—");
 }
 function openExVisualizer(id, opts){
   const ex = getEx(id);
@@ -4664,8 +4679,8 @@ function openExVisualizer(id, opts){
   }
   function visAboutHtml(e){
     const unit = e.mode==="time" ? (e.defaultTime+"s hold")
-      : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit())
-      : (e.defaultReps+" reps");
+      : e.mode==="weight" ? (e.defaultReps+"×"+fmtWeight(e.defaultWeight)+" "+weightUnit()+perSideSuffix(e))
+      : (e.defaultReps+" reps"+perSideSuffix(e));
     const eqTags = (e.equipment||[]).map(k=>'<span class="pill">'+esc(EQUIP_LABELS[k]||k)+'</span>').join(" ");
     const typeLbl = movementTypeLabel(e);
     const prog = (Array.isArray(e.progressions) && e.progressions.length)
@@ -4674,7 +4689,7 @@ function openExVisualizer(id, opts){
     const prim = (e.primaryMuscles||[]).map(m=>'<span class="vis-mtag prim">'+esc(m)+'</span>').join("");
     const sec = (e.secondaryMuscles||[]).map(m=>'<span class="vis-mtag sec">'+esc(m)+'</span>').join("");
     return '<div class="vis-block">'+
-        '<div class="vis-kv"><span>Movement type</span><b>'+esc(typeLbl)+'</b></div>'+
+        '<div class="vis-kv"><span>Movement type</span><b>'+esc(typeLbl)+perSidePill(e)+'</b></div>'+
         '<div class="vis-kv"><span>Default target</span><b>'+esc(unit)+'</b></div>'+
         '<div class="vis-kv"><span>Equipment</span><b>'+eqTags+'</b></div>'+
         '<div class="vis-kv"><span>Load on muscles</span><b>'+loadRowHtml(e)+'</b></div>'+
@@ -6485,6 +6500,10 @@ function renderLogExerciseStep(s, day, step, total){
   const showWeight = ex.weightAvailable || ex.mode==="weight";
   const showReps = ex.mode!=="time";
   const logMode = !!state.profile.loggingMode;
+  const isPerSide = !!(ex && ex.perSide && ex.mode!=="time");
+  const repsLabel = isPerSide ? 'Reps per side' : 'Actual reps';
+  const weightLabel = "Weight "+weightUnit()+(isPerSide ? " (per hand/side)" : "");
+  const perSideHint = isPerSide ? ' <b>Per-side exercise:</b> 6 means 6 left + 6 right (12 total) — volume counts both sides.' : '';
   const setCells = entry.sets.map((set,i)=>{
     const cellState = logCellState(set);
     const plan = de;
@@ -6497,9 +6516,9 @@ function renderLogExerciseStep(s, day, step, total){
       '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':'Actual reps'), i) : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':repsLabel), i) : "") +
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s) — beat '+beat+'s' : "Hold (s)"), i) : "") +
-      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), i) : "") +
+      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, weightLabel, i) : "") +
       effortSliderHtml(set, i)+
       (logMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-i="'+i+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
       '<input type="text" class="s-note" data-i="'+i+'" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
@@ -6516,14 +6535,14 @@ function renderLogExerciseStep(s, day, step, total){
       '<div class="log-head fx-in">' +
         '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
         '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
-        '<div class="big-title">'+esc(ex.name)+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
+        '<div class="big-title">'+esc(ex.name)+(isPerSide?' <span class="pill" title="Reps are per side — 6 means 6 left + 6 right, volume counts both sides">per side</span>':"")+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
         '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
         logTickerHtml(day) +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
       '<div class="log-count"><span>Exercise '+(logCtx.idx+1)+' of '+total+'</span><span><b>'+doneCount+'/'+entry.sets.length+'</b> sets logged</span></div>' +
       '<div class="log-step fx-in">' +
-        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+(logMode && (restBetween!=null||restAfter!=null)?' Tick Done on a set — or just enter reps — to start the rest timer automatically.':'')+'</p>' +
+        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+perSideHint+(logMode && (restBetween!=null||restAfter!=null)?' Tick Done on a set — or just enter reps — to start the rest timer automatically.':'')+'</p>' +
         restBarHtml(restBetween, restAfter, restSourceLabel(de, ex, day), isLastEx) +
         '<div class="set-grid">'+setCells+'</div>' +
         '<div class="btn-row log-actions">' +
@@ -6629,14 +6648,15 @@ function renderLogRoundStep(s, day, step, total){
     const planTxt = setPlanTxt(de, ex, r, day.id);
     const beat = st==="failure" ? prevSetActual(day.id, de.exId, r, showTime?"time":"reps") : null;
     const cellState = logCellState(set);
+    const isPS = !!(ex.perSide && ex.mode!=="time");
     return '<div class="set-cell round-cell fx-rise'+(cellState?' '+cellState:'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
       '<span class="set-warn" role="img" tabindex="0" data-tip="'+esc(setPartialTip(set))+'" aria-label="'+esc(setPartialTip(set) || 'Incomplete set')+'">!</span>'+
-      '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+'</span>'+
+      '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+(isPS?' <span class="pill">per side</span>':"")+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':'Actual reps'), r) : "") +
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':(isPS?'Reps per side':'Actual reps')), r) : "") +
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
-      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit(), r) : "") +
+      (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit()+(isPS?" (per hand/side)":""), r) : "") +
       effortSliderHtml(set, r)+
       (roundLogMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-exid="'+de.exId+'" data-set="'+r+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
       '<input type="text" class="s-note" placeholder="optional note…" value="'+esc(set.note||"")+'" style="margin-top:8px"/>'+
@@ -8244,8 +8264,8 @@ function renderHistory(){
       const numTitle = c.hit ? ("Set " + (c.setIndex + 1)) : "Set " + (c.setIndex + 1) + " · below target";
       let valTxt;
       if (ex && ex.mode === "time") valTxt = c.time + "s";
-      else if (ex && (ex.mode === "weight" || (c.weight != null && c.weight > 0))) valTxt = fmtWeight(c.weight != null ? c.weight : 0) + weightUnit() + " x " + c.reps + " reps";
-      else valTxt = (c.reps != null ? c.reps : "-") + " reps";
+      else if (ex && (ex.mode === "weight" || (c.weight != null && c.weight > 0))) valTxt = fmtWeight(c.weight != null ? c.weight : 0) + weightUnit() + " x " + c.reps + " reps" + perSideSuffix(ex);
+      else valTxt = (c.reps != null ? c.reps : "-") + " reps" + perSideSuffix(ex);
       const st = c.type && c.type !== "regular" ? ' <span class="set-type-badge ' + c.type + '">' + SET_TYPES[c.type].tag + '</span>' : '';
       const note = c.note ? '<span class="hist-setnote">' + esc(c.note) + '</span>' : '';
       let setVol = null;
@@ -8258,7 +8278,7 @@ function renderHistory(){
       (seen[exId]||[]).forEach(c=>{ const v = completedSetVolume(ex, c); if (v) exVol += v; });
     }catch(e){ exVol = 0; }
     const exVolTxt = exVol>0 ? '<span class="pill">'+fmtVol(exVol)+' '+weightUnit()+'</span>' : '<span class="pill" title="Timed holds, warm-ups, or sets with missing load are not counted">— volume</span>';
-    return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b><div class="spacer" style="flex:1"></div>' + exVolTxt + '</div><div class="hist-sets">' + rows + '</div></div>';
+    return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b>'+perSidePill(ex)+'<div class="spacer" style="flex:1"></div>' + exVolTxt + '</div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
   /* Both check-ins, in the order they were asked. Sessions saved before the
      split stored one post-hoc 'recovery' blob; that is shown as an older
@@ -9579,6 +9599,7 @@ function shareBuildPayload(dayId, opts){
     const x = getEx(id);
     const out = { n: shareCleanText(x.name, 80), m: x.mode || "reps", eq: (x.equipment || []).slice(0, 6), wa: !!x.weightAvailable,
       ds: x.defaultSets, dr: x.defaultReps, dt: x.defaultTime, dw: x.defaultWeight };
+    if (x.perSide) out.ps = 1;
     if (o.withNotes !== false){
       if (x.notes) out.no = shareCleanText(x.notes, SHARE_MAX_TEXT);
       if (x.instructions) out.ins = shareCleanText(x.instructions, SHARE_MAX_TEXT);
@@ -9635,6 +9656,7 @@ function shareParseExercise(raw, imageBudget){
     bodyParts: shareList(raw.bp, BODY_PARTS, 12),
     primaryMuscles: shareList(raw.pm, SHARE_MUSCLE_NAMES, 12),
     secondaryMuscles: shareList(raw.sm, SHARE_MUSCLE_NAMES, 12),
+    perSide: raw.ps === 1 || raw.ps === true,
     loadFactor: null, loadSource: null, image: "", progressions: [], _pg: []
   };
   if (typeof raw.lf === "number" && isFinite(raw.lf) && raw.lf >= 0 && raw.lf <= 300){
@@ -9830,7 +9852,7 @@ function sharePlanImport(payload, opts){
       return { ex: hit, isNew: false };
     }
     const ex = { id: "ex-" + shareMintId(next, taken), name: pe.name, type: pe.type, mode: pe.mode,
-      equipment: pe.equipment.slice(), weightAvailable: pe.weightAvailable,
+      equipment: pe.equipment.slice(), weightAvailable: pe.weightAvailable, perSide: !!pe.perSide,
       defaultSets: pe.defaultSets, defaultReps: pe.defaultReps, defaultTime: pe.defaultTime,
       defaultWeight: shareConvertWeight(pe.defaultWeight, payload.unit, unitNow),
       notes: pe.notes, instructions: pe.instructions,
@@ -11172,16 +11194,20 @@ function youWeeksData(period){
 }
 /* Total-volume math — computed from the user's logged history (state.sessions),
    never placeholders. Each working set contributes tonnage-style work in kg:
-   reps × (added weight + body weight × load factor %). Isometric holds (timed
+   effectiveReps × (added weight + body weight × load factor %). Isometric holds (timed
    exercises) are not counted yet, warm-up sets are prep and never counted, and
    a set drops out when reps are missing, when its body-weight share needs a
-   load factor / body weight that isn't set, or when it has neither. */
+   load factor / body weight that isn't set, or when it has neither.
+   Per-side exercises (unilateral work like one-arm rows, split squats, or a
+   dumbbell in each hand like lateral raises) log reps per side: 6 means
+   6 left + 6 right, so effectiveReps is doubled and volume counts both sides. */
+function sidesFactor(ex){ return (ex && ex.perSide) ? 2 : 1; }
 function completedSetVolume(ex, c){
   if (!ex || ex.mode==="time") return null;  // isometric holds skipped for now
   if (!c || c.type==="warmup") return null;  // warm-ups are prep, not volume
-  const reps = +c.reps||0;
+  const reps = (+c.reps||0) * sidesFactor(ex);
   if (reps<=0) return null;
-  const ext = (+c.weight)>0 ? +c.weight : 0;  // added load, e.g. a weighted vest
+  const ext = (+c.weight)>0 ? +c.weight : 0;  // added load, e.g. a weighted vest (per side/hand when perSide)
   const lf  = (typeof ex.loadFactor==="number") ? ex.loadFactor : null;
   const bw  = bodyWeightKg();
   if (lf==null){ return ext>0 ? reps*ext : null; } // external only; unquantifiable bodyweight share
