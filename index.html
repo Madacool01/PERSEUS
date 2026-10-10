@@ -1367,9 +1367,18 @@
   .vis-rm-calc label { display: flex; align-items: center; gap: .4rem; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
   .vis-rm-calc input { width: 5.2rem; padding: .42rem .55rem; font-size: .85rem; }
   .vis-rm-out { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
-  .vis-rm-note { margin: 0; padding: 0 1.1rem 1rem; font-size: .72rem; color: var(--ink-3); line-height: 1.5; }
-  .vis-rm-note details { margin-top: .35rem; }
-  .vis-rm-note summary { cursor: pointer; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .vis-rm-note { margin: 0 1.1rem 1rem; padding: .7rem .85rem; font-size: .82rem; color: var(--ink-2); line-height: 1.6; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); }
+  .vis-rm-formula { margin: 0; font-family: var(--font-body); }
+  .vis-rm-formula b { font-family: var(--font-display); color: var(--ink); }
+  .vis-rm-why { margin-top: .55rem; border-top: 1px dashed var(--line); padding-top: .55rem; }
+  .vis-rm-why summary { cursor: pointer; display: inline-flex; align-items: center; gap: .45rem; list-style: none; font-family: var(--font-display); font-weight: 700; font-size: .82rem; letter-spacing: -.01em; text-transform: none; color: var(--accent-deep); background: transparent; border: 0; padding: .15rem .2rem; border-radius: var(--r-md); }
+  .vis-rm-why summary::-webkit-details-marker { display: none; }
+  .vis-rm-why summary .q { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: .95em; }
+  .vis-rm-why summary::after { content: ""; width: 7px; height: 7px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .22s; opacity: .8; }
+  .vis-rm-why[open] summary::after { transform: rotate(-135deg) translateY(-1px); }
+  .vis-rm-why summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .vis-rm-why summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .vis-rm-why-body { margin: .5rem 0 0; padding: .6rem .75rem .65rem; font-size: .8rem; line-height: 1.6; color: var(--ink-2); background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 0 var(--r-md) var(--r-md) 0; }
   .vis-rm-empty { margin-top: .7rem; }
   .vis-rank-card {
     display: flex; align-items: center; gap: .9rem;
@@ -4879,8 +4888,8 @@ function openExVisualizer(id, opts){
       '<div class="vis-rm-calc"><label>Weight ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
       '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
       '<span class="vis-rm-out" data-rm-live>'+esc(rmDisplay(top.kg))+'</span></div>'+
-      '<p class="vis-rm-note">Epley: weight × (1 + reps ÷ 30). Best inside 1–10 reps; higher reps extrapolate.'+
-        '<details><summary>Why this set?</summary>The board scores every working set (warm-ups excluded) and keeps the highest Epley value. Tap another candidate to preview it, or tweak the calculator to explore targets.</details></p>'+
+      '<div class="vis-rm-note"><p class="vis-rm-formula"><b>Epley:</b> weight × (1 + reps ÷ 30). Best inside 1–10 reps; higher reps extrapolate.</p>'+
+        '<details class="vis-rm-why"><summary>Why <span class="q">this</span> set?</summary><p class="vis-rm-why-body">The board scores every working set (warm-ups excluded) and keeps the highest Epley value. Tap another candidate to preview it, or tweak the calculator to explore targets.</p></details></div>'+
     '</div>';
   }
   function bindRmCard(scope, ex){
