@@ -1379,6 +1379,29 @@
   .vis-rm-why summary:hover { text-decoration: underline; text-underline-offset: 3px; }
   .vis-rm-why summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .vis-rm-why-body { margin: .5rem 0 0; padding: .6rem .75rem .65rem; font-size: .8rem; line-height: 1.6; color: var(--ink-2); background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 0 var(--r-md) var(--r-md) 0; }
+  /* ---------- Records: where-did-the-weight-come-from derivation ---------- */
+  .vis-rm-how { margin-top: .4rem; display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-display); font-weight: 700; font-size: .8rem; color: var(--accent-deep); background: transparent; border: 0; border-bottom: 1px dashed var(--accent-line); padding: .1rem 0; cursor: pointer; }
+  .vis-rm-how::after { content: ""; width: 7px; height: 7px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .22s; }
+  .vis-rm-how.open::after { transform: rotate(-135deg) translateY(-1px); }
+  .vis-rm-how:hover { color: var(--accent); }
+  .vis-rm-how:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .vis-rm-deriv { margin-top: .6rem; padding: .7rem .75rem .75rem; background: var(--surface-2); border: 1px solid var(--line-2); border-radius: var(--r-md); animation: rmDerivIn .28s cubic-bezier(.22,1,.36,1); }
+  @keyframes rmDerivIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .vis-rm-eq { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .vis-rm-chip { font: inherit; font-size: .74rem; font-weight: 700; padding: .32rem .6rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; transition: transform .12s, box-shadow .15s, border-color .15s; font-variant-numeric: tabular-nums; }
+  .vis-rm-chip:hover { transform: translateY(-1px); }
+  .vis-rm-chip.add { border-color: var(--amber-line); background: var(--amber-soft); color: var(--amber); }
+  .vis-rm-chip.body { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
+  .vis-rm-chip.eff { cursor: default; border-color: var(--ink); background: var(--ink); color: var(--surface); }
+  .vis-rm-chip.on { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+  .vis-rm-plus { font-family: var(--font-display); font-weight: 800; color: var(--ink-3); }
+  .vis-rm-bar { display: flex; height: 12px; margin-top: .6rem; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+  .vis-rm-bar .seg { display: block; height: 100%; transition: width .35s cubic-bezier(.22,1,.36,1), filter .2s; min-width: 2px; }
+  .vis-rm-bar .seg.add { background: linear-gradient(90deg, var(--amber), var(--amber-soft)); }
+  .vis-rm-bar .seg.body { background: linear-gradient(90deg, var(--accent-deep), var(--accent)); flex: 1 1 auto; }
+  .vis-rm-bar .seg.hot { filter: brightness(1.15) saturate(1.2); }
+  .vis-rm-scale { display: flex; justify-content: space-between; margin-top: .25rem; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .vis-rm-deriv-note { margin: .45rem 0 0; font-size: .7rem; line-height: 1.5; color: var(--ink-3); }
   .vis-rm-empty { margin-top: .7rem; }
   .vis-rank-card {
     display: flex; align-items: center; gap: .9rem;
@@ -4691,7 +4714,10 @@ function exRmCandidates(ex){
       }
       const est = epley1RM(eff, reps);
       if (!(est > 0)) return;
-      out.push({ kg: est, effKg: eff, reps: reps, date: s.dateISO, set: c });
+      out.push({ kg: est, effKg: eff, reps: reps, date: s.dateISO, set: c,
+        extKg: (ex.mode === "weight" ? eff : (+c.weight || 0)),
+        shareKg: (ex.mode === "weight" ? 0 : eff - (+c.weight || 0)),
+        bwKg: bw, lf: lf });
     });
   });
   out.sort((a,b)=>b.kg-a.kg);
@@ -4702,6 +4728,31 @@ function rmSetLabel(ex, cand){
   const w = rmDisplay(cand.effKg);
   const r = cand.reps+" rep"+(cand.reps===1?"":"s");
   return ex && ex.mode === "weight" ? r+" @ "+w : r+" × "+w;
+}
+/* Interactive derivation of a bodyweight-style effective load: added plates
+   plus the lifted share of body weight. Returns the toggle + panel HTML for
+   the 1RM card (weight-mode lifts need none — the bar load is the load). */
+function rmDerivHtml(ex, cand){
+  if (!ex || ex.mode === "weight" || !cand) return "";
+  const bwD = fromKg(cand.bwKg), extD = fromKg(cand.extKg), shareD = fromKg(cand.shareKg), effD = fromKg(cand.effKg);
+  const u = weightUnit(), lf = Math.round(cand.lf);
+  const eff = cand.effKg || 1;
+  const addPct = Math.max(0, Math.min(100, (cand.extKg / eff) * 100));
+  const bodyPct = Math.max(0, 100 - addPct);
+  const srcLbl = loadSourceLabel(ex.loadSource);
+  return '<button type="button" class="vis-rm-how" data-rm-how aria-expanded="false">Where does '+esc(effD+" "+u)+' come from?</button>'+
+    '<div class="vis-rm-deriv" data-rm-deriv hidden>'+
+      '<div class="vis-rm-eq">'+
+        '<button type="button" class="vis-rm-chip add" data-rm-hot="add" title="Extra plates, vest or band">+'+esc(extD+" "+u)+' added</button>'+
+        '<span class="vis-rm-plus" aria-hidden="true">+</span>'+
+        '<button type="button" class="vis-rm-chip body" data-rm-hot="body" title="Share of your body weight this movement loads">'+esc(bwD+" "+u)+' × '+lf+'%</button>'+
+        '<span class="vis-rm-plus" aria-hidden="true">=</span>'+
+        '<span class="vis-rm-chip eff">'+esc(effD+" "+u)+' lifted</span>'+
+      '</div>'+
+      '<div class="vis-rm-bar" aria-hidden="true"><i class="seg add" data-rm-seg="add" style="width:'+addPct.toFixed(1)+'%"></i><i class="seg body" data-rm-seg="body" style="width:'+bodyPct.toFixed(1)+'%"></i></div>'+
+      '<div class="vis-rm-scale"><span>0</span><span>'+esc(effD+" "+u)+'</span></div>'+
+      '<p class="vis-rm-deriv-note">Body weight from Settings · '+lf+'% load factor'+(srcLbl?' ('+esc(srcLbl)+')':"")+' · same math as Total volume.</p>'+
+    '</div>';
 }
 function openExVisualizer(id, opts){
   const ex = getEx(id);
@@ -4881,6 +4932,7 @@ function openExVisualizer(id, opts){
         '<div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div>'+
           '<div class="vis-rm-val" data-rm-val>'+esc(rmDisplay(top.kg))+'</div>'+
           '<p class="vis-rm-src" data-rm-src>from '+esc(rmSetLabel(e,top))+' · '+esc(fmtDate(top.date))+'</p>'+
+          '<div data-rm-deriv-wrap>'+rmDerivHtml(e, top)+'</div>'+
         '</div>'+
         '<span class="vis-rm-conf '+conf.key+'" data-rm-conf>'+conf.label+'</span>'+
       '</div>'+
@@ -4901,6 +4953,7 @@ function openExVisualizer(id, opts){
     const liveEl = card.querySelector("[data-rm-live]");
     const wIn = card.querySelector("[data-rm-w]");
     const rIn = card.querySelector("[data-rm-r]");
+    const derivWrap = card.querySelector("[data-rm-deriv-wrap]");
     const toKgInput = v => (weightUnit()==="lb" ? (+v)/2.2046 : (+v));
     const refreshLive = ()=>{
       if (!wIn || !rIn || !liveEl) return;
@@ -4909,15 +4962,44 @@ function openExVisualizer(id, opts){
     };
     if (wIn) wIn.addEventListener("input", refreshLive);
     if (rIn) rIn.addEventListener("input", refreshLive);
+    const bindDeriv = ()=>{
+      const how = card.querySelector("[data-rm-how]");
+      const panel = card.querySelector("[data-rm-deriv]");
+      if (how && panel) how.addEventListener("click", ()=>{
+        const open = panel.hasAttribute("hidden");
+        if (open) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+        how.setAttribute("aria-expanded", String(open));
+        how.classList.toggle("open", open);
+      });
+      card.querySelectorAll("[data-rm-hot]").forEach(chip=>chip.addEventListener("click", ()=>{
+        const k = chip.dataset.rmHot;
+        card.querySelectorAll("[data-rm-seg]").forEach(s=>s.classList.toggle("hot", s.dataset.rmSeg===k));
+        card.querySelectorAll("[data-rm-hot]").forEach(x=>x.classList.toggle("on", x===chip));
+      }));
+    };
+    bindDeriv();
     card.querySelectorAll("[data-rm-pick]").forEach(btn=>btn.addEventListener("click", ()=>{
       card.querySelectorAll("[data-rm-pick]").forEach(x=>x.classList.toggle("on", x===btn));
-      const kg = +btn.dataset.rmKg, eff = +btn.dataset.rmEff, reps = +btn.dataset.rmReps;
+      const idx = +(btn.dataset.rmPick || 0);
+      const cand = exRmCandidates(ex).slice(0,3)[idx] || { kg:+btn.dataset.rmKg, effKg:+btn.dataset.rmEff, reps:+btn.dataset.rmReps, date:btn.dataset.rmDate };
+      const kg = +cand.kg, eff = +cand.effKg, reps = +cand.reps;
       if (valEl && kg > 0) valEl.textContent = rmDisplay(kg);
-      if (srcEl) srcEl.textContent = "from "+reps+" rep"+(reps===1?"":"s")+" × "+rmDisplay(eff)+" · "+fmtDate(btn.dataset.rmDate);
+      if (srcEl) srcEl.textContent = "from "+reps+" rep"+(reps===1?"":"s")+" × "+rmDisplay(eff)+" · "+fmtDate(cand.date);
       const conf = rmConfidence(reps);
       if (confEl){ confEl.textContent = conf.label; confEl.className = "vis-rm-conf "+conf.key; }
       if (wIn) wIn.value = String(fromKg(eff));
       if (rIn) rIn.value = String(reps);
+      if (derivWrap && ex.mode !== "weight"){
+        const wasOpen = card.querySelector("[data-rm-deriv]") && !card.querySelector("[data-rm-deriv]").hasAttribute("hidden");
+        derivWrap.innerHTML = rmDerivHtml(ex, cand);
+        if (wasOpen){
+          const p = derivWrap.querySelector("[data-rm-deriv]");
+          const h = derivWrap.querySelector("[data-rm-how]");
+          if (p) p.removeAttribute("hidden");
+          if (h){ h.setAttribute("aria-expanded", "true"); h.classList.add("open"); }
+        }
+        bindDeriv();
+      }
       refreshLive();
     }));
   }
