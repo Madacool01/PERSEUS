@@ -4964,7 +4964,7 @@ function openExVisualizer(id, opts){
         '</div>'+
         '<button type="button" class="vis-rm-conf '+conf.key+'" data-rm-conf title="What does '+conf.label+' mean? Tap to find out." aria-expanded="false" aria-label="Confidence: '+conf.label+'. Tap to learn what it means.">'+conf.label+'</button>'+
       '</div>'+
-      '<div data-rm-confw hidden></div>'+
+      '<div class="vis-rm-confw" data-rm-confw hidden></div>'+
       '<div class="vis-rm-cands" role="group" aria-label="Top estimates">'+candBtns+'</div>'+
       '<div class="vis-rm-calc"><label>Weight ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
       '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
