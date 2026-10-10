@@ -1355,9 +1355,22 @@
   .vis-rm-val { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.03em; line-height: 1.05; color: var(--ink); margin-top: .15rem; font-variant-numeric: tabular-nums; }
   .vis-rm-val small { font-size: .95rem; font-weight: 700; color: var(--ink-2); letter-spacing: 0; }
   .vis-rm-src { font-size: .78rem; color: var(--ink-2); margin-top: .25rem; }
-  .vis-rm-conf { flex: none; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent-deep); }
+  .vis-rm-conf { flex: none; font: inherit; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent-deep); cursor: pointer; transition: transform .12s, box-shadow .15s; }
+  .vis-rm-conf:hover { box-shadow: 0 0 0 3px var(--accent-soft); }
+  .vis-rm-conf:active { transform: scale(.95); }
   .vis-rm-conf.mid { color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
   .vis-rm-conf.low { color: var(--ink-3); border-color: var(--line); background: var(--surface-2); }
+  /* ---------- Records: confidence-band legend ---------- */
+  .vis-rm-confw { margin: 0 1.1rem .8rem; padding: .65rem .75rem .7rem; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); animation: rmDerivIn .28s cubic-bezier(.22,1,.36,1); }
+  .vis-rm-confw-t { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .45rem; }
+  .vis-rm-band { display: flex; align-items: center; gap: .55rem; padding: .3rem .45rem; border-radius: var(--r-md); font-size: .76rem; color: var(--ink-2); }
+  .vis-rm-band + .vis-rm-band { margin-top: .1rem; }
+  .vis-rm-band.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); color: var(--ink); font-weight: 700; }
+  .vis-rm-band .bl { flex: none; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: .14rem .5rem; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent-deep); }
+  .vis-rm-band.mid .bl { color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
+  .vis-rm-band.low .bl { color: var(--ink-3); border-color: var(--line); background: var(--surface-2); }
+  .vis-rm-band .br { flex: none; font-family: var(--font-mono); font-size: .62rem; color: var(--ink-3); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .vis-rm-conf-note { margin: .5rem 0 0; font-size: .7rem; line-height: 1.5; color: var(--ink-3); }
   .vis-rm-cands { display: flex; gap: .45rem; flex-wrap: wrap; padding: 0 1.1rem .8rem; }
   .vis-rm-cand { font: inherit; font-size: .76rem; font-weight: 600; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .34rem .7rem; cursor: pointer; transition: border-color .15s, background .15s, transform .12s; }
   .vis-rm-cand:hover { border-color: var(--accent-line); color: var(--ink); }
@@ -4691,6 +4704,21 @@ function rmConfidence(reps){
   if (reps <= 15) return { key:"mid", label:"Rough" };
   return { key:"low", label:"Stretch" };
 }
+/* Legend explaining the confidence band: Epley is validated on heavy,
+   near-maximal sets, so the band is set by the source set's rep count. */
+function rmConfLegendHtml(activeReps){
+  const rows = [
+    { label:"Solid", cls:"", range:"1–5 reps", txt:"Near-maximal — most accurate." },
+    { label:"Good", cls:"", range:"6–10 reps", txt:"Heavy enough to trust." },
+    { label:"Rough", cls:"mid", range:"11–15 reps", txt:"Extrapolating — endurance flatters it." },
+    { label:"Stretch", cls:"low", range:"16+ reps", txt:"A rough guess — often reads high." },
+  ];
+  const isOn = r => activeReps <= r.max && activeReps >= r.min;
+  const bounds = [{min:1,max:5},{min:6,max:10},{min:11,max:15},{min:16,max:99}];
+  return '<div class="vis-rm-confw-t">What does this band mean?</div>'+
+    rows.map((r,i)=>'<div class="vis-rm-band '+r.cls+(isOn(bounds[i])?" on":"")+'"><span class="bl">'+r.label+'</span><span>'+r.txt+'</span><span class="br">'+r.range+'</span></div>').join("")+
+    '<p class="vis-rm-conf-note">Set by the source set\u2019s rep count ('+activeReps+'). Tap another candidate above to see its band.</p>';
+}
 function exRmCandidates(ex){
   if (!ex || ex.mode === "time") return [];
   const rows = exSessions(ex.id);
@@ -4934,8 +4962,9 @@ function openExVisualizer(id, opts){
           '<p class="vis-rm-src" data-rm-src>from '+esc(rmSetLabel(e,top))+' · '+esc(fmtDate(top.date))+'</p>'+
           '<div data-rm-deriv-wrap>'+rmDerivHtml(e, top)+'</div>'+
         '</div>'+
-        '<span class="vis-rm-conf '+conf.key+'" data-rm-conf>'+conf.label+'</span>'+
+        '<button type="button" class="vis-rm-conf '+conf.key+'" data-rm-conf title="What does '+conf.label+' mean? Tap to find out." aria-expanded="false" aria-label="Confidence: '+conf.label+'. Tap to learn what it means.">'+conf.label+'</button>'+
       '</div>'+
+      '<div data-rm-confw hidden></div>'+
       '<div class="vis-rm-cands" role="group" aria-label="Top estimates">'+candBtns+'</div>'+
       '<div class="vis-rm-calc"><label>Weight ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
       '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
@@ -4978,6 +5007,16 @@ function openExVisualizer(id, opts){
       }));
     };
     bindDeriv();
+    const confWrap = card.querySelector("[data-rm-confw]");
+    let curReps = rIn ? +rIn.value : 0;
+    const paintConfLegend = reps => { if (confWrap) confWrap.innerHTML = rmConfLegendHtml(reps); };
+    if (confEl) confEl.addEventListener("click", ()=>{
+      if (!confWrap) return;
+      const open = confWrap.hasAttribute("hidden");
+      if (open){ paintConfLegend(curReps); confWrap.removeAttribute("hidden"); }
+      else confWrap.setAttribute("hidden", "");
+      confEl.setAttribute("aria-expanded", String(open));
+    });
     card.querySelectorAll("[data-rm-pick]").forEach(btn=>btn.addEventListener("click", ()=>{
       card.querySelectorAll("[data-rm-pick]").forEach(x=>x.classList.toggle("on", x===btn));
       const idx = +(btn.dataset.rmPick || 0);
@@ -4986,7 +5025,9 @@ function openExVisualizer(id, opts){
       if (valEl && kg > 0) valEl.textContent = rmDisplay(kg);
       if (srcEl) srcEl.textContent = "from "+reps+" rep"+(reps===1?"":"s")+" × "+rmDisplay(eff)+" · "+fmtDate(cand.date);
       const conf = rmConfidence(reps);
-      if (confEl){ confEl.textContent = conf.label; confEl.className = "vis-rm-conf "+conf.key; }
+      if (confEl){ confEl.textContent = conf.label; confEl.className = "vis-rm-conf "+conf.key; confEl.title = "What does "+conf.label+" mean? Tap to find out."; confEl.setAttribute("aria-label", "Confidence: "+conf.label+". Tap to learn what it means."); }
+      curReps = reps;
+      if (confWrap && !confWrap.hasAttribute("hidden")) paintConfLegend(reps);
       if (wIn) wIn.value = String(fromKg(eff));
       if (rIn) rIn.value = String(reps);
       if (derivWrap && ex.mode !== "weight"){
