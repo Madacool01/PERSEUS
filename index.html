@@ -1346,6 +1346,31 @@
   .vis-rec b { display: block; font-family: var(--font-display); font-size: 1.25rem; letter-spacing: -.01em; color: var(--ink); }
   .vis-rec span { display: block; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .35rem; }
   .vis-rec small { display: block; color: var(--ink-3); font-size: .72rem; margin-top: .2rem; }
+  /* ---------- Records: Epley 1RM predictor ---------- */
+  .vis-rm { margin-top: .7rem; border: 1px solid var(--accent-line); border-radius: var(--r-lg); background: linear-gradient(135deg, var(--accent-soft), var(--surface) 65%); overflow: hidden; box-shadow: var(--shadow-1); }
+  .vis-rm-top { display: flex; align-items: flex-start; gap: .9rem; padding: 1rem 1.1rem .8rem; }
+  .vis-rm-badge { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; box-shadow: 0 10px 22px -12px var(--accent-glow); }
+  .vis-rm-main { flex: 1; min-width: 0; }
+  .vis-rm-lbl { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .vis-rm-val { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.03em; line-height: 1.05; color: var(--ink); margin-top: .15rem; font-variant-numeric: tabular-nums; }
+  .vis-rm-val small { font-size: .95rem; font-weight: 700; color: var(--ink-2); letter-spacing: 0; }
+  .vis-rm-src { font-size: .78rem; color: var(--ink-2); margin-top: .25rem; }
+  .vis-rm-conf { flex: none; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent-deep); }
+  .vis-rm-conf.mid { color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
+  .vis-rm-conf.low { color: var(--ink-3); border-color: var(--line); background: var(--surface-2); }
+  .vis-rm-cands { display: flex; gap: .45rem; flex-wrap: wrap; padding: 0 1.1rem .8rem; }
+  .vis-rm-cand { font: inherit; font-size: .76rem; font-weight: 600; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .34rem .7rem; cursor: pointer; transition: border-color .15s, background .15s, transform .12s; }
+  .vis-rm-cand:hover { border-color: var(--accent-line); color: var(--ink); }
+  .vis-rm-cand:active { transform: scale(.96); }
+  .vis-rm-cand.on { border-color: var(--accent); background: var(--surface); color: var(--accent-deep); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .vis-rm-calc { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin: 0 1.1rem 1rem; padding: .65rem .75rem; border: 1px dashed var(--accent-line); border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 72%, transparent); }
+  .vis-rm-calc label { display: flex; align-items: center; gap: .4rem; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .vis-rm-calc input { width: 5.2rem; padding: .42rem .55rem; font-size: .85rem; }
+  .vis-rm-out { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
+  .vis-rm-note { margin: 0; padding: 0 1.1rem 1rem; font-size: .72rem; color: var(--ink-3); line-height: 1.5; }
+  .vis-rm-note details { margin-top: .35rem; }
+  .vis-rm-note summary { cursor: pointer; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .vis-rm-empty { margin-top: .7rem; }
   .vis-rank-card {
     display: flex; align-items: center; gap: .9rem;
     border: 1px solid var(--accent-line); border-radius: var(--r-lg);
@@ -4617,6 +4642,58 @@ function setValTxt(ex, c){
   if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit()+perSideSuffix(ex);
   return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()+perSideSuffix(ex)) : (c.reps!=null ? c.reps+" reps"+perSideSuffix(ex) : "—");
 }
+/* Epley 1RM estimator: 1RM = weight × (1 + reps / 30). Reps of 1 return
+   the weight itself; anything above ~10 reps is an extrapolation, so the
+   UI bands confidence by rep count. Effective weight for bodyweight-style
+   work adds the lifter's loaded body-weight share (same load factor as
+   the tonnage formula); pure weight-mode lifts use the bar/dumbbell load. */
+function epley1RM(weightKg, reps){
+  const w = +weightKg, r = +reps;
+  if (!isFinite(w) || !isFinite(r) || w <= 0 || r <= 0) return null;
+  if (r <= 1) return w;
+  return w * (1 + r / 30);
+}
+function rmConfidence(reps){
+  if (reps <= 5) return { key:"high", label:"Solid" };
+  if (reps <= 10) return { key:"high", label:"Good" };
+  if (reps <= 15) return { key:"mid", label:"Rough" };
+  return { key:"low", label:"Stretch" };
+}
+function exRmCandidates(ex){
+  if (!ex || ex.mode === "time") return [];
+  const rows = exSessions(ex.id);
+  const bw = bodyWeightKg();
+  const lf = (typeof ex.loadFactor === "number") ? ex.loadFactor : null;
+  const out = [];
+  rows.forEach(s=>{
+    (s.completedSets || []).filter(c=>c.exId===ex.id).forEach(c=>{
+      if (!c || c.type === "warmup") return;
+      const reps = +c.reps || 0;
+      if (reps <= 0) return;
+      let eff = null;
+      if (ex.mode === "weight"){
+        const w = +c.weight || 0;
+        if (w > 0) eff = w;
+      } else {
+        const ext = +c.weight || 0;
+        const bodyShare = (lf != null && bw != null) ? bw * (lf / 100) : 0;
+        eff = ext + bodyShare;
+        if (!(eff > 0)) return;
+      }
+      const est = epley1RM(eff, reps);
+      if (!(est > 0)) return;
+      out.push({ kg: est, effKg: eff, reps: reps, date: s.dateISO, set: c });
+    });
+  });
+  out.sort((a,b)=>b.kg-a.kg);
+  return out;
+}
+function rmDisplay(kg){ return fromKg(kg)+" "+weightUnit(); }
+function rmSetLabel(ex, cand){
+  const w = rmDisplay(cand.effKg);
+  const r = cand.reps+" rep"+(cand.reps===1?"":"s");
+  return ex && ex.mode === "weight" ? r+" @ "+w : r+" × "+w;
+}
 function openExVisualizer(id, opts){
   const ex = getEx(id);
   if (!ex) return;
@@ -4776,6 +4853,65 @@ function openExVisualizer(id, opts){
       '<svg class="vis-chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+bars+'</svg>'+
       '<div class="vis-chart-x">'+rows.map(s=>'<span>'+fmtDate(s.dateISO)+'</span>').join("")+'</div>';
   }
+  function visRmCardHtml(e){
+    if (e.mode === "time") return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">—</div><p class="vis-rm-src">Timed holds don\'t produce a rep-max estimate.</p></div></div></div>';
+    const cands = exRmCandidates(e).slice(0, 3);
+    if (!cands.length){
+      const lfMissing = (e.mode !== "weight" && typeof e.loadFactor !== "number");
+      const hint = lfMissing
+        ? "Add a body-weight load factor (Edit exercise) and your body weight (Settings) so body-weight sets can count — or log a weighted set."
+        : "Log a working set with reps and load to seed the estimate.";
+      return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">—</div><p class="vis-rm-src">'+esc(hint)+'</p></div></div></div>';
+    }
+    const top = cands[0];
+    const conf = rmConfidence(top.reps);
+    const candBtns = cands.map((c,i)=>'<button type="button" class="vis-rm-cand'+(i===0?" on":"")+'" data-rm-pick="'+i+'" data-rm-kg="'+c.kg+'" data-rm-eff="'+c.effKg+'" data-rm-reps="'+c.reps+'" data-rm-date="'+esc(c.date)+'">'+esc(rmSetLabel(e,c))+' → '+esc(rmDisplay(c.kg))+'</button>').join("");
+    const calcW = e.mode === "weight" ? top.set.weight : Math.round(top.effKg*10)/10;
+    return '<div class="vis-rm" data-rm-card>'+
+      '<div class="vis-rm-top"><div class="vis-rm-badge" aria-hidden="true">1R</div>'+
+        '<div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div>'+
+          '<div class="vis-rm-val" data-rm-val>'+esc(rmDisplay(top.kg))+'</div>'+
+          '<p class="vis-rm-src" data-rm-src>from '+esc(rmSetLabel(e,top))+' · '+esc(fmtDate(top.date))+'</p>'+
+        '</div>'+
+        '<span class="vis-rm-conf '+conf.key+'" data-rm-conf>'+conf.label+'</span>'+
+      '</div>'+
+      '<div class="vis-rm-cands" role="group" aria-label="Top estimates">'+candBtns+'</div>'+
+      '<div class="vis-rm-calc"><label>Weight ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
+      '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
+      '<span class="vis-rm-out" data-rm-live>'+esc(rmDisplay(top.kg))+'</span></div>'+
+      '<p class="vis-rm-note">Epley: weight × (1 + reps ÷ 30). Best inside 1–10 reps; higher reps extrapolate.'+
+        '<details><summary>Why this set?</summary>The board scores every working set (warm-ups excluded) and keeps the highest Epley value. Tap another candidate to preview it, or tweak the calculator to explore targets.</details></p>'+
+    '</div>';
+  }
+  function bindRmCard(scope, ex){
+    const card = scope && scope.querySelector ? scope.querySelector("[data-rm-card]") : null;
+    if (!card) return;
+    const valEl = card.querySelector("[data-rm-val]");
+    const srcEl = card.querySelector("[data-rm-src]");
+    const confEl = card.querySelector("[data-rm-conf]");
+    const liveEl = card.querySelector("[data-rm-live]");
+    const wIn = card.querySelector("[data-rm-w]");
+    const rIn = card.querySelector("[data-rm-r]");
+    const toKgInput = v => (weightUnit()==="lb" ? (+v)/2.2046 : (+v));
+    const refreshLive = ()=>{
+      if (!wIn || !rIn || !liveEl) return;
+      const est = epley1RM(toKgInput(wIn.value), +rIn.value);
+      liveEl.textContent = est ? rmDisplay(est) : "—";
+    };
+    if (wIn) wIn.addEventListener("input", refreshLive);
+    if (rIn) rIn.addEventListener("input", refreshLive);
+    card.querySelectorAll("[data-rm-pick]").forEach(btn=>btn.addEventListener("click", ()=>{
+      card.querySelectorAll("[data-rm-pick]").forEach(x=>x.classList.toggle("on", x===btn));
+      const kg = +btn.dataset.rmKg, eff = +btn.dataset.rmEff, reps = +btn.dataset.rmReps;
+      if (valEl && kg > 0) valEl.textContent = rmDisplay(kg);
+      if (srcEl) srcEl.textContent = "from "+reps+" rep"+(reps===1?"":"s")+" × "+rmDisplay(eff)+" · "+fmtDate(btn.dataset.rmDate);
+      const conf = rmConfidence(reps);
+      if (confEl){ confEl.textContent = conf.label; confEl.className = "vis-rm-conf "+conf.key; }
+      if (wIn) wIn.value = String(fromKg(eff));
+      if (rIn) rIn.value = String(reps);
+      refreshLive();
+    }));
+  }
   function visRecordsHtml(e){
     const rows = exSessions(e.id);
     if (!rows.length) return '<div class="vis-empty">No records yet — log a session with '+esc(e.name)+' to start the board.</div>';
@@ -4802,7 +4938,7 @@ function openExVisualizer(id, opts){
       rec("Best set", bestSet?bestSet.b.label:"—", bestSet?fmtDate(bestSet.date):"")+
       rec("Volume peak", volShown, volSub)+
       rec("On target", hitPct+"%", "sets hit")+
-    '</div>';
+    '</div>'+visRmCardHtml(e);
   }
   function visLeaderboardHtml(e){
     const rows = exSessions(e.id)
@@ -4901,6 +5037,7 @@ function openExVisualizer(id, opts){
       if (alt){ close(); openExVisualizer(alt.id, { lockDelete: vis.lockDelete }); }
     }));
     bindCarouselWheel();
+    bindRmCard(h, ex);
     $$("[data-goto]", h).forEach(b=>b.addEventListener("click", ()=>{
       vis.tab = b.dataset.goto;
       $$("[data-vis-tab]", h).forEach(x=>x.classList.toggle("active", x.dataset.visTab===vis.tab));
