@@ -4771,13 +4771,13 @@ function rmDerivHtml(ex, cand){
   return '<button type="button" class="vis-rm-how" data-rm-how aria-expanded="false">Where does '+esc(effD+" "+u)+' come from?</button>'+
     '<div class="vis-rm-deriv" data-rm-deriv hidden>'+
       '<div class="vis-rm-eq">'+
-        '<button type="button" class="vis-rm-chip add" data-rm-hot="add" title="Extra plates, vest or band">+'+esc(extD+" "+u)+' added</button>'+
-        '<span class="vis-rm-plus" aria-hidden="true">+</span>'+
         '<button type="button" class="vis-rm-chip body" data-rm-hot="body" title="Share of your body weight this movement loads">'+esc(bwD+" "+u)+' × '+lf+'%</button>'+
+        '<span class="vis-rm-plus" aria-hidden="true">+</span>'+
+        '<button type="button" class="vis-rm-chip add" data-rm-hot="add" title="Extra plates, vest or band">+'+esc(extD+" "+u)+' added</button>'+
         '<span class="vis-rm-plus" aria-hidden="true">=</span>'+
         '<span class="vis-rm-chip eff">'+esc(effD+" "+u)+' lifted</span>'+
       '</div>'+
-      '<div class="vis-rm-bar" aria-hidden="true"><i class="seg add" data-rm-seg="add" style="width:'+addPct.toFixed(1)+'%"></i><i class="seg body" data-rm-seg="body" style="width:'+bodyPct.toFixed(1)+'%"></i></div>'+
+      '<div class="vis-rm-bar" aria-hidden="true"><i class="seg body" data-rm-seg="body" style="width:'+bodyPct.toFixed(1)+'%"></i><i class="seg add" data-rm-seg="add" style="width:'+addPct.toFixed(1)+'%"></i></div>'+
       '<div class="vis-rm-scale"><span>0</span><span>'+esc(effD+" "+u)+'</span></div>'+
       '<p class="vis-rm-deriv-note">Body weight from Settings · '+lf+'% load factor'+(srcLbl?' ('+esc(srcLbl)+')':"")+' · same math as Total volume.</p>'+
     '</div>';
