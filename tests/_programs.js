@@ -24,14 +24,11 @@ check($$("#view-programs .view-hero .hero-cta .btn").length === 2, "exactly two 
 check(!!$("#view-programs .btn.primary") && !!$("#view-programs .btn.ghost-dark"), "CTA contrast classes (primary + ghost-dark)");
 check(!/SECTION 0|QUESTION 0|ABOUT US/i.test($("#view-programs").innerHTML), "no cheap meta-labels");
 
-// The shelf now holds only the user's custom week; the template program is gone.
+// The shelf holds saved programs only; the working week lives in the builder below.
 check(!$("#view-programs [data-prog-saved]"), "no saved programs on a fresh install");
-const customCard = $("#view-programs [data-prog-goto='prog-builder']");
-check(!!customCard && (customCard.className.match(/span-\d+/) || ["?"])[0] === "span-7", "the working week card keeps its 7-column width (not stretched)");
-check(!!$("#view-programs .prog-card.ghost"), "an empty-state card completes the row while nothing is saved");
-check((($("#view-programs .prog-card.ghost").className.match(/span-\d+/) || ["?"])[0]) === "span-5", "the empty state takes the 5-column remainder (7 + 5 = 12)");
-check(!!customCard.querySelector(".prog-week"), "card dots row has a horizontal wrapper");
-check(customCard.querySelectorAll(".prog-week .prog-dot").length === 7, "card shows all 7 day dots");
+check(!$("#view-programs [data-prog-goto='prog-builder']"), "no custom-week card duplicates the builder");
+check(!!$("#view-programs .prog-card.ghost"), "an empty-state card shows while nothing is saved");
+check((($("#view-programs .prog-card.ghost").className.match(/span-\d+/) || ["?"])[0]) === "span-12", "the empty state takes the full row");
 check(!!$("#view-programs .bento"), "bento grid present (dense via CSS)");
 check(!/Upper Upper Minimalist/i.test($("#view-programs").textContent), "Upper Upper Minimalist removed from the shelf");
 check(!$("#view-programs [data-prog-open]") && !$("#view-programs .prog-overlay"), "no template detail/enroll entry points remain");
@@ -55,9 +52,6 @@ const before = $("[data-prog-flow='1']").textContent;
 E("document.querySelector('[data-prog-slot=\"1\"]').value = 'day-t-a'; document.querySelector('[data-prog-slot=\"1\"]').dispatchEvent(new Event('change', {bubbles:true}))");
 const after = $("[data-prog-flow='1']").textContent;
 check(before !== after && after === "Routine A", "slot change updates pinned flow (" + before + " -> " + after + ")");
-const liveOn = $$("#view-programs [data-prog-goto] .prog-dot.on").length;
-const trained = JSON.parse(E("JSON.stringify(progDraft().slots)")).filter(Boolean).length;
-check(liveOn === trained, "custom-week dots update on the spot (" + liveOn + " lit for " + trained + " sessions)");
 check(E("progDraft().slots[1]") === "day-t-a", "slot choice persisted to the draft")
 
 // no routine recommendation: a single session suggests nothing
@@ -84,7 +78,7 @@ E("switchView('programs')");
 // Tuesday / Thursday / Sunday - exactly the example in the brief
 E("const dd=progDraft(); dd.slots=[null,'day-t-a',null,'day-t-b',null,null,'day-t-a']; progSaveDraft(dd); renderPrograms();");
 check(E("JSON.stringify(progGaps(progDraft().slots))") === "[1,2,1]", "Tuesday / Thursday / Sunday sit 1, 2, 1 days apart");
-check(/3 sessions \u00b7 Tue \/ Thu \/ Sun/.test($("#view-programs").textContent), "the builder names the training days");
+check(/3.*training days/.test($("[data-pm-summary]").textContent), "the builder counts the training days");
 
 E("document.querySelector('[data-prog-save]').click()");
 check(!!$("#prog-save-host .psave-card"), "Save Program opens the glass sheet");
@@ -144,8 +138,7 @@ check(scard.querySelectorAll(".prog-week .prog-dot.on").length === 3, "exactly t
 check(/Distance between sessions: 1 \u00b7 2 \u00b7 1 days/.test(scard.querySelector(".prog-gaps").textContent), "the card states the distances (" + scard.querySelector(".prog-gaps").textContent + ")");
 check(!!scard.querySelector("[data-prog-start-saved]") && !!scard.querySelector("[data-prog-remove]"), "the card offers Start and Remove");
 check(!$("#view-programs .prog-card.ghost"), "the empty state is replaced once a program is saved");
-check((scard.className.match(/span-\d+/) || ["?"])[0] === "span-5", "the first saved program fills the 5-column remainder (7 + 5 = 12)");
-check($$("#view-programs [data-prog-goto] .prog-dot").length === 7, "the working week keeps its own dot row");
+check((scard.className.match(/span-\d+/) || ["?"])[0] === "span-12", "a lone saved program takes the full row");
 
 section("Rotating the shape preserves the distances");
 check(E("JSON.stringify(progShiftSlots(progSavedList()[0].slots, progOffsetFor(progSavedList()[0].slots, 0)).map((x,i)=>x?i:null).filter(x=>x!==null))") === "[0,2,5]", "anchoring on Monday moves the sessions to Monday, Wednesday and Saturday");
@@ -189,7 +182,7 @@ section("Removing a saved program");
 E("document.querySelector('[data-prog-remove]').click()");
 check(E("progSavedList().length") === 0, "the program is gone from the shelf store");
 check(!$("#view-programs [data-prog-saved]"), "its card left the shelf");
-check($$("#view-programs .prog-card").length === 2 && !!$("#view-programs .prog-card.ghost"), "the shelf returns to the working week plus its empty-state card");
+check($$("#view-programs .prog-card").length === 1 && !!$("#view-programs .prog-card.ghost"), "the shelf returns to just its empty-state card");
 
 section("Saved programs persist across a reload");
 E("const list=progSavedList(); list.push({id:'id-persist',name:'Reloaded',description:'survives',slots:[null,'day-t-a',null,null,null,null,'day-t-b'],ts:1}); progSaveList(list);");

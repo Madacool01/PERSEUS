@@ -10720,27 +10720,17 @@ function renderPrograms(){
   }
   const dayOpts = '<option value="">Rest day</option>' + (state.days || []).map(d=>'<option value="' + d.id + '">' + esc(d.name) + '</option>').join("");
   const saved = progSavedList();
-  const customCard =
-    '<article class="prog-card span-7 fx-in" data-prog-goto="prog-builder" tabindex="0" role="button" aria-label="Your custom week">' +
-      '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/perseus-custom-week/1200/800)"></span></div>' +
-      '<div class="prog-body"><div class="prog-name">Your custom week</div><p class="prog-blurb">Seven slots filled with your saved routines. Pick your own training days below, then start it.</p>' +
-      '<div class="prog-week" aria-hidden="true">' + progWeekDots(draft.slots) + '</div>' +
-      '<div class="micro">' + esc(progSessionLabel(draft.slots)) + '</div>' +
-      '<span class="routine-open">Open <span class="btn-arrow">→</span></span></div></article>';
-  /* The shelf is a 7+5 bento. The working week keeps its own width (span-7)
-     and is completed either by the first saved program (span-5) or, while
-     nothing is saved, by a card that says so. Later programs pair up at
-     span-6; an odd one left over takes the whole row. Every row sums to 12. */
+  /* The shelf holds saved programs only. The working week lives in the
+      builder below, so no custom-week card duplicates it up top. */
   const emptyCard =
-    '<article class="prog-card ghost span-5 fx-in">' +
+    '<article class="prog-card ghost span-12 fx-in">' +
       '<div class="prog-body">' +
         '<div class="prog-name">Nothing saved yet</div>' +
         '<p class="prog-blurb">Build a week below, give it a name, and it waits for you here — training days and distances intact.</p>' +
         '<div class="prog-actions"><button type="button" class="btn small" data-prog-scroll="prog-builder">Build a week <span class="btn-arrow">→</span></button></div>' +
       '</div></article>';
   const savedCards = saved.map((p, i)=>{
-    const span = i === 0 ? "span-5"
-      : (i === saved.length - 1 && (saved.length - 1) % 2 === 1) ? "span-12" : "span-6";
+    const span = (i === saved.length - 1 && saved.length % 2 === 1) ? "span-12" : "span-6";
     const gapLine = progGapLabel(p.slots);
     return '<article class="prog-card saved ' + span + ' fx-in" data-prog-saved="' + esc(p.id) + '">' +
       '<div class="prog-media"><span style="background-image:url(https://picsum.photos/seed/' + esc(seedOf(p.name || "program")) + '/1200/800)"></span></div>' +
@@ -10756,7 +10746,7 @@ function renderPrograms(){
         '</div>' +
       '</div></article>';
   }).join("");
-  const cards = customCard + (saved.length ? savedCards : emptyCard);
+  const cards = saved.length ? savedCards : emptyCard;
   const acc = PROG_DAYS.map((d, i)=>{
     const sel = draft.slots[i] || "";
     return '<div class="prog-slice' + (i === 0 ? ' open' : '') + '" data-prog-day="' + i + '" tabindex="0" role="button" aria-label="' + d + '">' +
@@ -10803,7 +10793,7 @@ function renderPrograms(){
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
-      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Your working week, plus every program you have saved. A saved program remembers its training days and the distance between them.</p>' +
+      '<div class="section-block" id="prog-library"><h2 class="section">The shelf</h2><p class="subtitle fx-scrub">Every program you have saved. A saved program remembers its training days and the distance between them.</p>' +
       '<div class="bento">' + cards + '</div></div>' +
       '<div class="section-block" id="prog-builder"><h2 class="section">Shape your seven days</h2><p class="subtitle fx-scrub">Tap a day and assign a saved routine or leave it to rest. Two hard days want three rest days between, like Monday and Thursday.</p>' +
       '<div class="prog-acc prog-acc-desktop" role="list">' + acc + '</div>' +
@@ -10827,11 +10817,6 @@ function renderPrograms(){
     catch(e){ try{ el.scrollIntoView(); }catch(e2){} }
   };
   $$("[data-prog-scroll]", s).forEach(b=>b.addEventListener("click", ()=>go(b.dataset.progScroll)));
-  $$("[data-prog-goto]", s).forEach(c=>{
-    const h = ()=>go(c.dataset.progGoto);
-    c.addEventListener("click", h);
-    c.addEventListener("keydown", e=>{ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); h(); } });
-  });
   $$("[data-prog-day]", s).forEach(sl=>{
     const toggle = ()=>{
       const was = sl.classList.contains("open");
@@ -10879,8 +10864,6 @@ function renderPrograms(){
     }
     const sum = s.querySelector("[data-pm-summary]");
     if (sum) sum.innerHTML = progSummaryHtml(d.slots);
-    const live = s.querySelector('[data-prog-goto] .prog-week');
-    if (live) live.innerHTML = progWeekDots(d.slots);
     progBindSuggest(s);
   }
   $$("[data-prog-slot]", s).forEach(sel=>sel.addEventListener("change", ()=>

@@ -71,7 +71,6 @@ check($("[data-prog-flow='1']").textContent === "Workout B", "flow row updates")
 const wantSets = E("progRoutineSets('day-2') + ' sets'");
 check($("[data-prog-flow-sets='1']").textContent === wantSets, "flow set count updates (" + $("[data-prog-flow-sets='1']").textContent + ")");
 check($("[data-prog-flow='1']").closest(".prog-step").classList.contains("on"), "flow step marked as training");
-check($$("[data-prog-goto] .prog-dot.on").length === 4, "shelf dots reflect four training days");
 check(/4<\/b> training days/.test($("[data-pm-summary]").innerHTML), "summary counts training days (" + $("[data-pm-summary]").textContent + ")");
 
 section("Reverting a day back to rest");
@@ -83,7 +82,6 @@ check(!$("[data-pm-row='1']").classList.contains("training"), "card leaves the t
 check($("[data-pm-row='1'] [data-pm-pick='1'][data-pm-val='']").classList.contains("on"), "Rest option marked");
 check($("[data-prog-flow-sets='1']").textContent === "recover", "flow shows recovery");
 check(!$("[data-prog-flow='1']").closest(".prog-step").classList.contains("on"), "flow step no longer training");
-check($$("[data-prog-goto] .prog-dot.on").length === 3, "shelf dots back to three");
 
 section("Runtime errors");
 check(errors.length === 0, "no window errors" + (errors.length ? " -> " + errors.join(" | ") : ""));
