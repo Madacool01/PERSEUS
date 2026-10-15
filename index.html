@@ -2321,6 +2321,46 @@
   button.btn.sess-close svg { width: 13px; height: 13px; }
   button.btn.sess-close:hover { color: var(--red); border-color: var(--red); background: var(--red-soft); box-shadow: var(--shadow-1); }
 
+  /* ---------- History mobile flip: punch-card field index (mobile only) ----------
+     Desktop keeps both panes side-by-side, untouched. On phones the two
+     history panes stack and force a long scroll, so a sticky 2-up punch-card
+     sits on top: Logbook (sessions) | Ascent (per-exercise lines). */
+  .hist-flip, .hist-flip-cap { display: none; }
+  @media (max-width: 900px) {
+    .hist-flip-cap {
+      display: block; margin: 0 0 .5rem;
+      font-family: var(--font-mono); font-size: .6rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase; color: var(--ink-3);
+    }
+    .hist-flip {
+      display: flex; gap: .3rem; padding: .3rem;
+      position: sticky; top: 68px; z-index: 6;
+      border: 1px solid var(--line-2); border-radius: 16px;
+      background: var(--surface); box-shadow: var(--shadow-1);
+    }
+    .hist-flip button {
+      flex: 1 1 0; display: flex; align-items: center; justify-content: center; gap: .5rem;
+      font-family: var(--font-mono); font-size: .66rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      padding: .7rem .5rem; border-radius: 11px; border: 1px dashed transparent;
+      background: transparent; color: var(--ink-3); cursor: pointer;
+      transition: background .2s, color .2s, border-color .2s, transform .15s;
+    }
+    .hist-flip button:active { transform: scale(.97); }
+    .hist-flip button .punch {
+      width: 8px; height: 8px; border-radius: 50%;
+      border: 1.5px solid currentColor; flex: 0 0 auto;
+    }
+    .hist-flip button.active { background: var(--ink); color: var(--paper); border-style: solid; border-color: var(--ink); }
+    .hist-flip button.active .punch { background: var(--accent); border-color: var(--accent); }
+    .hist-flip button .cnt {
+      font-size: .6rem; letter-spacing: .06em; padding: .1rem .45rem;
+      border-radius: 999px; border: 1px solid currentColor; opacity: .85;
+    }
+    #view-history .hist-pane { display: none; }
+    #view-history .hist-pane.show { display: block; }
+  }
+
   /* ---------- Confetti ---------- */
   .confetti { position: fixed; font-size: 20px; pointer-events: none; z-index: 60; animation: floatUp 1.4s ease-out forwards; }
   @keyframes floatUp { to { transform: translateY(-120px); opacity: 0; } }
@@ -8473,13 +8513,31 @@ function renderHistory(){
         '<p class="view-sub fx-scrub">Every session, every trend. Watch how each movement progresses over time.</p>' +
       '</div>' +
     '</div>' +
-    '<div class="wrap"><div class="bento">' +
+    '<div class="wrap"><div class="hist-flip-cap">Field index · flip, don\'t scroll</div>' +
+      '<div class="hist-flip" role="tablist" aria-label="History sections">' +
+        '<button type="button" role="tab" data-hist-flip="sessions"><span class="punch" aria-hidden="true"></span>Logbook <span class="cnt">'+sessions.length+'</span></button>' +
+        '<button type="button" role="tab" data-hist-flip="progress"><span class="punch" aria-hidden="true"></span>Ascent <span class="cnt">'+Object.keys(exProgress).length+'</span></button>' +
+      '</div><div class="bento">' +
       '<div class="span-4 stat-card"><div><div class="stat-num">'+sessions.length+'</div><div class="stat-lbl">sessions logged</div></div></div>' +
       '<div class="span-4 stat-card t2"><div><div class="stat-num">'+pct+'<small>%</small></div><div class="stat-lbl">sets on target</div></div></div>' +
       '<div class="span-4 stat-card t3"><div><div class="stat-num">'+avgEff+'</div><div class="stat-lbl">avg effort · 1-5</div></div></div>' +
-      '<div class="span-5"><div class="card h100"><div class="card-head"><h3>Sessions</h3><button class="btn close-all" data-close-all disabled title="Close all open sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18l-5-5-5 5"/><path d="M17 11l-5-5-5 5"/></svg><span>Close all</span></button></div><div class="wo-list">'+sessRows+'</div></div></div>' +
-      '<div class="span-7"><div class="card h100"><h3>Per-exercise progression</h3><div class="micro" style="margin:-.4rem 0 .7rem"><span style="color:var(--red);font-weight:700">Red</span> = below target for that session (missed reps/time).</div>'+(progHtml||'<div class="muted small">Log sessions to see trends.</div>')+'</div></div>' +
+      '<div class="span-5 hist-pane" data-hist-pane="sessions"><div class="card h100"><div class="card-head"><h3>Sessions</h3><button class="btn close-all" data-close-all disabled title="Close all open sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18l-5-5-5 5"/><path d="M17 11l-5-5-5 5"/></svg><span>Close all</span></button></div><div class="wo-list">'+sessRows+'</div></div></div>' +
+      '<div class="span-7 hist-pane" data-hist-pane="progress"><div class="card h100"><h3>Per-exercise progression</h3><div class="micro" style="margin:-.4rem 0 .7rem"><span style="color:var(--red);font-weight:700">Red</span> = below target for that session (missed reps/time).</div>'+(progHtml||'<div class="muted small">Log sessions to see trends.</div>')+'</div></div>' +
     '</div></div>';
+  // mobile field-index flip: two mini-tabs swap the stacked panes, desktop unaffected
+  const histFlipInit = (window._histFlip === "progress") ? "progress" : "sessions";
+  const histFlipBtns = $$("[data-hist-flip]", s);
+  const histFlipApply = (name)=>{
+    window._histFlip = name;
+    histFlipBtns.forEach(b=>{
+      const on = b.dataset.histFlip === name;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    $$("[data-hist-pane]", s).forEach(p=>p.classList.toggle("show", p.dataset.histPane === name));
+  };
+  histFlipBtns.forEach(b=>b.addEventListener("click", ()=>histFlipApply(b.dataset.histFlip)));
+  histFlipApply(histFlipInit);
   // session detail view inline (toggle per card) + close-all (animated collapse)
   const updateCloseAll = ()=>{
     const btn = $("[data-close-all]", s); if(!btn) return;
