@@ -1950,9 +1950,11 @@
   .bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.1rem; grid-auto-flow: dense; }
   .bento .span-4 { grid-column: span 4; }
   .bento .span-5 { grid-column: span 5; }
+  .bento .span-6 { grid-column: span 6; }
   .bento .span-7 { grid-column: span 7; }
+  .bento .span-12 { grid-column: span 12; }
   @media (max-width: 900px) {
-    .bento .span-4, .bento .span-5, .bento .span-7 { grid-column: span 12; }
+    .bento .span-4, .bento .span-5, .bento .span-6, .bento .span-7, .bento .span-12 { grid-column: span 12; }
   }
   .stat-card {
     position: relative; overflow: hidden;
@@ -2356,7 +2358,7 @@
     .hero-cta .btn-xl { width: 100%; justify-content: center; min-height: 54px; }
     .ticker-track { animation-duration: 60s; }
     .bento, .settings-grid { grid-template-columns: 1fr; }
-    .bento .span-4, .bento .span-5, .bento .span-7,
+    .bento .span-4, .bento .span-5, .bento .span-6, .bento .span-7, .bento .span-12,
     .settings-grid .cell, .settings-grid .cell.s7, .settings-grid .cell.s5, .settings-grid .cell.s12 { grid-column: span 1; }
     .exercise-list { grid-template-columns: 1fr; grid-auto-flow: dense; }
     .set-grid { grid-template-columns: 1fr; grid-auto-flow: dense; }
