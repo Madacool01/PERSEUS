@@ -54,6 +54,24 @@ const check = (c, m) => { if (c) { pass++; console.log("  ✓ " + m); } else { f
   check(html2.includes("set-folder-pick"), "settings has Pick backup folder button");
   check(html2.includes("set-folder-now"), "settings has Backup now button");
   check(html2.includes("set-folder-forget"), "settings can disconnect folder");
+  check(html2.includes("set-folder-path"), "settings has Save location path readout");
+  const row0 = window.document.querySelector("#set-folder-path");
+  check(Boolean(row0) && row0.hidden === true, "path readout hidden while no folder is chosen");
+  check(window.eval("backupFolderPathLabel()") === "", "backupFolderPathLabel() empty with no folder");
+
+  window.localStorage.setItem("perseus-backup-meta", JSON.stringify({ folderName: "Perseus Backups", lastBackupISO: "", auto: true }));
+  const label = window.eval("backupFolderPathLabel()");
+  check(label === "…/Perseus Backups/", "backupFolderPathLabel() builds path (" + label + ")");
+  window.eval("renderSettings()");
+  const row1 = window.document.querySelector("#set-folder-path");
+  const val1 = window.document.querySelector("#set-folder-path-value");
+  check(Boolean(row1) && row1.hidden === false, "path readout appears once a folder is chosen");
+  check(Boolean(val1) && val1.textContent === "…/Perseus Backups/", "path readout shows chosen path (" + (val1 && val1.textContent) + ")");
+
+  window.localStorage.setItem("perseus-backup-meta", JSON.stringify({ folderName: "", lastBackupISO: "", auto: true }));
+  window.eval("renderSettings()");
+  const row2 = window.document.querySelector("#set-folder-path");
+  check(Boolean(row2) && row2.hidden === true, "path readout hides again after Disconnect");
 
   console.log("\n===================================");
   console.log("RESULT: " + pass + " passed, " + fail + " failed");

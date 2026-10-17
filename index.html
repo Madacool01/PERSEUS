@@ -214,6 +214,11 @@
   .muted { color: var(--ink-3); }
   .small { font-size: 13px; }
   .micro { font-size: 12px; color: var(--ink-3); }
+  /* Auto-backup save location (Settings → Your data) */
+  .folder-path { margin: .5rem 0 .7rem; padding: .55rem .7rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .folder-path[hidden] { display: none; }
+  .folder-path .micro { display: block; margin-bottom: .25rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+  .folder-path code { display: block; font-family: var(--font-mono); font-size: .84rem; color: var(--ink); overflow-wrap: anywhere; }
 
   /* ---------- Header: split editorial nav ---------- */
   header.app {
@@ -3416,6 +3421,13 @@ function getBackupMeta(){
     const m = JSON.parse(raw);
     return { folderName: m.folderName||"", lastBackupISO: m.lastBackupISO||"", auto: m.auto!==false };
   }catch(e){ return { folderName:"", lastBackupISO:"", auto:true }; }
+}
+function backupFolderPathLabel(){
+  try{
+    const name = String(getBackupMeta().folderName||"").trim();
+    if (!name) return "";
+    return "…/" + name.replace(/[\/\\]+$/,"") + "/";
+  }catch(e){ return ""; }
 }
 function setBackupMeta(meta){
   try{ if (typeof localStorage!=="undefined") localStorage.setItem(BACKUP_META_KEY, JSON.stringify(meta)); }catch(e){}
@@ -8734,6 +8746,7 @@ function renderSettings(){
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
         '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
+          '<div class="folder-path" id="set-folder-path" hidden><span class="micro">Save location</span><code id="set-folder-path-value"></code></div>'+
           '<p class="micro" id="set-folder-status">Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
           '<div class="btn-row"><button class="btn" id="set-folder-pick">Pick backup folder</button><button class="btn" id="set-folder-now">Backup now</button><button class="btn ghost" id="set-folder-forget">Disconnect</button></div></div>' +
         '<button class="btn danger" id="set-clear" style="margin-top:12px">Reset all data</button>' +
@@ -8818,6 +8831,12 @@ function renderSettings(){
   try{
     const bm = getBackupMeta();
     const st = $("#set-folder-status", s);
+    const pathRow = $("#set-folder-path", s), pathVal = $("#set-folder-path-value", s);
+    if (pathRow && pathVal){
+      const label = backupFolderPathLabel();
+      pathRow.hidden = !label;
+      pathVal.textContent = label;
+    }
     if (st) st.textContent = bm.folderName
       ? ("Backing up to “"+bm.folderName+"” — daily "+backupFileName(new Date())+(bm.lastBackupISO ? " · last saved "+String(bm.lastBackupISO).slice(0,10) : " · not saved yet today")+".")
       : "Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.";
