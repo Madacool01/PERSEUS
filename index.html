@@ -9653,7 +9653,12 @@ function weeklySplitData(nowMs){
   return { groups, sessionCount };
 }
 function youSplitHtml(nowMs){
-  const d = weeklySplitData(nowMs);
+  const now = +nowMs || Date.now();
+  const d = weeklySplitData(now);
+  /* Shares youMuscleWeekOffset with the trained-muscles map above, so the two
+     weekly cards always describe the same Mon–Sun window. */
+  const isCurrentWeek = youWeekStart(now) === youWeekStart(Date.now());
+  const range = youMuscleWeekRange(now);
   const vols = SPLIT_GROUPS.map(g=>d.groups[g].volumeKg);
   const maxVol = Math.max(0, ...vols);
   const maxSets = Math.max(1, ...SPLIT_GROUPS.map(g=>d.groups[g].sets));
@@ -9662,7 +9667,7 @@ function youSplitHtml(nowMs){
     const w = maxVol > 0 ? Math.round(100 * s.volumeKg / maxVol) : Math.round(100 * s.sets / maxSets);
     const setsW = Math.round(100 * s.sets / maxSets);
     let sub;
-    if (s.sets === 0) sub = "no volume this week";
+    if (s.sets === 0) sub = isCurrentWeek ? "no volume this week" : "no volume that week";
     else if (maxVol > 0) sub = Math.round(100 * s.volumeKg / maxVol) + "% of top muscle volume";
     else sub = "holds only — no tonnage";
     return '<div class="rec-row" data-split-muscle="' + g + '">'+
@@ -9673,10 +9678,16 @@ function youSplitHtml(nowMs){
       '<div class="rec-sub">' + sub + '</div></div>';
   }).join("");
   const cap = d.sessionCount === 0
-    ? "No sessions logged this week yet — log a workout to see your split."
-    : d.sessionCount + (d.sessionCount === 1 ? " session" : " sessions") + " this week";
+    ? (isCurrentWeek
+      ? "No sessions logged this week yet — log a workout to see your split."
+      : "No sessions logged that week.")
+    : d.sessionCount + (d.sessionCount === 1 ? " session" : " sessions") + (isCurrentWeek ? " this week" : " that week");
   return '<div class="week-muscles" id="you-muscle-split">' +
-    '<div class="you-page-head"><h3>Muscle split</h3><span class="pill time">Mon–Sun</span></div>' +
+    '<div class="you-page-head"><h3>Muscle split</h3>' +
+    '<span class="wm-week-nav" role="group" aria-label="Browse weeks">' +
+    '<button type="button" class="wm-week-btn" data-you-week-nav="prev" aria-label="Previous week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>' +
+    '<button type="button" class="wm-week-btn" data-you-week-nav="next" aria-label="Next week"' + (youMuscleWeekOffset >= 0 ? " disabled" : "") + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>' +
+    '</span><span class="pill time">' + (isCurrentWeek ? "Mon–Sun" : range.label) + '</span></div>' +
     '<div class="wm-legend"><span>Volume + working sets per muscle · primary muscles only</span><span>' + cap + '</span></div>' +
     '<div class="rec-grid">' + rows + '</div>' +
     '<p class="micro" style="margin-top:.7rem">Same tonnage math as Total volume — timed holds count sets, not volume.</p></div>';
@@ -11881,7 +11892,7 @@ function renderYouRecoverySection(){
     youRecoveryHtml(Date.now())+
     '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>'+
     youWeeklyMusclesHtml(youMuscleWeekRef())+
-    youSplitHtml(Date.now());
+    youSplitHtml(youMuscleWeekRef());
   /* Upgrade the fallback map to the anatomical body-muscles charts when the
      CDN module has loaded (no-op offline / in jsdom — the fallback stays). */
   try{ if (typeof window.renderWeeklyBodyCharts === "function") window.renderWeeklyBodyCharts(); }catch(e){}

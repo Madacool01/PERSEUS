@@ -319,5 +319,41 @@ check(splitBars("chest")[1].getAttribute("style").indexOf("100%") !== -1, "top m
 check(splitBars("back")[1].getAttribute("style").indexOf("33%") !== -1, "1-set muscle fills a third of the blue bar (1/3)");
 check(splitRow("chest").textContent.indexOf("3") !== -1, "sets count number shown next to the blue bar");
 
+// Week pager: the split card browses past weeks with the same arrows as the map
+// (reduced-motion stub makes pulseRadarAnd re-render synchronously under jsdom)
+W.matchMedia = () => ({ matches: true, addEventListener(){}, addListener(){}, removeEventListener(){}, removeListener(){} });
+E(`getEx('ex-1').primaryMuscles=['Pectoralis major'];getEx('ex-1').secondaryMuscles=[];
+getEx('ex-6').primaryMuscles=['Latissimus dorsi'];getEx('ex-6').secondaryMuscles=[];
+getEx('ex-1').loadFactor = null; getEx('ex-6').loadFactor = null;
+(function(){
+  var monday = new Date(youWeekStart(Date.now()));
+  var lastMon = new Date(monday.getTime() - 7*86400000);
+  state.sessions = [
+    { id:'s-nav-now', dayId:'day-1', dateISO: monday.toISOString(), completedSets:[
+      { exId:'ex-1', setIndex:0, reps:10, weight:10, rating:2, hit:true, type:'regular' }
+    ]},
+    { id:'s-nav-last', dayId:'day-1', dateISO: lastMon.toISOString(), completedSets:[
+      { exId:'ex-6', setIndex:0, reps:10, weight:20, rating:2, hit:true, type:'regular' },
+      { exId:'ex-6', setIndex:1, reps:10, weight:20, rating:2, hit:true, type:'regular' }
+    ]}
+  ];
+})(); youMuscleWeekOffset = 0; renderYouTab();`);
+clickTab("you");
+const click = el => el.dispatchEvent(new W.MouseEvent("click", { bubbles: true }));
+const splitNav = dir => $("#you-muscle-split [data-you-week-nav='" + dir + "']");
+const splitRowNums = g => Array.from(splitRow(g).querySelectorAll(".rec-pct")).map(el=>el.textContent);
+check(Boolean(splitNav("prev")) && Boolean(splitNav("next")), "split card has previous/next week arrows");
+check(splitRowNums("chest")[0].indexOf("100") !== -1 && splitRowNums("chest")[1] === "1", "current week shows chest 100 volume / 1 set");
+check(splitNav("next").hasAttribute("disabled"), "next arrow disabled on the current week");
+click(splitNav("prev"));
+check(splitRowNums("back")[0].indexOf("400") !== -1 && splitRowNums("back")[1] === "2", "previous week shows back 400 volume / 2 sets");
+check(splitRowNums("chest")[0].indexOf("0") !== -1 && splitRowNums("chest")[1] === "0", "this week's chest volume is absent in the previous week");
+check(!splitNav("next").hasAttribute("disabled"), "next arrow enabled once browsing the past");
+check($("#you-muscle-split").textContent.indexOf("that week") !== -1, "split caption reads that week when browsing the past");
+check($("#you-muscle-split").textContent.indexOf("1 session that week") !== -1, "split caption counts the browsed week's sessions");
+check($("#you-weekly-muscles").textContent.indexOf("Trained last week") !== -1, "map and split share one week state");
+click(splitNav("next"));
+check(splitRowNums("chest")[0].indexOf("100") !== -1 && splitNav("next").hasAttribute("disabled"), "next arrow returns to the current week");
+
 console.log("\nRESULT: " + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
