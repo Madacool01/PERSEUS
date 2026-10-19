@@ -344,6 +344,8 @@ const splitNav = dir => $("#you-muscle-split [data-you-week-nav='" + dir + "']")
 const splitRowNums = g => Array.from(splitRow(g).querySelectorAll(".rec-pct")).map(el=>el.textContent);
 check(Boolean(splitNav("prev")) && Boolean(splitNav("next")), "split card has previous/next week arrows");
 check(splitRowNums("chest")[0].indexOf("100") !== -1 && splitRowNums("chest")[1] === "1", "current week shows chest 100 volume / 1 set");
+const splitPill = () => $("#you-muscle-split .you-page-head .pill").textContent;
+check(splitPill() === E("youMuscleWeekRange(Date.now()).label"), "split pill shows the week's actual dates, not Mon–Sun");
 check(splitNav("next").hasAttribute("disabled"), "next arrow disabled on the current week");
 click(splitNav("prev"));
 check(splitRowNums("back")[0].indexOf("400") !== -1 && splitRowNums("back")[1] === "2", "previous week shows back 400 volume / 2 sets");

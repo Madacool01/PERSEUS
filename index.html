@@ -2574,6 +2574,291 @@
     .routine-card:hover .routine-open { transform: translateX(4px); }
   }
 
+  /* ---------- Workout maker: multi-step session builder ----------
+     A glass sheet that asks for the training goal, target, gear, dose and
+     athlete profile, then previews a sequenced routine before saving it into
+     the Workouts tab. Colours stay on the shared token pairs. */
+  #builder-host {
+    position: fixed; inset: 0; z-index: 76;
+    display: grid; place-items: center;
+    padding: clamp(.45rem, 2vw, 1.4rem);
+    background: rgba(18,15,11,.7);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+    animation: modalBack .25s ease;
+  }
+  #builder-host:empty { display: none; }
+  .bld-shell {
+    width: min(1160px, 100%); height: min(90vh, 880px);
+    display: flex; flex-direction: column; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    animation: modalIn .34s cubic-bezier(.22,1,.36,1);
+  }
+  .bld-top {
+    flex: 0 0 auto; display: flex; align-items: center; gap: .9rem;
+    padding: 1rem 1.25rem .85rem;
+    background: linear-gradient(100deg, var(--accent-soft), transparent 46%), var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .bld-mark {
+    flex: none; width: 40px; height: 40px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent); color: var(--on-accent);
+    font-family: var(--font-display); font-weight: 800; font-size: 1rem;
+    letter-spacing: -.05em;
+  }
+  .bld-head-t { min-width: 0; }
+  .bld-kicker {
+    font-family: var(--font-mono); font-size: .56rem; font-weight: 700;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
+  }
+  .bld-title {
+    margin: .15rem 0 0; font-family: var(--font-display);
+    font-size: clamp(1.05rem, 2vw, 1.34rem); font-weight: 700;
+    letter-spacing: -.025em; line-height: 1.05; color: var(--ink);
+  }
+  .bld-close { flex: none; margin-left: auto; }
+  .bld-steps { flex: 0 0 auto; display: flex; gap: .32rem; padding: .65rem 1.25rem 0; }
+  .bld-step {
+    flex: 1 1 0; min-width: 0; border: 0; background: transparent;
+    padding: .2rem 0 .55rem; cursor: pointer; text-align: left;
+    font-family: var(--font-mono); font-size: .55rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+    transition: color .2s;
+  }
+  .bld-step b { display: block; height: 3px; border-radius: 999px; background: var(--line); margin-bottom: .4rem; transition: background .25s, transform .25s; }
+  .bld-step:hover { color: var(--ink-2); }
+  .bld-step.done { color: var(--ink-2); }
+  .bld-step.done b { background: var(--accent-line); }
+  .bld-step.on { color: var(--ink); }
+  .bld-step.on b { background: var(--accent); transform: scaleY(1.35); }
+  .bld-body {
+    flex: 1 1 auto; min-height: 0;
+    display: grid; grid-template-columns: minmax(0,.78fr) minmax(0,1.55fr);
+  }
+  .bld-rail {
+    min-height: 0; overflow-y: auto;
+    padding: 1.35rem 1.3rem 1.2rem;
+    border-right: 1px solid var(--line);
+    background:
+      radial-gradient(120% 80% at 0% 0%, var(--accent-soft), transparent 62%),
+      linear-gradient(170deg, var(--surface-2), transparent 55%),
+      var(--surface);
+    display: flex; flex-direction: column; gap: .85rem;
+  }
+  .bld-rail-title {
+    margin: 0; font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.5rem, 2.55vw, 2.08rem); line-height: 1.01;
+    letter-spacing: -.035em; color: var(--ink); max-width: 13ch;
+  }
+  .bld-rail-title em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--accent); }
+  .bld-rail-sub { margin: 0; max-width: 34ch; font-size: .85rem; line-height: 1.65; color: var(--ink-2); }
+  .bld-rail-rule { width: 42px; height: 2px; background: var(--accent); border-radius: 999px; margin: .25rem 0 .1rem; }
+  .bld-brief {
+    margin-top: auto; padding-top: .9rem; border-top: 1px dashed var(--line);
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .bld-brief-row { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; }
+  .bld-brief-k {
+    flex: none; font-family: var(--font-mono); font-size: .55rem; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .bld-brief-v { min-width: 0; text-align: right; font-size: .76rem; font-weight: 600; color: var(--ink); }
+  .bld-stage { min-height: 0; overflow-y: auto; padding: 1.35rem 1.45rem 1.1rem; }
+  .bld-q { margin: 0; font-family: var(--font-display); font-size: clamp(1.12rem, 1.9vw, 1.38rem); font-weight: 700; letter-spacing: -.025em; color: var(--ink); }
+  .bld-qsub { margin: .35rem 0 0; max-width: 62ch; font-size: .82rem; line-height: 1.6; color: var(--ink-2); }
+  .bld-block-gap { margin-top: 1.15rem; }
+  .bld-opts { display: grid; gap: .6rem; margin-top: .9rem; }
+  .bld-opts.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .bld-opts.four { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .bld-opt {
+    position: relative; min-width: 0; overflow: hidden; text-align: left;
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    background: var(--surface); color: var(--ink); padding: .9rem .85rem 1rem;
+    cursor: pointer; font: inherit;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s, box-shadow .25s;
+  }
+  .bld-opt:hover { transform: translateY(-2px); border-color: var(--accent-line); box-shadow: var(--shadow-1); }
+  .bld-opt:active { transform: translateY(0) scale(.99); }
+  .bld-opt.on {
+    border-color: var(--accent);
+    background: linear-gradient(155deg, var(--accent-soft), var(--surface) 74%);
+  }
+  .bld-opt-ico { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: .65rem; color: var(--accent-deep); }
+  .bld-opt-ico svg { width: 30px; height: 30px; }
+  .bld-opt-ico img { width: 42px; height: 42px; object-fit: contain; filter: saturate(.9) contrast(1.05); }
+  .bld-opt b { display: block; font-family: var(--font-display); font-size: .98rem; letter-spacing: -.02em; }
+  .bld-opt small { display: block; margin-top: .3rem; font-size: .72rem; line-height: 1.45; color: var(--ink-2); }
+  .bld-opt-zone {
+    display: inline-block; margin-top: .55rem; font-family: var(--font-mono);
+    font-size: .55rem; font-style: normal; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent-deep);
+    background: var(--surface); border: 1px solid var(--accent-line);
+    border-radius: 999px; padding: .18rem .46rem;
+  }
+  .bld-tick {
+    position: absolute; top: .55rem; right: .55rem; width: 18px; height: 18px;
+    display: grid; place-items: center; border-radius: 50%;
+    background: var(--accent); color: var(--on-accent); opacity: 0; transform: scale(.7);
+    transition: opacity .2s, transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .bld-tick svg { width: 11px; height: 11px; }
+  .bld-opt.on .bld-tick { opacity: 1; transform: none; }
+  .bld-hint { margin: .7rem 0 0; font-size: .7rem; line-height: 1.55; color: var(--ink-3); }
+  .bld-hint b { color: var(--ink-2); }
+  .bld-presets { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .8rem; }
+  .bld-preset {
+    border: 1px dashed var(--line); border-radius: 999px; background: transparent;
+    color: var(--ink-2); font: inherit; font-size: .7rem; font-weight: 600;
+    padding: .3rem .65rem; cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+  }
+  .bld-preset:hover, .bld-preset:focus-visible { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .bld-preset.on { border-style: solid; border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
+  .bld-eq { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .45rem; margin-top: .8rem; }
+  .bld-eq-tile {
+    display: flex; align-items: center; gap: .45rem; min-width: 0;
+    border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+    padding: .5rem .55rem; cursor: pointer; font: inherit; color: var(--ink-2);
+    transition: border-color .18s, background .18s, transform .18s;
+  }
+  .bld-eq-tile:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .bld-eq-tile.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .bld-eq-tile img { flex: none; width: 24px; height: 24px; object-fit: contain; }
+  .bld-eq-tile span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .71rem; font-weight: 600; }
+  .bld-muscles { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: .4rem; margin-top: .8rem; }
+  .bld-muscle {
+    display: flex; flex-direction: column; align-items: center; gap: .28rem;
+    padding: .5rem .25rem .45rem; border: 1px solid var(--line); border-radius: var(--r-md);
+    background: var(--surface); cursor: pointer; font: inherit; color: var(--ink-2);
+    transition: border-color .18s, background .18s, transform .18s;
+  }
+  .bld-muscle:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .bld-muscle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .bld-muscle img { width: 34px; height: 34px; object-fit: contain; filter: saturate(.85); }
+  .bld-muscle span { font-size: .63rem; font-weight: 600; }
+  .bld-durations { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .5rem; margin-top: .9rem; }
+  .bld-dur {
+    border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
+    padding: .85rem .6rem .75rem; text-align: left; cursor: pointer; font: inherit;
+    transition: border-color .18s, background .18s, transform .18s;
+  }
+  .bld-dur:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+  .bld-dur.on { border-color: var(--accent); background: linear-gradient(160deg, var(--accent-soft), var(--surface) 78%); }
+  .bld-dur b { display: block; font-family: var(--font-display); font-size: 1.65rem; line-height: 1; letter-spacing: -.04em; color: var(--ink); }
+  .bld-dur b i { font-style: normal; font-size: .75rem; letter-spacing: 0; margin-left: .12rem; color: var(--ink-2); }
+  .bld-dur span { display: block; margin-top: .35rem; font-family: var(--font-mono); font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .bld-levels { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .5rem; margin-top: .9rem; }
+  .bld-level {
+    border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
+    padding: .8rem .75rem; text-align: left; cursor: pointer; font: inherit;
+    transition: border-color .18s, background .18s, transform .18s;
+  }
+  .bld-level:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+  .bld-level.on { border-color: var(--accent); background: linear-gradient(160deg, var(--accent-soft), var(--surface) 78%); }
+  .bld-meter { display: flex; gap: 3px; margin-bottom: .55rem; }
+  .bld-meter i { flex: 1; height: 5px; border-radius: 999px; background: var(--line); }
+  .bld-meter i.on { background: var(--accent); }
+  .bld-level b { display: block; font-family: var(--font-display); font-size: .9rem; letter-spacing: -.015em; }
+  .bld-level small { display: block; margin-top: .22rem; font-size: .68rem; line-height: 1.45; color: var(--ink-2); }
+  .bld-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .9rem; }
+  .bld-fields .field { margin: 0; }
+  .bld-field-note { margin: .65rem 0 0; font-size: .68rem; line-height: 1.55; color: var(--ink-3); }
+  .bld-sheet { margin-top: .9rem; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
+  .bld-sheet-top {
+    padding: 1rem 1.1rem .95rem;
+    background: radial-gradient(120% 130% at 0% 0%, var(--accent-soft), transparent 62%), var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .bld-sheet-name { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 2.5vw, 1.85rem); line-height: 1.02; letter-spacing: -.035em; color: var(--ink); }
+  .bld-sheet-name em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--accent); }
+  .bld-sheet-meta { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .65rem; }
+  .bld-pill {
+    display: inline-flex; align-items: center; gap: .25rem;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+    padding: .2rem .55rem; font-family: var(--font-mono); font-size: .55rem;
+    font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .bld-pill.accent { color: var(--accent-deep); background: var(--accent-soft); border-color: var(--accent-line); }
+  .bld-block { padding: .85rem 1.1rem; border-top: 1px dashed var(--line); }
+  .bld-sheet-top + .bld-block { border-top: 0; }
+  .bld-block-h { display: flex; align-items: center; gap: .55rem; margin-bottom: .55rem; }
+  .bld-block-t {
+    font-family: var(--font-mono); font-size: .55rem; font-weight: 700;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .bld-block-note { margin-left: auto; font-size: .64rem; color: var(--ink-3); }
+  .bld-prep { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .bld-prep span { border: 1px dashed var(--line); border-radius: 999px; padding: .26rem .55rem; font-size: .7rem; color: var(--ink-2); background: var(--surface-2); }
+  .bld-pair { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: .5rem; margin-bottom: .6rem; }
+  .bld-pair-rail { position: relative; display: flex; align-items: center; justify-content: center; }
+  .bld-pair-rail::before { content: ""; position: absolute; top: .55rem; bottom: .55rem; width: 2px; border-radius: 999px; background: var(--accent-line); }
+  .bld-pair-tag {
+    position: relative; z-index: 1; writing-mode: vertical-rl; transform: rotate(180deg);
+    background: var(--surface); padding: .22rem 0; color: var(--accent-deep);
+    font-family: var(--font-mono); font-size: .47rem; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .bld-ex {
+    display: flex; align-items: flex-start; gap: .55rem;
+    border: 1px solid var(--line-2); border-radius: var(--r-md);
+    background: var(--surface-2); padding: .55rem .65rem;
+  }
+  .bld-ex + .bld-ex { margin-top: .32rem; }
+  .bld-ex-n { flex: none; padding-top: .08rem; font-family: var(--font-mono); font-size: .55rem; font-weight: 700; color: var(--accent-deep); }
+  .bld-ex-body { min-width: 0; flex: 1 1 auto; }
+  .bld-ex-name { font-size: .85rem; font-weight: 700; line-height: 1.25; color: var(--ink); }
+  .bld-ex-meta { margin-top: .14rem; font-size: .65rem; color: var(--ink-3); }
+  .bld-ex-dose { flex: none; text-align: right; font-family: var(--font-mono); font-size: .57rem; line-height: 1.5; color: var(--ink-2); white-space: nowrap; }
+  .bld-ex-dose b { display: block; color: var(--ink); font-size: .62rem; }
+  .bld-rest { display: flex; align-items: center; gap: .5rem; margin: .2rem 0 .55rem 24px; font-size: .59rem; letter-spacing: .04em; color: var(--ink-3); }
+  .bld-rest::before, .bld-rest::after { content: ""; flex: 1 1 auto; border-top: 1px dashed var(--line); }
+  .bld-standalone { display: grid; gap: .32rem; }
+  .bld-save-note { margin: .8rem 0 0; font-size: .66rem; line-height: 1.55; color: var(--ink-3); }
+  .bld-empty { border: 1px dashed var(--accent-line); border-radius: var(--r-lg); background: var(--accent-soft); padding: 1rem; margin-top: .9rem; font-size: .82rem; line-height: 1.55; color: var(--ink-2); }
+  .bld-foot {
+    flex: 0 0 auto; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    padding: .85rem 1.25rem; border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .bld-foot .spacer { margin-left: auto; }
+  .bld-count { font-family: var(--font-mono); font-size: .55rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+  /* Persistent entry band on Workouts. */
+  .bld-band {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 1.2rem; padding: .95rem 1.1rem;
+    border: 1px dashed var(--accent-line); border-radius: var(--r-lg);
+    background: linear-gradient(112deg, var(--accent-soft), transparent 70%), var(--surface);
+  }
+  .bld-band .t { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: -.02em; color: var(--ink); }
+  .bld-band .micro { margin: .2rem 0 0; max-width: 62ch; }
+  .bld-band .btn { margin-left: auto; flex: none; }
+  @media (max-width: 900px) {
+    .bld-shell { height: 100dvh; max-height: 100dvh; border-radius: 14px 14px 0 0; }
+    #builder-host { padding: 0; align-items: end; }
+    .bld-body { grid-template-columns: 1fr; }
+    .bld-rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 1rem 1.1rem .85rem; gap: .45rem; }
+    .bld-rail-title { max-width: none; font-size: 1.5rem; }
+    .bld-rail-sub, .bld-brief, .bld-rail-rule { display: none; }
+    .bld-stage { padding: 1.1rem; }
+    .bld-foot { padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px)); }
+    .bld-opts.three, .bld-opts.four { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .bld-eq { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .bld-muscles { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  }
+  @media (max-width: 600px) {
+    .bld-steps { padding: .55rem .85rem 0; }
+    .bld-step { font-size: .48rem; letter-spacing: .06em; }
+    .bld-top { padding: .8rem .9rem .7rem; }
+    .bld-opts.three, .bld-opts.four, .bld-durations, .bld-levels, .bld-fields { grid-template-columns: 1fr 1fr; }
+    .bld-levels { grid-template-columns: 1fr; }
+    .bld-fields { grid-template-columns: 1fr; }
+    .bld-eq { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .bld-muscles { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .bld-foot .btn { flex: 1 1 auto; justify-content: center; }
+    .bld-foot .spacer { display: none; }
+    .bld-band .btn { margin-left: 0; width: 100%; justify-content: center; }
+  }
+
   /* ---------- Focus / reduced motion ---------- */
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
@@ -2655,6 +2940,7 @@
 <div id="api-guide-host"></div>
 <div id="prog-start-host"></div>
 <div id="prog-save-host"></div>
+<div id="builder-host"></div>
 <nav id="m-tabs" aria-label="Primary">
   <button data-view="home" class="tab-btn active" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
   <button data-view="workouts" class="tab-btn" aria-label="Workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/></svg><span>Workouts</span></button>
@@ -2708,7 +2994,7 @@
 
 const STORAGE_KEY = "perseus-v1";
 const LEGACY_STORAGE_KEYS = ["adaptive-coach-v1"]; // old keys to migrate from
-const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy", defaultSessionType:"hypertrophy", bodyWeight:null, heightCm:null, theme:"heritage", loggingMode:false, repZones:null };
+const DEFAULT_PROFILE = { weightUnit:"kg", name:"", experience:"beginner", apiKey:"", aiModel:"openai/gpt-oss-20b", autoApply:false, lastSessionType:"hypertrophy", defaultSessionType:"hypertrophy", bodyWeight:null, heightCm:null, age:null, theme:"heritage", loggingMode:false, repZones:null };
 /* Color themes (Settings → Appearance). Swatch dots preview each palette;
    applyTheme() maps the saved id onto <html data-theme>, whose CSS blocks
    redefine the same semantic tokens. Unknown ids fall back to heritage. */
@@ -5385,13 +5671,18 @@ function renderRoutineList(){
         '<h2 class="view-title">Shape the week<span class="serif-i">,</span> then <em class="serif-i">let the coach</em> push it forward.</h2>' +
         '<p class="view-sub fx-scrub">Your routines live here. Open one to plan it. Sets never change; the coach only tunes reps, hold time, or weight.</p>' +
         '<div class="hero-cta">' +
-          '<button class="btn btn-xl primary" id="add-day"><span>+ New routine</span><span class="btn-arrow">→</span></button>' +
-          '<button class="btn btn-xl ghost-dark" data-goto="log">Log today’s session <span class="btn-arrow">→</span></button>' +
+          '<button class="btn btn-xl primary" data-builder-open>Build a workout <span class="btn-arrow">→</span></button>' +
+          '<button class="btn btn-xl ghost-dark" id="add-day"><span>+ New routine</span></button>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
       coachStripHtml() +
+      '<div class="bld-band fx-in">' +
+        '<div><div class="t">Let the maker sequence the session</div>' +
+        '<p class="micro">Give it a goal, a target, your gear, and the time you have. It pairs supersets, picks the dose, and saves a routine you can start immediately.</p></div>' +
+        '<button type="button" class="btn primary" data-builder-open>Open the maker <span class="btn-arrow">→</span></button>' +
+      '</div>' +
       '<div class="section-block">' +
         '<div class="btn-row" style="margin-bottom:1.1rem">'+
           '<button class="btn" id="import-share">Open a shared workout</button>'+
@@ -5404,6 +5695,7 @@ function renderRoutineList(){
     planMode="edit"; planEditId = card.dataset.editDay; render();
   }));
   $$("[data-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.goto)));
+  $$("[data-builder-open]", s).forEach(b=>b.addEventListener("click", ()=>openWorkoutBuilder()));
   const stripTrack = $("[data-strip-track]", s);
   if (stripTrack){
     const step = ()=>{ const c = stripTrack.querySelector(".strip-card"); return c ? c.offsetWidth + 18 : 340; };
@@ -8230,11 +8522,13 @@ function renderCoach(){
         '<p class="view-sub">Review what changes for next session. Accept or reject each call. Set count is never altered.</p>' +
         '<div class="hero-cta">' +
           '<button class="btn btn-xl primary" data-goto="log">Log a session <span class="btn-arrow">→</span></button>' +
+          '<button class="btn btn-xl ghost-dark" data-builder-open>Build a session <span class="btn-arrow">→</span></button>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div class="wrap"><div class="empty"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6v4"/><path d="M21 6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.675A7 7 0 1 1 9 6z"/></svg></div>No suggestions yet. Log a session and the coach will propose changes for next time.</div></div>';
     $$("[data-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.goto)));
+    $$("[data-builder-open]", s).forEach(b=>b.addEventListener("click", ()=>openWorkoutBuilder()));
     return;
   }
   let html = '<div class="view-hero slim">' +
@@ -8430,6 +8724,780 @@ function recAct(ds, actVal){
   }
   saveState();
   renderCoach();
+}
+
+/* =========================================================================
+   WORKOUT MAKER
+   -------------------------------------------------------------------------
+   A six-screen builder that reads the training goal, target, available gear,
+   time budget, and athlete profile, then sequences a real routine from the
+   user's own exercise library. Groq is not called here: generation is a
+   deterministic, seeded builder so the flow works offline and instantly.
+   The output lands in state.days, so the coach, logger, and program shelf can
+   treat it like any other routine.
+   ========================================================================= */
+const BUILDER_HOME_EQUIP = ["bodyweight","dumbbell","bands","pullup","bench"];
+const BUILDER_STEPS = ["Goal","Focus","Gear","Time","You","Session"];
+const BUILDER_FOCUS_META = {
+  upper: { label:"Upper Body", parts:["Chest","Back","Shoulders","Biceps","Triceps","Forearms"] },
+  lower: { label:"Lower Body", parts:["Glutes","Thighs","Calves","Hips"] },
+  full:  { label:"Full Body", parts:[] },
+  pick:  { label:"Target Muscles", parts:[] }
+};
+const BUILDER_MUSCLE_PARTS = ["Chest","Back","Shoulders","Biceps","Triceps","Forearms","Core","Glutes","Thighs","Calves"];
+const BUILDER_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Glutes:"glutes", Thighs:"quads", Calves:"calves" };
+const BUILDER_REST = { strength:[120,180], hypertrophy:[60,90], endurance:[30,45] };
+const BUILDER_FUN_RX = /(renegade|muscle-up|archer|hindu|lever|rollout|negative)/i;
+let builderState = null;
+let builderEsc = null;
+
+function openWorkoutBuilder(opts){
+  const p = state.profile || {};
+  builderState = {
+    step: 0,
+    goal: (p.defaultSessionType==="strength" || p.defaultSessionType==="endurance") ? p.defaultSessionType : "hypertrophy",
+    focus: "upper",
+    muscles: [],
+    equipment: BUILDER_HOME_EQUIP.slice(),
+    duration: 30,
+    difficulty: "moderate",
+    age: (p.age!=null) ? String(p.age) : "",
+    bodyWeight: (p.bodyWeight!=null) ? String(fromKg(p.bodyWeight)) : "",
+    experience: p.experience || "beginner",
+    attempt: 0,
+    draft: null,
+    focusOnRender: true
+  };
+  if (opts && opts.goal && SESSION_TYPES[opts.goal]) builderState.goal = opts.goal;
+  const host = $("#builder-host");
+  if (!host) return;
+  if (builderEsc) document.removeEventListener("keydown", builderEsc);
+  builderEsc = ev=>{ if (ev.key==="Escape") closeWorkoutBuilder(); };
+  document.addEventListener("keydown", builderEsc);
+  try{ document.body.style.overflow = "hidden"; }catch(e){}
+  host.onclick = ev=>{ if (ev.target === host) closeWorkoutBuilder(); };
+  renderWorkoutBuilder();
+}
+function closeWorkoutBuilder(){
+  const host = $("#builder-host");
+  if (host){ host.innerHTML = ""; host.onclick = null; }
+  if (builderEsc){ document.removeEventListener("keydown", builderEsc); builderEsc = null; }
+  builderState = null;
+  try{ document.body.style.overflow = ""; }catch(e){}
+}
+function builderStepCopy(step){
+  const copy = [
+    { title:'Choose the <em>engine</em>.', sub:'Strength, hypertrophy, or endurance. Rep ranges, rest, and set dose all follow from this one choice.' },
+    { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or major in a specific muscle. The sequence follows your target.' },
+    { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
+    { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty decides sets, rest, and whether a finisher appears.' },
+    { title:'Make it <em>yours</em>.', sub:'Age tunes volume and rest. Body weight keeps your profile and volume math current. Experience sets how conservative the first session should be.' },
+    { title:'Your session, <em>ready</em>.', sub:'Warm-up, paired work, and a cool-down. Shuffle the sequence or save it straight into Workouts.' }
+  ];
+  return copy[step] || copy[0];
+}
+function builderTick(){
+  return '<span class="bld-tick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 6.5"/></svg></span>';
+}
+function builderSameSet(a, c){
+  if (!a || !c || a.length !== c.length) return false;
+  return a.every(k=>c.indexOf(k) !== -1);
+}
+function builderFocusParts(b){
+  if (b.focus==="pick") return (b.muscles||[]).slice();
+  return BUILDER_FOCUS_META[b.focus] ? BUILDER_FOCUS_META[b.focus].parts.slice() : [];
+}
+function builderTargetLabel(b){
+  if (b.focus==="pick"){
+    if (!b.muscles.length) return "Pick muscles";
+    return b.muscles.slice(0,2).join(" & ") + (b.muscles.length>2 ? " +"+(b.muscles.length-2) : "");
+  }
+  return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
+}
+function builderGearLabel(b){
+  if (builderSameSet(b.equipment, BUILDER_HOME_EQUIP)) return "Home setup";
+  if (builderSameSet(b.equipment, ALL_EQUIP)) return "Full gym";
+  const kit = (b.equipment||[]).filter(k=>k!=="bodyweight");
+  if (!kit.length) return "Body weight";
+  if (kit.length===1) return EQUIP_FILTER_LABELS[kit[0]] || kit[0];
+  return kit.length + " pieces";
+}
+function builderLevelLabel(id){
+  return id==="easy" ? "Easy" : id==="hard" ? "Hard" : "Moderate";
+}
+function builderBriefHtml(){
+  const b = builderState;
+  const rows = [
+    ["Goal", sessionTypeLabel(b.goal)],
+    ["Target", builderTargetLabel(b)],
+    ["Gear", builderGearLabel(b)],
+    ["Time", b.duration + " min"],
+    ["Level", builderLevelLabel(b.difficulty)]
+  ];
+  return '<div class="bld-brief">' + rows.map(r=>
+    '<div class="bld-brief-row"><span class="bld-brief-k">'+esc(r[0])+'</span><span class="bld-brief-v">'+esc(r[1])+'</span></div>'
+  ).join("") + '</div>';
+}
+function renderWorkoutBuilder(){
+  const host = $("#builder-host");
+  if (!host || !builderState) return;
+  const b = builderState;
+  if (b.step===5 && !b.draft) b.draft = generateWorkout(b);
+  const step = Math.max(0, Math.min(5, b.step));
+  const changedStep = b._lastStep !== step;
+  b._lastStep = step;
+  const copy = builderStepCopy(step);
+  const stepsHtml = BUILDER_STEPS.map((label,i)=>
+    '<button type="button" class="bld-step'+(i<step?' done':'')+(i===step?' on':'')+'" data-bld-step="'+i+'" aria-current="'+(i===step?'step':'false')+'"><b></b>'+esc(label)+'</button>'
+  ).join("");
+  host.innerHTML =
+    '<div class="bld-shell" role="dialog" aria-modal="true" aria-labelledby="bld-title">'+
+      '<div class="bld-top">'+
+        '<span class="bld-mark" aria-hidden="true">P</span>'+
+        '<div class="bld-head-t">'+
+          '<div class="bld-kicker">The workout maker</div>'+
+          '<h2 class="bld-title" id="bld-title">Build a session around your day</h2>'+
+        '</div>'+
+        '<button type="button" class="btn ghost sh-x bld-close" data-bld-close aria-label="Close the workout maker">&#10005;</button>'+
+      '</div>'+
+      '<div class="bld-steps" aria-label="Builder progress">'+stepsHtml+'</div>'+
+      '<div class="bld-body">'+
+        '<aside class="bld-rail">'+
+          '<h3 class="bld-rail-title">'+copy.title+'</h3>'+
+          '<span class="bld-rail-rule" aria-hidden="true"></span>'+
+          '<p class="bld-rail-sub">'+copy.sub+'</p>'+
+          builderBriefHtml()+
+        '</aside>'+
+        '<div class="bld-stage" data-bld-stage>'+builderStageHtml(step)+'</div>'+
+      '</div>'+
+      builderFootHtml(step)+
+    '</div>';
+  bindBuilderEvents();
+  if (changedStep) builderAnimateStage(host);
+  if (b.focusOnRender){
+    b.focusOnRender = false;
+    const close = $("[data-bld-close]", host);
+    if (close) close.focus({preventScroll:true});
+  }
+}
+function builderAnimateStage(host){
+  try{
+    if (!window.gsap) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const stage = $(".bld-stage", host);
+    if (!stage) return;
+    const items = $$(".bld-q, .bld-qsub, .bld-opts, .bld-presets, .bld-eq, .bld-muscles, .bld-durations, .bld-levels, .bld-fields, .bld-hint, .bld-field-note, .bld-sheet, .bld-save-note, .bld-empty", stage);
+    if (items.length){
+      window.gsap.fromTo(items, {y:14, opacity:0}, {
+        y:0, opacity:1, duration:.46, stagger:.045, ease:"power3.out",
+        overwrite:"auto", clearProps:"transform,opacity"
+      });
+    }
+  }catch(e){}
+}
+function builderFootHtml(step){
+  const preview = step===5;
+  return '<div class="bld-foot">'+
+    '<button type="button" class="btn" data-bld-back'+(step===0?' disabled':'')+'>Back</button>'+
+    '<span class="bld-count">'+(step+1)+' of 6</span>'+
+    '<span class="spacer"></span>'+
+    (preview
+      ? '<button type="button" class="btn ghost" data-bld-shuffle>Shuffle</button>'+
+        '<button type="button" class="btn" data-bld-save>Save to routines</button>'+
+        '<button type="button" class="btn primary" data-bld-start>Start now <span class="btn-arrow">&#8594;</span></button>'
+      : '<button type="button" class="btn primary" data-bld-next>'+(step===4?'Build the session':'Continue')+' <span class="btn-arrow">&#8594;</span></button>')+
+  '</div>';
+}
+function builderStageHtml(step){
+  if (step===0) return builderGoalHtml();
+  if (step===1) return builderFocusHtml();
+  if (step===2) return builderGearHtml();
+  if (step===3) return builderTimeHtml();
+  if (step===4) return builderYouHtml();
+  return builderPreviewHtml();
+}
+function builderGoalHtml(){
+  const b = builderState;
+  const goals = [
+    { id:"strength", label:"Strength", desc:"Low reps, long rests, heavier work.", svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>' },
+    { id:"hypertrophy", label:"Hypertrophy", desc:"Moderate reps, controlled volume.", img:"icon_muscles/biceps.png" },
+    { id:"endurance", label:"Endurance", desc:"High reps, short rests, a real sweat.", svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3 10 2-5h7"/></svg>' }
+  ];
+  return '<h4 class="bld-q">What should this session build?</h4>'+
+    '<p class="bld-qsub">Rep ranges and rest follow the adaptation you choose. You can still edit every target after saving.</p>'+
+    '<div class="bld-opts three">'+goals.map(g=>{
+      const on = b.goal===g.id;
+      const z = sessionZone(g.id);
+      const ico = g.img ? '<img src="'+g.img+'" alt="" loading="lazy"/>' : g.svg;
+      return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-goal="'+g.id+'" aria-pressed="'+on+'">'+
+        builderTick()+'<span class="bld-opt-ico">'+ico+'</span>'+
+        '<b>'+g.label+'</b><small>'+g.desc+'</small>'+
+        '<em class="bld-opt-zone">'+z[0]+'-'+z[1]+' reps</em></button>';
+    }).join("")+'</div>'+
+    '<p class="bld-hint"><b>Built from your own library.</b> Nothing is generated from a fixed template; the maker sequences movements you already own and can log.</p>';
+}
+function builderFocusHtml(){
+  const b = builderState;
+  const cards = [
+    { id:"upper", label:"Upper body", desc:"Chest, back, shoulders, arms.", img:"icon_muscles/chest.png" },
+    { id:"lower", label:"Lower body", desc:"Glutes, thighs, calves, hips.", img:"icon_muscles/quads.png" },
+    { id:"full", label:"Full body", desc:"A balanced head-to-toe sequence.", img:"icon_muscles/core.png" },
+    { id:"pick", label:"Target muscles", desc:"Major in one or two areas.", img:"icon_muscles/shoulders.png" }
+  ];
+  let html = '<h4 class="bld-q">Where should the work land?</h4>'+
+    '<p class="bld-qsub">A broad target gives a balanced session. Target muscles narrows the pool to the areas you choose.</p>'+
+    '<div class="bld-opts four">'+cards.map(c=>{
+      const on = b.focus===c.id;
+      return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-focus="'+c.id+'" aria-pressed="'+on+'">'+
+        builderTick()+'<span class="bld-opt-ico"><img src="'+c.img+'" alt="" loading="lazy"/></span>'+
+        '<b>'+c.label+'</b><small>'+c.desc+'</small></button>';
+    }).join("")+'</div>';
+  if (b.focus==="pick"){
+    html += '<div class="bld-block-gap"><div class="bld-q" style="font-size:1rem">Which muscles?</div>'+
+      '<div class="bld-muscles">'+BUILDER_MUSCLE_PARTS.map(p=>{
+        const on = b.muscles.indexOf(p) !== -1;
+        const key = BUILDER_PART_ICON[p] || "";
+        const file = key ? ("icon_muscles/" + (RADAR_ICON_FILE[key] || key) + ".png") : "";
+        return '<button type="button" class="bld-muscle'+(on?' on':'')+'" data-bld-muscle="'+esc(p)+'" aria-pressed="'+on+'">'+
+          (file?'<img src="'+file+'" alt="" loading="lazy"/>':"")+'<span>'+esc(p)+'</span></button>';
+      }).join("")+'</div>'+
+      '<p class="bld-hint">Pick one or two. The maker fills the rest of the session from matching movements in your library.</p></div>';
+  }
+  return html;
+}
+function builderGearHtml(){
+  const b = builderState;
+  const presets = [
+    { id:"home", label:"Home setup" },
+    { id:"gym", label:"Full gym" },
+    { id:"body", label:"Body weight only" }
+  ];
+  const isHome = builderSameSet(b.equipment, BUILDER_HOME_EQUIP);
+  const isGym = builderSameSet(b.equipment, ALL_EQUIP);
+  const isBody = builderSameSet(b.equipment, ["bodyweight"]);
+  return '<h4 class="bld-q">What can you train with?</h4>'+
+    '<p class="bld-qsub">Choose a preset or build your own kit. Body weight is always available; the rest filters the movement pool.</p>'+
+    '<div class="bld-presets">'+presets.map(p=>{
+      const on = (p.id==="home"&&isHome) || (p.id==="gym"&&isGym) || (p.id==="body"&&isBody);
+      return '<button type="button" class="bld-preset'+(on?' on':'')+'" data-bld-preset="'+p.id+'">'+esc(p.label)+'</button>';
+    }).join("")+'</div>'+
+    '<div class="bld-eq">'+ALL_EQUIP.map(k=>{
+      const on = k==="bodyweight" || b.equipment.indexOf(k)!==-1;
+      return '<button type="button" class="bld-eq-tile'+(on?' on':'')+'" data-bld-equip="'+esc(k)+'" aria-pressed="'+on+'" title="'+esc(EQUIP_LABELS[k]||k)+'">'+
+        '<img src="'+EQUIP_ICONS[k]+'" alt="" loading="lazy"/><span>'+esc(EQUIP_FILTER_LABELS[k]||k)+'</span></button>';
+    }).join("")+'</div>'+
+    '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have.</p>';
+}
+function builderTimeHtml(){
+  const b = builderState;
+  const durs = [
+    { v:15, label:"Express" },
+    { v:30, label:"Standard" },
+    { v:45, label:"Full" },
+    { v:60, label:"Long" }
+  ];
+  const levels = [
+    { id:"easy", label:"Easy", desc:"2 sets and generous rest.", bars:1 },
+    { id:"moderate", label:"Moderate", desc:"3 sets at a steady pace.", bars:2 },
+    { id:"hard", label:"Hard", desc:"4 sets and a final finisher.", bars:3 }
+  ];
+  return '<h4 class="bld-q">How much time and effort?</h4>'+
+    '<p class="bld-qsub">Time changes the number of movements. Difficulty changes sets, rest, and whether the session ends with a finisher.</p>'+
+    '<div class="bld-durations">'+durs.map(d=>{
+      const on = b.duration===d.v;
+      return '<button type="button" class="bld-dur'+(on?' on':'')+'" data-bld-duration="'+d.v+'" aria-pressed="'+on+'">'+
+        '<b>'+d.v+'<i>min</i></b><span>'+d.label+'</span></button>';
+    }).join("")+'</div>'+
+    '<div class="bld-block-gap"><div class="bld-q" style="font-size:1rem">Difficulty</div>'+
+      '<div class="bld-levels">'+levels.map(l=>{
+        const on = b.difficulty===l.id;
+        return '<button type="button" class="bld-level'+(on?' on':'')+'" data-bld-level="'+l.id+'" aria-pressed="'+on+'">'+
+          '<span class="bld-meter" aria-hidden="true">'+[1,2,3].map(n=>'<i class="'+(n<=l.bars?'on':'')+'"></i>').join("")+'</span>'+
+          '<b>'+l.label+'</b><small>'+l.desc+'</small></button>';
+      }).join("")+'</div></div>'+
+    '<p class="bld-hint"><b>Conservatism stays on.</b> Beginners and older athletes are capped at three working sets, with extra rest where it matters.</p>';
+}
+function builderYouHtml(){
+  const b = builderState;
+  const exp = [
+    ["beginner","Beginner, conservative and simple"],
+    ["intermediate","Intermediate, balanced"],
+    ["advanced","Advanced, with more nuance"]
+  ];
+  return '<h4 class="bld-q">A little context, then the session.</h4>'+
+    '<p class="bld-qsub">Age tunes volume and rest. Body weight pre-fills your profile so the session log and volume math start from the right number. Both are optional and stay in this browser.</p>'+
+    '<div class="bld-fields">'+
+      '<label class="field"><span>Age (optional)</span><input type="number" min="13" max="100" step="1" inputmode="numeric" data-bld-age placeholder="e.g. 32" value="'+esc(b.age)+'"/></label>'+
+      '<label class="field"><span>Body weight ('+esc(weightUnit())+', optional)</span><input type="number" min="0" step="0.5" inputmode="decimal" data-bld-bw placeholder="e.g. 70" value="'+esc(b.bodyWeight)+'"/></label>'+
+      '<label class="field" style="grid-column:1/-1"><span>Coaching depth</span><select data-bld-exp>'+
+        exp.map(x=>'<option value="'+x[0]+'"'+(b.experience===x[0]?" selected":"")+'>'+esc(x[1])+'</option>').join("")+
+      '</select></label>'+
+    '</div>'+
+    '<p class="bld-field-note">Nothing here is sent anywhere. Age 55+ trims a movement and adds rest; beginners never get a failure finisher.</p>';
+}
+function builderPreviewHtml(){
+  const b = builderState;
+  const d = b.draft;
+  if (!d || !d.exercises.length){
+    return '<h4 class="bld-q">No movements match that setup.</h4>'+
+      '<p class="bld-qsub">Add a piece of equipment or broaden the target, then build again.</p>'+
+      '<div class="bld-empty">The maker only chooses from your exercise library. Open Exercises to add a movement, or go back and select more gear.</div>';
+  }
+  const sets = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
+  const meta = [
+    bldPill(sessionTypeLabel(d.goal), true),
+    bldPill(d.focusLabel),
+    bldPill(d.duration + " min"),
+    bldPill(sets + " working sets")
+  ];
+  if (d.supersets.length) meta.push(bldPill(d.supersets.length + " superset" + (d.supersets.length===1?"":"s")));
+  let html = '<div class="bld-sheet">'+
+    '<div class="bld-sheet-top">'+
+      '<h4 class="bld-sheet-name">'+esc(d.name)+'</h4>'+
+      '<div class="bld-sheet-meta">'+meta.join("")+'</div>'+
+    '</div>'+
+    '<div class="bld-block">'+
+      '<div class="bld-block-h"><span class="bld-block-t">Warm-up</span><span class="bld-block-note">3 minutes · not logged</span></div>'+
+      '<div class="bld-prep">'+d.warmup.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>'+
+    '</div>'+
+    '<div class="bld-block">'+
+      '<div class="bld-block-h"><span class="bld-block-t">Main work</span><span class="bld-block-note">Logged · rest after each pair</span></div>';
+  d.pairs.forEach((pair,pi)=>{
+    const letter = String.fromCharCode(65 + pi);
+    if (pair.length === 2){
+      html += '<div class="bld-pair">'+
+        '<div class="bld-pair-rail"><span class="bld-pair-tag">Superset</span></div>'+
+        '<div>'+pair.map((de,ei)=>builderExRow(de, letter + (ei+1))).join("")+'</div>'+
+      '</div>'+
+      '<div class="bld-rest">Rest '+builderRestLabel(d.rest)+' after the pair</div>';
+    } else {
+      html += '<div class="bld-standalone">'+pair.map((de,ei)=>builderExRow(de, String(pi+1).padStart(2,"0"))).join("")+'</div>';
+    }
+  });
+  html += '</div>';
+  if (d.finisher){
+    html += '<div class="bld-block">'+
+      '<div class="bld-block-h"><span class="bld-block-t">Finisher</span><span class="bld-block-note">One last push</span></div>'+
+      builderExRow(d.finisher, "F")+
+    '</div>';
+  }
+  html += '<div class="bld-block">'+
+    '<div class="bld-block-h"><span class="bld-block-t">Cool-down</span><span class="bld-block-note">3 minutes · not logged</span></div>'+
+    '<div class="bld-prep">'+d.cooldown.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>'+
+  '</div></div>'+
+  '<p class="bld-save-note">Saving writes this as a routine in Workouts. Targets sync to any routine that already uses the same movement; every set stays editable.</p>';
+  return html;
+}
+function bldPill(text, accent){
+  return '<span class="bld-pill'+(accent?' accent':'')+'">'+esc(text)+'</span>';
+}
+function builderExRow(de, label){
+  const ex = getEx(de.exId);
+  if (!ex) return "";
+  const isTime = ex.mode==="time";
+  const arr = isTime ? (de.setTimes||[]) : (de.setReps||[]);
+  const dose = arr.length ? (arr.join(" / ") + (isTime?"s":"")) : "";
+  const weight = (usesWeightFor(ex) && de.weight>0) ? (" · "+fmtWeight(de.weight)+" "+weightUnit()) : "";
+  const fail = (de.setTypes||[]).indexOf("failure")!==-1 ? " · last set to failure" : "";
+  const per = (ex.perSide && !isTime) ? " /side" : "";
+  const parts = (ex.bodyParts||[]).slice(0,2).join(" · ") || "Full body";
+  return '<div class="bld-ex">'+
+    '<span class="bld-ex-n">'+esc(label)+'</span>'+
+    '<div class="bld-ex-body"><div class="bld-ex-name">'+esc(ex.name)+'</div><div class="bld-ex-meta">'+esc(parts)+per+'</div></div>'+
+    '<div class="bld-ex-dose"><b>'+esc(dose)+'</b>'+de.targetSets+' sets'+esc(weight)+esc(fail)+'</div>'+
+  '</div>';
+}
+function bindBuilderEvents(){
+  const host = $("#builder-host");
+  if (!host || !builderState) return;
+  const b = builderState;
+  $$("[data-bld-close]", host).forEach(x=>x.addEventListener("click", closeWorkoutBuilder));
+  $$("[data-bld-step]", host).forEach(x=>x.addEventListener("click", ()=>{
+    const i = Math.max(0, Math.min(5, +x.dataset.bldStep));
+    b.step = i;
+    if (i===5 && !b.draft) b.draft = generateWorkout(b);
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-goal]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.goal = x.dataset.bldGoal;
+    b.draft = null;
+    b.step = 1;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-focus]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.focus = x.dataset.bldFocus;
+    b.draft = null;
+    if (b.focus!=="pick"){ b.step = 2; renderWorkoutBuilder(); }
+    else renderWorkoutBuilder();
+  }));
+  $$("[data-bld-muscle]", host).forEach(x=>x.addEventListener("click", ()=>{
+    const p = x.dataset.bldMuscle;
+    const i = b.muscles.indexOf(p);
+    if (i===-1) b.muscles.push(p); else b.muscles.splice(i,1);
+    b.draft = null;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-preset]", host).forEach(x=>x.addEventListener("click", ()=>{
+    const id = x.dataset.bldPreset;
+    if (id==="home") b.equipment = BUILDER_HOME_EQUIP.slice();
+    else if (id==="gym") b.equipment = ALL_EQUIP.slice();
+    else b.equipment = ["bodyweight"];
+    b.draft = null;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-equip]", host).forEach(x=>x.addEventListener("click", ()=>{
+    const k = x.dataset.bldEquip;
+    if (k==="bodyweight"){ toast("Body weight is always available"); return; }
+    const i = b.equipment.indexOf(k);
+    if (i===-1) b.equipment.push(k); else b.equipment.splice(i,1);
+    if (b.equipment.indexOf("bodyweight")===-1) b.equipment.push("bodyweight");
+    b.draft = null;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-duration]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.duration = +x.dataset.bldDuration;
+    b.draft = null;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-level]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.difficulty = x.dataset.bldLevel;
+    b.draft = null;
+    renderWorkoutBuilder();
+  }));
+  const ageIn = $("[data-bld-age]", host);
+  if (ageIn) ageIn.addEventListener("input", ()=>{ b.age = ageIn.value; b.draft = null; });
+  const bwIn = $("[data-bld-bw]", host);
+  if (bwIn) bwIn.addEventListener("input", ()=>{ b.bodyWeight = bwIn.value; b.draft = null; });
+  const expSel = $("[data-bld-exp]", host);
+  if (expSel) expSel.addEventListener("change", ()=>{ b.experience = expSel.value; b.draft = null; });
+  const back = $("[data-bld-back]", host);
+  if (back) back.addEventListener("click", ()=>{
+    if (b.step>0){ b.step--; renderWorkoutBuilder(); }
+  });
+  const next = $("[data-bld-next]", host);
+  if (next) next.addEventListener("click", ()=>{
+    if (!builderValidate()) return;
+    if (b.step<5){
+      b.step++;
+      if (b.step===5) b.draft = generateWorkout(b);
+      renderWorkoutBuilder();
+    }
+  });
+  const shuffle = $("[data-bld-shuffle]", host);
+  if (shuffle) shuffle.addEventListener("click", ()=>{
+    b.attempt++;
+    b.draft = generateWorkout(b);
+    renderWorkoutBuilder();
+  });
+  const save = $("[data-bld-save]", host);
+  if (save) save.addEventListener("click", ()=>builderSave(false));
+  const start = $("[data-bld-start]", host);
+  if (start) start.addEventListener("click", ()=>builderSave(true));
+}
+function builderValidate(){
+  const b = builderState;
+  if (b.step===1 && b.focus==="pick" && !b.muscles.length){
+    toast("Pick at least one muscle group");
+    return false;
+  }
+  if (b.step===2 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
+    b.equipment = (b.equipment||[]).concat(["bodyweight"]);
+  }
+  if (b.step===4){
+    if (b.age!==""){
+      const age = +b.age;
+      if (!isFinite(age) || age<13 || age>100){ toast("Enter an age between 13 and 100, or leave it blank"); return false; }
+    }
+    if (b.bodyWeight!==""){
+      const bw = +b.bodyWeight;
+      if (!isFinite(bw) || bw<=0){ toast("Enter a valid body weight, or leave it blank"); return false; }
+    }
+  }
+  return true;
+}
+function builderSeedStr(b){
+  return [b.goal,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+}
+function builderRng(seed){
+  let h = 2166136261 >>> 0;
+  for (let i=0;i<seed.length;i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return function(){
+    h += 0x6D2B79F5;
+    let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function builderPool(b, count){
+  const pick = b.equipment.indexOf("bodyweight")===-1 ? b.equipment.concat(["bodyweight"]) : b.equipment.slice();
+  let pool = (state.exercises||[]).filter(e=>{
+    const kit = (e.equipment && e.equipment.length) ? e.equipment : ["bodyweight"];
+    return kit.some(k=>pick.indexOf(k)!==-1);
+  });
+  const parts = builderFocusParts(b);
+  if (parts.length){
+    const strict = pool.filter(e=>libMatchParts(e, parts));
+    if (strict.length >= Math.min(3, count || 3)) pool = strict;
+  }
+  return pool;
+}
+function builderFocusHits(e, parts){
+  if (!parts || !parts.length) return 0;
+  let n = 0;
+  parts.forEach(p=>{ if (libMatchParts(e,[p])) n++; });
+  return n;
+}
+function builderTargetCount(b){
+  let n = b.duration<=15 ? 3 : b.duration<=30 ? 4 : b.duration<=45 ? 5 : 6;
+  if (b.experience==="beginner") n = Math.min(n, 4);
+  if (+b.age>=55) n = Math.max(3, n-1);
+  return n;
+}
+function builderSets(b){
+  let n = b.difficulty==="easy" ? 2 : b.difficulty==="hard" ? 4 : 3;
+  if (b.experience==="beginner" && n>3) n = 3;
+  if (+b.age>=55 && n>3) n = 3;
+  return n;
+}
+function builderUseFinisher(b){
+  if (b.experience==="beginner") return false;
+  if (+b.age>=55) return false;
+  return b.goal==="endurance" || b.difficulty==="hard";
+}
+function builderRestSec(b){
+  const r = BUILDER_REST[b.goal] || BUILDER_REST.hypertrophy;
+  let v = b.difficulty==="easy" ? r[1] : b.difficulty==="hard" ? r[0] : Math.round((r[0]+r[1])/2);
+  if (+b.age>=55) v += 15;
+  return v;
+}
+function builderRestLabel(sec){
+  if (sec < 60) return sec + "s";
+  return Math.floor(sec/60) + ":" + String(sec%60).padStart(2,"0");
+}
+function builderRepLadder(b, n, rnd){
+  const z = sessionZone(b.goal);
+  const lo = z[0], hi = z[1];
+  const bias = b.difficulty==="easy" ? .3 : b.difficulty==="hard" ? .7 : .5;
+  const anchor = Math.round(lo + (hi-lo)*bias);
+  const dir = rnd() < .5 ? 1 : -1;
+  const out = [];
+  for (let i=0;i<n;i++){
+    const shift = dir>0 ? Math.min(i, hi-anchor) : -Math.min(i, anchor-lo);
+    out.push(Math.max(1, Math.min(50, anchor + shift)));
+  }
+  return out;
+}
+function builderTimeLadder(b, n, rnd){
+  const base = b.goal==="endurance" ? 45 : b.goal==="strength" ? 20 : 30;
+  const dir = rnd() < .5 ? 1 : -1;
+  const out = [];
+  for (let i=0;i<n;i++){
+    const shift = dir>0 ? Math.min(i*5, 15) : -Math.min(i*5, 10);
+    out.push(Math.max(10, Math.min(90, base + shift)));
+  }
+  return out;
+}
+function builderDe(ex, b, rnd, opts){
+  const sets = (opts && opts.sets) ? opts.sets : builderSets(b);
+  const isTime = ex.mode==="time";
+  const arr = isTime ? builderTimeLadder(b, sets, rnd) : builderRepLadder(b, sets, rnd);
+  const de = {
+    exId: ex.id,
+    targetSets: sets,
+    reps: isTime ? 0 : arr[0],
+    time: isTime ? arr[0] : 0,
+    weight: 0,
+    setTypes: Array.from({length:sets}, ()=>"regular"),
+    modifiedAt: Date.now()
+  };
+  if (isTime) de.setTimes = arr; else de.setReps = arr;
+  if (usesWeightFor(ex)){
+    const shared = exercisePlan(ex.id);
+    let w = (shared && shared.weight!=null) ? +shared.weight : (+ex.defaultWeight || 0);
+    if (!isFinite(w) || w<0) w = 0;
+    de.weight = w;
+    de.setWeights = Array.from({length:sets}, ()=>w);
+  }
+  if (opts && opts.failure) de.setTypes[sets-1] = "failure";
+  return de;
+}
+function builderFocusLabel(b){
+  if (b.focus==="pick" && b.muscles.length){
+    return b.muscles.slice(0,2).join(" & ") + (b.muscles.length>2 ? " +"+(b.muscles.length-2) : "");
+  }
+  return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
+}
+function builderSessionName(b, focusLabel, rnd){
+  const suffixes = ["Ladder","Circuit","Sequence","Forge","Engine","Density","Flow","Mix"];
+  const suffix = suffixes[Math.floor(rnd()*suffixes.length)];
+  return focusLabel + " " + sessionTypeLabel(b.goal) + " " + suffix;
+}
+function builderWarmup(b){
+  const f = b.focus;
+  const parts = builderFocusParts(b);
+  if (f==="lower" || (f==="pick" && parts.some(p=>["Thighs","Glutes","Calves","Hips"].indexOf(p)!==-1))){
+    return ["Hip openers","Bodyweight squats","Glute bridges"];
+  }
+  if (f==="upper" || (f==="pick" && parts.some(p=>["Chest","Back","Shoulders","Biceps","Triceps","Forearms"].indexOf(p)!==-1))){
+    return ["Arm circles","Scapular push-ups","Band pull-aparts"];
+  }
+  return ["Worlds greatest stretch","Jumping jacks","Scapular push-ups"];
+}
+/* Pair antagonist or non-overlapping work so a superset rests one area while
+   the other works. The first movement keeps its slot; the best partner moves
+   forward with it, and any leftover closes as a straight set. */
+function builderPairUp(items){
+  const rest = items.slice();
+  const pairs = [];
+  while (rest.length){
+    const first = rest.shift();
+    if (!rest.length){ pairs.push([first]); break; }
+    const firstEx = getEx(first.exId);
+    const firstParts = firstEx ? (firstEx.bodyParts || []) : [];
+    let best = 0;
+    let bestOverlap = Infinity;
+    rest.forEach((de, i)=>{
+      const ex = getEx(de.exId);
+      const parts = ex ? (ex.bodyParts || []) : [];
+      const overlap = parts.filter(p=>firstParts.indexOf(p)!==-1).length;
+      if (overlap < bestOverlap){ bestOverlap = overlap; best = i; }
+    });
+    pairs.push([first, rest.splice(best,1)[0]]);
+  }
+  return pairs;
+}
+function generateWorkout(b){
+  const rnd = builderRng(builderSeedStr(b));
+  const parts = builderFocusParts(b);
+  const count = builderTargetCount(b);
+  const pool = builderPool(b, count);
+  const ranked = pool.map(e=>({
+    e: e,
+    s: rnd()*2 + (e.favorite?0.7:0) + builderFocusHits(e, parts)*0.75 +
+       (b.experience==="beginner" && e.mode!=="time" ? 0.25 : 0) -
+       (b.experience==="beginner" && e.perSide ? 0.2 : 0)
+  })).sort((a,c)=>c.s-a.s).map(x=>x.e);
+  const chosen = [];
+  const used = {};
+  let coverage = parts.length ? parts.slice() : ["Chest","Back","Shoulders","Thighs","Glutes","Core"];
+  for (let i=coverage.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=coverage[i]; coverage[i]=coverage[j]; coverage[j]=t; }
+  coverage.forEach(p=>{
+    if (chosen.length>=count) return;
+    const c = ranked.find(e=>!used[e.id] && libMatchParts(e,[p]));
+    if (c){ chosen.push(c); used[c.id] = 1; }
+  });
+  for (let i=0;i<ranked.length && chosen.length<count;i++){
+    const e = ranked[i];
+    if (!used[e.id]){ chosen.push(e); used[e.id] = 1; }
+  }
+  if (!chosen.length){
+    return {
+      name:"No matching session", goal:b.goal, focus:b.focus, focusLabel:builderFocusLabel(b),
+      duration:b.duration, difficulty:b.difficulty, warmup:[], cooldown:[],
+      exercises:[], supersets:[], pairs:[], finisher:null, rest:builderRestSec(b),
+      stats:{sets:0,movements:0}
+    };
+  }
+  let finisherEx = null;
+  if (builderUseFinisher(b)){
+    const fun = ranked.filter(e=>!used[e.id] && BUILDER_FUN_RX.test(e.name));
+    if (fun.length){
+      finisherEx = fun[Math.floor(rnd()*fun.length)];
+    } else if (chosen.length>=3){
+      finisherEx = chosen.pop();
+    }
+  }
+  const mainDes = chosen.map(ex=>builderDe(ex, b, rnd));
+  const finisherDe = finisherEx ? builderDe(finisherEx, b, rnd, {sets:2, failure:true}) : null;
+  const pairs = builderPairUp(mainDes);
+  const supersets = [];
+  pairs.forEach(pair=>{
+    if (pair.length===2){
+      supersets.push({ id:"ss-bld-"+Math.random().toString(36).slice(2,8), exIds:pair.map(x=>x.exId) });
+    }
+  });
+  const ordered = [];
+  pairs.forEach(pair=>pair.forEach(de=>ordered.push(de)));
+  const exercises = ordered.concat(finisherDe ? [finisherDe] : []);
+  const focusLabel = builderFocusLabel(b);
+  return {
+    name: builderSessionName(b, focusLabel, rnd),
+    goal: b.goal,
+    focus: b.focus,
+    focusLabel: focusLabel,
+    duration: b.duration,
+    difficulty: b.difficulty,
+    warmup: builderWarmup(b),
+    cooldown: ["Easy walk","Chest opener","Box breathing"],
+    exercises: exercises,
+    supersets: supersets,
+    pairs: pairs,
+    finisher: finisherDe,
+    rest: builderRestSec(b),
+    stats: {
+      sets: exercises.reduce((a,x)=>a+(x.targetSets||0),0),
+      movements: exercises.length
+    }
+  };
+}
+function builderSave(startNow){
+  const b = builderState;
+  if (!b || !b.draft) return;
+  const d = b.draft;
+  if (!d.exercises.length){ toast("No exercises available for this setup"); return; }
+  const p = state.profile;
+  if (b.age!==""){
+    const age = +b.age;
+    if (isFinite(age)) p.age = Math.max(13, Math.min(100, Math.round(age)));
+  }
+  if (b.bodyWeight!==""){
+    const bw = +b.bodyWeight;
+    if (isFinite(bw) && bw>0) p.bodyWeight = toKg(bw);
+  }
+  p.experience = b.experience || p.experience;
+  let name = d.name;
+  if (nameTaken(state.days, name)){
+    let k = 2;
+    while (nameTaken(state.days, name + " " + k)) k++;
+    name = name + " " + k;
+  }
+  const id = "day-" + uid();
+  const day = {
+    id: id,
+    name: name,
+    type: d.goal,
+    exercises: d.exercises.map(de=>({
+      exId: de.exId,
+      targetSets: de.targetSets,
+      reps: de.reps,
+      time: de.time,
+      weight: de.weight,
+      setReps: Array.isArray(de.setReps) ? de.setReps.slice() : undefined,
+      setTimes: Array.isArray(de.setTimes) ? de.setTimes.slice() : undefined,
+      setTypes: (de.setTypes||[]).slice(),
+      setWeights: Array.isArray(de.setWeights) ? de.setWeights.slice() : undefined,
+      modifiedAt: de.modifiedAt || Date.now()
+    })),
+    supersets: d.supersets.map(g=>({ id: g.id, exIds: g.exIds.slice() }))
+  };
+  state.days.push(day);
+  day.exercises.forEach(de=>{
+    if (!de.setReps) delete de.setReps;
+    if (!de.setTimes) delete de.setTimes;
+    if (!de.setWeights) delete de.setWeights;
+    syncExercisePlan(de.exId, de);
+  });
+  saveState();
+  closeWorkoutBuilder();
+  if (startNow){
+    switchView("log");
+    startLog(id);
+    toast("Session ready — check in and start");
+  } else {
+    switchView("workouts");
+    toast("Saved to your routines");
+  }
 }
 
 /* =========================================================================
@@ -8689,6 +9757,7 @@ function renderSettings(){
           '<label class="field"><span>Current weight</span><input id="set-bw" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 70" value="'+fromKg(prof.bodyWeight)+'"/></label>'+
           '<label class="field"><span>Height (optional)</span><input id="set-ht" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 175" value="'+fromCm(prof.heightCm)+'"/></label>'+
         '</div>'+
+        '<label class="field"><span>Age (optional)</span><input id="set-age" type="number" min="13" max="100" step="1" inputmode="numeric" placeholder="e.g. 32" value="'+(prof.age!=null?esc(prof.age):"")+'"/></label>'+
         '<p class="micro" style="margin:-.1rem 0 .9rem">Current weight scales bodyweight movements in Total volume (a push-up ≈ 67% of it, a pull-up ≈ 100%). Height is stored for later use — both fields may stay blank.</p>'+
         '<label class="field"><span>Coaching depth</span><select id="set-exp">'+
           '<option value="beginner"'+(prof.experience==="beginner"?" selected":"")+'>Beginner, conservative and simple</option>'+
@@ -8758,8 +9827,11 @@ function renderSettings(){
     prof.weightUnit = $("#set-unit", s).value;
     const bwRaw = $("#set-bw", s).value.trim();
     const htRaw = $("#set-ht", s).value.trim();
+    const ageRaw = $("#set-age", s).value.trim();
     prof.bodyWeight = bwRaw==="" ? null : toKg(parseFloat(bwRaw));
     prof.heightCm = htRaw==="" ? null : toCm(parseFloat(htRaw));
+    const ageNum = ageRaw==="" ? null : Math.round(+ageRaw);
+    prof.age = (ageNum==null || !isFinite(ageNum)) ? null : Math.max(13, Math.min(100, ageNum));
     prof.experience = $("#set-exp", s).value;
     saveState(); toast("Profile saved"); renderSettings();
   });
@@ -9687,7 +10759,7 @@ function youSplitHtml(nowMs){
     '<span class="wm-week-nav" role="group" aria-label="Browse weeks">' +
     '<button type="button" class="wm-week-btn" data-you-week-nav="prev" aria-label="Previous week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg></button>' +
     '<button type="button" class="wm-week-btn" data-you-week-nav="next" aria-label="Next week"' + (youMuscleWeekOffset >= 0 ? " disabled" : "") + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18"/></svg></button>' +
-    '</span><span class="pill time">' + (isCurrentWeek ? "Mon–Sun" : range.label) + '</span></div>' +
+    '</span><span class="pill time">' + range.label + '</span></div>' +
     '<div class="wm-legend"><span>Volume + working sets per muscle · primary muscles only</span><span>' + cap + '</span></div>' +
     '<div class="rec-grid">' + rows + '</div>' +
     '<p class="micro" style="margin-top:.7rem">Same tonnage math as Total volume — timed holds count sets, not volume.</p></div>';
@@ -11410,7 +12482,7 @@ function renderHome(){
       ? 'Nice work. Review what the coach wants to change next time, or go again.'
       : 'Everything the coach needs is ready. Log every set and it will tune the next one.';
   const primary = !day
-    ? '<button type="button" class="btn btn-xl primary" data-home-goto="log">Log a session <span class="btn-arrow">→</span></button>'
+    ? '<button type="button" class="btn btn-xl primary" data-home-build>Build today’s session <span class="btn-arrow">→</span></button>'
     : '<button type="button" class="btn btn-xl primary" data-home-start="' + day.id + '">' + (logged ? "Log another" : "Start today’s session") + ' <span class="btn-arrow">→</span></button>';
   s.innerHTML =
     '<div class="view-hero home-hero">' +
@@ -11434,6 +12506,7 @@ function renderHome(){
       '</div>' +
     '</div>';
   $$("[data-home-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.homeGoto)));
+  $$("[data-home-build]", s).forEach(b=>b.addEventListener("click", ()=>openWorkoutBuilder()));
   /* Card-level goto targets (e.g. the Your Week box) are articles, so they
      need keyboard support that native buttons get for free. */
   $$("article[data-home-goto]", s).forEach(b=>{
