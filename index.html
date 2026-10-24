@@ -8700,6 +8700,20 @@ function recAct(ds, actVal){
           } else if (sug.field==="time" && Array.isArray(de.setTimes) && delta!==null){
             de.setTimes = de.setTimes.map(v=>Math.max(0,(+v||0)+delta));
             de.time = Math.max(0,(de.time||0)+delta);
+          } else if (sug.field==="weight"){
+            // Weights are stored per set whenever the plan has been hand-edited
+            // or added with the weight picker. Update that array too, otherwise
+            // syncExercisePlan treats the old per-set weights as authoritative
+            // and the coach's new working weight never reaches the editor/logger.
+            const targetW = +sug.to;
+            const curW = +setWeightOf(de, 0);
+            const wDelta = isFinite(curW) ? targetW - curW : null;
+            if (Array.isArray(de.setWeights) && wDelta!==null){
+              de.setWeights = de.setWeights.map(v=>Math.max(0,(+v||0)+wDelta));
+              de.weight = de.setWeights.length ? de.setWeights[0] : targetW;
+            } else {
+              de.weight = targetW;
+            }
           } else {
             de[sug.field] = sug.to;
           }
