@@ -1360,6 +1360,16 @@
   .vis-rm-lbl { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
   .vis-rm-val { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.03em; line-height: 1.05; color: var(--ink); margin-top: .15rem; font-variant-numeric: tabular-nums; }
   .vis-rm-val small { font-size: .95rem; font-weight: 700; color: var(--ink-2); letter-spacing: 0; }
+  /* Bodyweight 1RM: read as "bodyweight + added", so the two numbers carry the
+     meaning instead of one total that has to be translated in the lifter's head. */
+  .vis-rm-val.split { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 .18rem; font-size: clamp(1.15rem, 3.3vw, 1.6rem); }
+  .vis-rm-part { display: inline-flex; align-items: baseline; gap: .3rem; white-space: nowrap; }
+  .vis-rm-part b { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .vis-rm-part small { font-family: var(--font-mono); font-size: .5rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .vis-rm-part.add b { color: var(--accent-deep); }
+  .vis-rm-part-plus { font-family: var(--font-display); font-weight: 800; color: var(--ink-3); margin: 0 .22rem; }
+  .vis-rm-out.split { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 .15rem; }
+  .vis-rm-out.split .vis-rm-part small { font-size: .46rem; }
   .vis-rm-src { font-size: .78rem; color: var(--ink-2); margin-top: .25rem; }
   .vis-rm-conf { flex: none; font: inherit; font-family: var(--font-mono); font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--surface); color: var(--accent-deep); cursor: pointer; transition: transform .12s, box-shadow .15s; }
   .vis-rm-conf:hover { box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -5095,10 +5105,42 @@ function exRmCandidates(ex){
   return out;
 }
 function rmDisplay(kg){ return fromKg(kg)+" "+weightUnit(); }
+/* Split a bodyweight-style estimate into the part the lifter's own loaded body
+   weight accounts for, plus the extra load they would have to add to reach the
+   predicted max. The Epley surplus lands in the "added" part, so the two shown
+   numbers always add up to the estimate: a 75 kg chin-up x 6 predicts 90 kg,
+   read as "75 kg bodyweight + 15 kg added". Pure weight-mode lifts have no body
+   weight component and keep the single kg readout. */
+function rmSplit(ex, cand){
+  if (!ex || ex.mode === "weight" || !cand) return null;
+  const total = +cand.kg;
+  if (!(total > 0)) return null;
+  const share = cand.shareKg != null
+    ? +cand.shareKg
+    : Math.max(0, (+cand.effKg || 0) - (+cand.extKg || 0));
+  if (!(share > 0) || !(total > share)) return null;
+  return { bodyKg: share, addKg: total - share, totalKg: total, lf: cand.lf };
+}
+function rmDisplayText(ex, cand){
+  const split = rmSplit(ex, cand);
+  if (!split) return rmDisplay(cand.kg);
+  const u = weightUnit();
+  return fromKg(split.bodyKg)+" "+u+" bodyweight + "+fromKg(split.addKg)+" "+u+" added";
+}
+function rmDisplayHtml(ex, cand){
+  const split = rmSplit(ex, cand);
+  if (!split) return esc(rmDisplay(cand.kg));
+  const u = weightUnit();
+  const lf = (typeof split.lf === "number") ? Math.round(split.lf) : null;
+  const bodyLbl = (lf != null && lf < 99.5) ? "bodyweight · "+lf+"%" : "bodyweight";
+  return '<span class="vis-rm-part body"><b>'+esc(fromKg(split.bodyKg)+" "+u)+'</b><small> '+esc(bodyLbl)+'</small></span>'+
+    '<span class="vis-rm-part-plus">+</span>'+
+    '<span class="vis-rm-part add"><b>'+esc(fromKg(split.addKg)+" "+u)+'</b><small> added</small></span>';
+}
 function rmSetLabel(ex, cand){
   const w = rmDisplay(cand.effKg);
   const r = cand.reps+" rep"+(cand.reps===1?"":"s");
-  return ex && ex.mode === "weight" ? r+" @ "+w : r+" × "+w;
+  return ex && ex.mode === "weight" ? r+" @ "+w : r+" × "+w+" lifted";
 }
 /* Interactive derivation of a bodyweight-style effective load: added plates
    plus the lifted share of body weight. Returns the toggle + panel HTML for
@@ -5296,12 +5338,12 @@ function openExVisualizer(id, opts){
     }
     const top = cands[0];
     const conf = rmConfidence(top.reps);
-    const candBtns = cands.map((c,i)=>'<button type="button" class="vis-rm-cand'+(i===0?" on":"")+'" data-rm-pick="'+i+'" data-rm-kg="'+c.kg+'" data-rm-eff="'+c.effKg+'" data-rm-reps="'+c.reps+'" data-rm-date="'+esc(c.date)+'">'+esc(rmSetLabel(e,c))+' → '+esc(rmDisplay(c.kg))+'</button>').join("");
+    const candBtns = cands.map((c,i)=>'<button type="button" class="vis-rm-cand'+(i===0?" on":"")+'" data-rm-pick="'+i+'" data-rm-kg="'+c.kg+'" data-rm-eff="'+c.effKg+'" data-rm-reps="'+c.reps+'" data-rm-share="'+(c.shareKg||0)+'" data-rm-date="'+esc(c.date)+'">'+esc(rmSetLabel(e,c))+' → '+esc(rmDisplayText(e,c))+'</button>').join("");
     const calcW = e.mode === "weight" ? top.set.weight : Math.round(top.effKg*10)/10;
     return '<div class="vis-rm" data-rm-card>'+
       '<div class="vis-rm-top"><div class="vis-rm-badge" aria-hidden="true">1R</div>'+
         '<div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div>'+
-          '<div class="vis-rm-val" data-rm-val>'+esc(rmDisplay(top.kg))+'</div>'+
+          '<div class="vis-rm-val'+(rmSplit(e, top)?" split":"")+'" data-rm-val>'+rmDisplayHtml(e, top)+'</div>'+
           '<p class="vis-rm-src" data-rm-src>from '+esc(rmSetLabel(e,top))+' · '+esc(fmtDate(top.date))+'</p>'+
           '<div data-rm-deriv-wrap>'+rmDerivHtml(e, top)+'</div>'+
         '</div>'+
@@ -5309,9 +5351,9 @@ function openExVisualizer(id, opts){
       '</div>'+
       '<div class="vis-rm-confw" data-rm-confw hidden></div>'+
       '<div class="vis-rm-cands" role="group" aria-label="Top estimates">'+candBtns+'</div>'+
-      '<div class="vis-rm-calc"><label>Weight ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
+      '<div class="vis-rm-calc"><label'+(e.mode==="weight"?"":' title="Your loaded body-weight share plus any added weight"')+'>'+(e.mode==="weight"?"Weight":"Lifted load")+' ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
       '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
-      '<span class="vis-rm-out" data-rm-live>'+esc(rmDisplay(top.kg))+'</span></div>'+
+      '<span class="vis-rm-out'+(rmSplit(e, top)?" split":"")+'" data-rm-live>'+rmDisplayHtml(e, top)+'</span></div>'+
       '<div class="vis-rm-note"><p class="vis-rm-formula"><b>Epley:</b> weight × (1 + reps ÷ 30). Best inside 1–10 reps; higher reps extrapolate.</p>'+
         '<details class="vis-rm-why"><summary>Why <span class="q">this</span> set?</summary><p class="vis-rm-why-body">The board scores every working set (warm-ups excluded) and keeps the highest Epley value. Tap another candidate to preview it, or tweak the calculator to explore targets.</p></details></div>'+
     '</div>';
@@ -5326,11 +5368,17 @@ function openExVisualizer(id, opts){
     const wIn = card.querySelector("[data-rm-w]");
     const rIn = card.querySelector("[data-rm-r]");
     const derivWrap = card.querySelector("[data-rm-deriv-wrap]");
+    const firstPick = card.querySelector("[data-rm-pick]");
+    let curShare = firstPick ? (+firstPick.dataset.rmShare || 0) : 0;
     const toKgInput = v => (weightUnit()==="lb" ? (+v)/2.2046 : (+v));
     const refreshLive = ()=>{
       if (!wIn || !rIn || !liveEl) return;
-      const est = epley1RM(toKgInput(wIn.value), +rIn.value);
-      liveEl.textContent = est ? rmDisplay(est) : "—";
+      const eff = toKgInput(wIn.value);
+      const est = epley1RM(eff, +rIn.value);
+      if (!est){ liveEl.textContent = "—"; liveEl.classList.remove("split"); return; }
+      const cand = { kg:est, effKg:eff, reps:+rIn.value, shareKg:curShare, lf:ex.loadFactor };
+      liveEl.innerHTML = rmDisplayHtml(ex, cand);
+      liveEl.classList.toggle("split", !!rmSplit(ex, cand));
     };
     if (wIn) wIn.addEventListener("input", refreshLive);
     if (rIn) rIn.addEventListener("input", refreshLive);
@@ -5363,9 +5411,13 @@ function openExVisualizer(id, opts){
     card.querySelectorAll("[data-rm-pick]").forEach(btn=>btn.addEventListener("click", ()=>{
       card.querySelectorAll("[data-rm-pick]").forEach(x=>x.classList.toggle("on", x===btn));
       const idx = +(btn.dataset.rmPick || 0);
-      const cand = exRmCandidates(ex).slice(0,3)[idx] || { kg:+btn.dataset.rmKg, effKg:+btn.dataset.rmEff, reps:+btn.dataset.rmReps, date:btn.dataset.rmDate };
+      const cand = exRmCandidates(ex).slice(0,3)[idx] || { kg:+btn.dataset.rmKg, effKg:+btn.dataset.rmEff, reps:+btn.dataset.rmReps, shareKg:+btn.dataset.rmShare, date:btn.dataset.rmDate };
       const kg = +cand.kg, eff = +cand.effKg, reps = +cand.reps;
-      if (valEl && kg > 0) valEl.textContent = rmDisplay(kg);
+      curShare = cand.shareKg != null ? +cand.shareKg : (+btn.dataset.rmShare || 0);
+      if (valEl && kg > 0){
+        valEl.innerHTML = rmDisplayHtml(ex, cand);
+        valEl.classList.toggle("split", !!rmSplit(ex, cand));
+      }
       if (srcEl) srcEl.textContent = "from "+reps+" rep"+(reps===1?"":"s")+" × "+rmDisplay(eff)+" · "+fmtDate(cand.date);
       const conf = rmConfidence(reps);
       if (confEl){ confEl.textContent = conf.label; confEl.className = "vis-rm-conf "+conf.key; confEl.title = "What does "+conf.label+" mean? Tap to find out."; confEl.setAttribute("aria-label", "Confidence: "+conf.label+". Tap to learn what it means."); }
