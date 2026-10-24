@@ -2716,6 +2716,43 @@
   .bld-opt.on .bld-tick { opacity: 1; transform: none; }
   .bld-hint { margin: .7rem 0 0; font-size: .7rem; line-height: 1.55; color: var(--ink-3); }
   .bld-hint b { color: var(--ink-2); }
+  /* ---------- Workout maker: session shape ---------- */
+  .bld-styles { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; margin-top: .7rem; }
+  .bld-style {
+    text-align: left; border: 1px solid var(--line); border-radius: var(--r-md);
+    background: var(--surface); padding: .65rem .75rem; cursor: pointer; font: inherit;
+    transition: border-color .18s, background .18s, transform .18s;
+  }
+  .bld-style:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .bld-style.on { border-color: var(--accent); background: var(--accent-soft); }
+  .bld-style b { display: block; font-family: var(--font-display); font-size: .86rem; letter-spacing: -.015em; color: var(--ink); }
+  .bld-style small { display: block; margin-top: .2rem; font-size: .66rem; line-height: 1.45; color: var(--ink-2); }
+  .bld-source {
+    display: inline-flex; align-items: center; border-radius: 999px;
+    padding: .2rem .55rem; font-family: var(--font-mono); font-size: .53rem;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-3);
+  }
+  .bld-source.ai { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
+  .bld-why { margin: .55rem 0 0; max-width: 66ch; font-size: .74rem; line-height: 1.5; color: var(--ink-2); }
+  .bld-circuit .bld-pair-rail::before { background: var(--amber-line); }
+  .bld-circuit .bld-pair-tag { color: var(--amber); }
+  .bld-building { padding: .6rem 0 1rem; }
+  .bld-building-orb {
+    display: block; width: 46px; height: 46px; margin-bottom: 1rem; border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, var(--accent-soft), transparent 58%), var(--accent);
+    box-shadow: 0 0 0 0 var(--accent-glow); animation: bldPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes bldPulse { 0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 12px transparent; } }
+  .bld-building-bar { height: 6px; margin-top: 1.05rem; border-radius: 999px; overflow: hidden; background: var(--line); }
+  .bld-building-bar i { display: block; width: 34%; height: 100%; border-radius: 999px; background: var(--accent); animation: bldScan 1.15s ease-in-out infinite; }
+  @keyframes bldScan { from { transform: translateX(-110%); } to { transform: translateX(390%); } }
+  .bld-building-inline { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-mono); font-size: .56rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .bld-building-inline i { width: 14px; height: 14px; border: 2px solid var(--accent-line); border-top-color: var(--accent); border-radius: 50%; animation: radarSpin .8s linear infinite; }
+  .bld-ai-note { margin: .8rem 0 0; padding: .6rem .75rem; border: 1px solid var(--amber-line); border-radius: var(--r-md); background: var(--amber-soft); color: var(--amber); font-size: .71rem; line-height: 1.5; }
+  @media (prefers-reduced-motion: reduce) {
+    .bld-building-orb, .bld-building-bar i, .bld-building-inline i { animation: none; }
+  }
   .bld-presets { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .8rem; }
   .bld-preset {
     border: 1px dashed var(--line); border-radius: 999px; background: transparent;
@@ -2862,6 +2899,7 @@
     .bld-opts.three, .bld-opts.four, .bld-durations, .bld-levels, .bld-fields { grid-template-columns: 1fr 1fr; }
     .bld-levels { grid-template-columns: 1fr; }
     .bld-fields { grid-template-columns: 1fr; }
+    .bld-styles { grid-template-columns: 1fr; }
     .bld-eq { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .bld-muscles { grid-template-columns: repeat(3, minmax(0,1fr)); }
     .bld-foot .btn { flex: 1 1 auto; justify-content: center; }
@@ -5734,7 +5772,7 @@ function renderRoutineList(){
       coachStripHtml() +
       '<div class="bld-band fx-in">' +
         '<div><div class="t">Let the maker sequence the session</div>' +
-        '<p class="micro">Give it a goal, a target, your gear, and the time you have. It pairs supersets, picks the dose, and saves a routine you can start immediately.</p></div>' +
+        '<p class="micro">Give it a goal, a format, your gear, and the time you have. It builds straight sets, a circuit, a specific style, or a surprise — then saves a routine you can start immediately.</p></div>' +
         '<button type="button" class="btn primary" data-builder-open>Open the maker <span class="btn-arrow">→</span></button>' +
       '</div>' +
       '<div class="section-block">' +
@@ -8805,7 +8843,22 @@ function recAct(ds, actVal){
    treat it like any other routine.
    ========================================================================= */
 const BUILDER_HOME_EQUIP = ["bodyweight","dumbbell","bands","pullup","bench"];
-const BUILDER_STEPS = ["Goal","Focus","Gear","Time","You","Session"];
+const BUILDER_STEPS = ["Goal","Format","Focus","Gear","Time","You","Session"];
+/* Session shape comes before the exercise details. "Regular" is the default so
+   the maker never assumes a superset; the other three are explicit requests for
+   a particular structure or for the AI to combine structures. */
+const BUILDER_FORMATS = {
+  regular:  { label:"Regular session",  tag:"Sets & rest", desc:"Straight sets, one movement at a time, with rest between sets." },
+  fun:      { label:"More fun",         tag:"Playful",     desc:"A light mix: one circuit or superset, straight work, and a finisher." },
+  specific: { label:"Specific type",    tag:"Your call",   desc:"Choose the exact structure you want from the styles below." },
+  surprise: { label:"Surprise me",       tag:"Unique",      desc:"An unexpected session that combines different structures." }
+};
+const BUILDER_STYLES = {
+  superset: { label:"Supersets", desc:"Two movements back to back, then rest after the pair." },
+  circuit:  { label:"Circuit",   desc:"Three movements per round, one rest at the end." },
+  ladder:   { label:"Ladder",    desc:"Straight sets with reps climbing or falling each set." },
+  dropset:  { label:"Drop sets", desc:"Straight sets, then a lighter or failure final set." }
+};
 const BUILDER_FOCUS_META = {
   upper: { label:"Upper Body", parts:["Chest","Back","Shoulders","Biceps","Triceps","Forearms"] },
   lower: { label:"Lower Body", parts:["Glutes","Thighs","Calves","Hips"] },
@@ -8824,6 +8877,8 @@ function openWorkoutBuilder(opts){
   builderState = {
     step: 0,
     goal: (p.defaultSessionType==="strength" || p.defaultSessionType==="endurance") ? p.defaultSessionType : "hypertrophy",
+    format: "regular",
+    style: "straight",
     focus: "upper",
     muscles: [],
     equipment: BUILDER_HOME_EQUIP.slice(),
@@ -8834,6 +8889,9 @@ function openWorkoutBuilder(opts){
     experience: p.experience || "beginner",
     attempt: 0,
     draft: null,
+    building: false,
+    aiNote: "",
+    buildToken: 0,
     focusOnRender: true
   };
   if (opts && opts.goal && SESSION_TYPES[opts.goal]) builderState.goal = opts.goal;
@@ -8856,11 +8914,12 @@ function closeWorkoutBuilder(){
 function builderStepCopy(step){
   const copy = [
     { title:'Choose the <em>engine</em>.', sub:'Strength, hypertrophy, or endurance. Rep ranges, rest, and set dose all follow from this one choice.' },
+    { title:'Pick the <em>shape</em>.', sub:'Straight sets, a playful mix, a specific structure, or a surprise. Supersets are never assumed.' },
     { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or major in a specific muscle. The sequence follows your target.' },
     { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
     { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty decides sets, rest, and whether a finisher appears.' },
     { title:'Make it <em>yours</em>.', sub:'Age tunes volume and rest. Body weight keeps your profile and volume math current. Experience sets how conservative the first session should be.' },
-    { title:'Your session, <em>ready</em>.', sub:'Warm-up, paired work, and a cool-down. Shuffle the sequence or save it straight into Workouts.' }
+    { title:'Your session, <em>ready</em>.', sub:'A real structure, not a template. Shuffle it, or save it straight into Workouts.' }
   ];
   return copy[step] || copy[0];
 }
@@ -8893,10 +8952,20 @@ function builderGearLabel(b){
 function builderLevelLabel(id){
   return id==="easy" ? "Easy" : id==="hard" ? "Hard" : "Moderate";
 }
+function builderFormatLabel(b){
+  const f = BUILDER_FORMATS[b.format] || BUILDER_FORMATS.regular;
+  if (b.format==="specific") return (BUILDER_STYLES[b.style]||BUILDER_STYLES.superset).label;
+  return f.label;
+}
+function builderStyleLabel(b){
+  if (b.format==="specific") return (BUILDER_STYLES[b.style]||BUILDER_STYLES.superset).label;
+  return builderFormatLabel(b);
+}
 function builderBriefHtml(){
   const b = builderState;
   const rows = [
     ["Goal", sessionTypeLabel(b.goal)],
+    ["Format", builderFormatLabel(b)],
     ["Target", builderTargetLabel(b)],
     ["Gear", builderGearLabel(b)],
     ["Time", b.duration + " min"],
@@ -8910,8 +8979,7 @@ function renderWorkoutBuilder(){
   const host = $("#builder-host");
   if (!host || !builderState) return;
   const b = builderState;
-  if (b.step===5 && !b.draft) b.draft = generateWorkout(b);
-  const step = Math.max(0, Math.min(5, b.step));
+  const step = Math.max(0, Math.min(BUILDER_STEPS.length-1, b.step));
   const changedStep = b._lastStep !== step;
   b._lastStep = step;
   const copy = builderStepCopy(step);
@@ -8964,24 +9032,29 @@ function builderAnimateStage(host){
   }catch(e){}
 }
 function builderFootHtml(step){
-  const preview = step===5;
+  const last = BUILDER_STEPS.length - 1;
+  const preview = step===last;
+  const building = builderState && builderState.building;
   return '<div class="bld-foot">'+
     '<button type="button" class="btn" data-bld-back'+(step===0?' disabled':'')+'>Back</button>'+
-    '<span class="bld-count">'+(step+1)+' of 6</span>'+
+    '<span class="bld-count">'+(step+1)+' of '+(last+1)+'</span>'+
     '<span class="spacer"></span>'+
     (preview
-      ? '<button type="button" class="btn ghost" data-bld-shuffle>Shuffle</button>'+
-        '<button type="button" class="btn" data-bld-save>Save to routines</button>'+
-        '<button type="button" class="btn primary" data-bld-start>Start now <span class="btn-arrow">&#8594;</span></button>'
-      : '<button type="button" class="btn primary" data-bld-next>'+(step===4?'Build the session':'Continue')+' <span class="btn-arrow">&#8594;</span></button>')+
+      ? (building
+        ? '<span class="bld-building-inline"><i></i>Writing the session…</span>'
+        : '<button type="button" class="btn ghost" data-bld-shuffle>Shuffle</button>'+
+          '<button type="button" class="btn" data-bld-save>Save to routines</button>'+
+          '<button type="button" class="btn primary" data-bld-start>Start now <span class="btn-arrow">&#8594;</span></button>')
+      : '<button type="button" class="btn primary" data-bld-next>'+(step===last-1?'Build the session':'Continue')+' <span class="btn-arrow">&#8594;</span></button>')+
   '</div>';
 }
 function builderStageHtml(step){
   if (step===0) return builderGoalHtml();
-  if (step===1) return builderFocusHtml();
-  if (step===2) return builderGearHtml();
-  if (step===3) return builderTimeHtml();
-  if (step===4) return builderYouHtml();
+  if (step===1) return builderFormatHtml();
+  if (step===2) return builderFocusHtml();
+  if (step===3) return builderGearHtml();
+  if (step===4) return builderTimeHtml();
+  if (step===5) return builderYouHtml();
   return builderPreviewHtml();
 }
 function builderGoalHtml(){
@@ -9003,6 +9076,36 @@ function builderGoalHtml(){
         '<em class="bld-opt-zone">'+z[0]+'-'+z[1]+' reps</em></button>';
     }).join("")+'</div>'+
     '<p class="bld-hint"><b>Built from your own library.</b> Nothing is generated from a fixed template; the maker sequences movements you already own and can log.</p>';
+}
+function builderFormatHtml(){
+  const b = builderState;
+  const icons = {
+    regular:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><path d="M8 5v4M16 10v4M8 15v4"/></svg>',
+    fun:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>',
+    specific: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7v6H4zM13 13h7v6h-7z"/><path d="M13 8h7M4 16h7M17 5v3M7 13v3"/></svg>',
+    surprise: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8H4v-8"/><path d="M2 8h20v4H2z"/><path d="M12 8v12"/><path d="M12 8S9.5 3 7 4.5 8.5 8 12 8zM12 8s2.5-5 5-3.5S15.5 8 12 8z"/></svg>'
+  };
+  let html = '<h4 class="bld-q">What kind of session do you want?</h4>'+
+    '<p class="bld-qsub">This decides the structure before the AI writes it. A regular session never gets supersets unless you ask for them.</p>'+
+    '<div class="bld-opts four">'+Object.keys(BUILDER_FORMATS).map(id=>{
+      const f = BUILDER_FORMATS[id];
+      const on = b.format===id;
+      return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-format="'+id+'" aria-pressed="'+on+'">'+
+        builderTick()+'<span class="bld-opt-ico">'+icons[id]+'</span>'+
+        '<b>'+esc(f.label)+'</b><small>'+esc(f.desc)+'</small>'+
+        '<em class="bld-opt-zone">'+esc(f.tag)+'</em></button>';
+    }).join("")+'</div>';
+  if (b.format==="specific"){
+    html += '<div class="bld-block-gap"><div class="bld-q" style="font-size:1rem">Which structure?</div>'+
+      '<div class="bld-styles">'+Object.keys(BUILDER_STYLES).map(id=>{
+        const s = BUILDER_STYLES[id];
+        const on = b.style===id;
+        return '<button type="button" class="bld-style'+(on?' on':'')+'" data-bld-style="'+id+'" aria-pressed="'+on+'">'+
+          '<b>'+esc(s.label)+'</b><small>'+esc(s.desc)+'</small></button>';
+      }).join("")+'</div></div>';
+  }
+  html += '<p class="bld-hint"><b>GroqCloud writes the plan</b> when an AI key is set in Settings. Without a key the same request is built locally, so the maker still works offline.</p>';
+  return html;
 }
 function builderFocusHtml(){
   const b = builderState;
@@ -9105,6 +9208,14 @@ function builderYouHtml(){
 }
 function builderPreviewHtml(){
   const b = builderState;
+  if (b.building){
+    return '<div class="bld-building">'+
+      '<span class="bld-building-orb" aria-hidden="true"></span>'+
+      '<h4 class="bld-q">Designing your session.</h4>'+
+      '<p class="bld-qsub">GroqCloud is writing a '+esc(builderFormatLabel(b).toLowerCase())+' around your library, gear, and time. This usually takes a few seconds.</p>'+
+      '<div class="bld-building-bar" aria-hidden="true"><i></i></div>'+
+    '</div>';
+  }
   const d = b.draft;
   if (!d || !d.exercises.length){
     return '<h4 class="bld-q">No movements match that setup.</h4>'+
@@ -9114,33 +9225,39 @@ function builderPreviewHtml(){
   const sets = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
   const meta = [
     bldPill(sessionTypeLabel(d.goal), true),
+    bldPill(builderFormatLabel(b)),
     bldPill(d.focusLabel),
     bldPill(d.duration + " min"),
     bldPill(sets + " working sets")
   ];
-  if (d.supersets.length) meta.push(bldPill(d.supersets.length + " superset" + (d.supersets.length===1?"":"s")));
+  if (d.supersets.length) meta.push(bldPill(d.supersets.length + " paired block" + (d.supersets.length===1?"":"s")));
+  const groupNote = d.groups.some(g=>g.type!=="straight")
+    ? "Logged · rest after each pair or round"
+    : "Logged · rest "+builderRestLabel(d.rest)+" between sets";
   let html = '<div class="bld-sheet">'+
     '<div class="bld-sheet-top">'+
       '<h4 class="bld-sheet-name">'+esc(d.name)+'</h4>'+
-      '<div class="bld-sheet-meta">'+meta.join("")+'</div>'+
+      '<div class="bld-sheet-meta">'+meta.join("")+"<span class=\"bld-source "+(d.source==="ai"?"ai":"local")+'">'+(d.source==="ai"?"GroqCloud":"Local maker")+'</span></div>'+
+      (d.rationale?'<p class="bld-why">'+esc(d.rationale)+'</p>':"")+
     '</div>'+
     '<div class="bld-block">'+
       '<div class="bld-block-h"><span class="bld-block-t">Warm-up</span><span class="bld-block-note">3 minutes · not logged</span></div>'+
       '<div class="bld-prep">'+d.warmup.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>'+
     '</div>'+
     '<div class="bld-block">'+
-      '<div class="bld-block-h"><span class="bld-block-t">Main work</span><span class="bld-block-note">Logged · rest after each pair</span></div>';
-  d.pairs.forEach((pair,pi)=>{
-    const letter = String.fromCharCode(65 + pi);
-    if (pair.length === 2){
-      html += '<div class="bld-pair">'+
-        '<div class="bld-pair-rail"><span class="bld-pair-tag">Superset</span></div>'+
-        '<div>'+pair.map((de,ei)=>builderExRow(de, letter + (ei+1))).join("")+'</div>'+
-      '</div>'+
-      '<div class="bld-rest">Rest '+builderRestLabel(d.rest)+' after the pair</div>';
-    } else {
-      html += '<div class="bld-standalone">'+pair.map((de,ei)=>builderExRow(de, String(pi+1).padStart(2,"0"))).join("")+'</div>';
+      '<div class="bld-block-h"><span class="bld-block-t">Main work</span><span class="bld-block-note">'+esc(groupNote)+'</span></div>';
+  d.groups.forEach((g,gi)=>{
+    if (g.type === "straight"){
+      html += '<div class="bld-standalone">'+g.members.map(de=>builderExRow(de, String(gi+1).padStart(2,"0"))).join("")+'</div>';
+      return;
     }
+    const letter = String.fromCharCode(65 + gi);
+    const isCircuit = g.type === "circuit";
+    html += '<div class="bld-pair'+(isCircuit?" bld-circuit":"")+'">'+
+      '<div class="bld-pair-rail"><span class="bld-pair-tag">'+(isCircuit?"Circuit":"Superset")+'</span></div>'+
+      '<div>'+g.members.map((de,ei)=>builderExRow(de, letter + (ei+1))).join("")+'</div>'+
+    '</div>'+
+    '<div class="bld-rest">Rest '+builderRestLabel(g.restSec||d.rest)+' after the '+(isCircuit?"round":"pair")+'</div>';
   });
   html += '</div>';
   if (d.finisher){
@@ -9153,6 +9270,7 @@ function builderPreviewHtml(){
     '<div class="bld-block-h"><span class="bld-block-t">Cool-down</span><span class="bld-block-note">3 minutes · not logged</span></div>'+
     '<div class="bld-prep">'+d.cooldown.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>'+
   '</div></div>'+
+  (b.aiNote?'<p class="bld-ai-note">'+esc(b.aiNote)+'</p>':"")+
   '<p class="bld-save-note">Saving writes this as a routine in Workouts. Targets sync to any routine that already uses the same movement; every set stays editable.</p>';
   return html;
 }
@@ -9181,28 +9299,47 @@ function bindBuilderEvents(){
   const b = builderState;
   $$("[data-bld-close]", host).forEach(x=>x.addEventListener("click", closeWorkoutBuilder));
   $$("[data-bld-step]", host).forEach(x=>x.addEventListener("click", ()=>{
-    const i = Math.max(0, Math.min(5, +x.dataset.bldStep));
+    const i = Math.max(0, Math.min(BUILDER_STEPS.length-1, +x.dataset.bldStep));
     b.step = i;
-    if (i===5 && !b.draft) b.draft = generateWorkout(b);
+    if (i===BUILDER_STEPS.length-1 && !b.draft){ builderBuild(); return; }
     renderWorkoutBuilder();
   }));
   $$("[data-bld-goal]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.goal = x.dataset.bldGoal;
-    b.draft = null;
+    builderInvalidate();
     b.step = 1;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-format]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.format = x.dataset.bldFormat;
+    builderInvalidate();
+    if (b.format==="specific"){
+      if (!BUILDER_STYLES[b.style]) b.style = "superset";
+      b.step = 1;
+      renderWorkoutBuilder();
+    } else {
+      b.style = b.format==="fun" ? "mix" : b.format==="surprise" ? "surprise" : "straight";
+      b.step = 2;
+      renderWorkoutBuilder();
+    }
+  }));
+  $$("[data-bld-style]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.style = x.dataset.bldStyle;
+    builderInvalidate();
+    b.step = 2;
     renderWorkoutBuilder();
   }));
   $$("[data-bld-focus]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.focus = x.dataset.bldFocus;
-    b.draft = null;
-    if (b.focus!=="pick"){ b.step = 2; renderWorkoutBuilder(); }
+    builderInvalidate();
+    if (b.focus!=="pick"){ b.step = 3; renderWorkoutBuilder(); }
     else renderWorkoutBuilder();
   }));
   $$("[data-bld-muscle]", host).forEach(x=>x.addEventListener("click", ()=>{
     const p = x.dataset.bldMuscle;
     const i = b.muscles.indexOf(p);
     if (i===-1) b.muscles.push(p); else b.muscles.splice(i,1);
-    b.draft = null;
+    builderInvalidate();
     renderWorkoutBuilder();
   }));
   $$("[data-bld-preset]", host).forEach(x=>x.addEventListener("click", ()=>{
@@ -9210,7 +9347,7 @@ function bindBuilderEvents(){
     if (id==="home") b.equipment = BUILDER_HOME_EQUIP.slice();
     else if (id==="gym") b.equipment = ALL_EQUIP.slice();
     else b.equipment = ["bodyweight"];
-    b.draft = null;
+    builderInvalidate();
     renderWorkoutBuilder();
   }));
   $$("[data-bld-equip]", host).forEach(x=>x.addEventListener("click", ()=>{
@@ -9219,25 +9356,25 @@ function bindBuilderEvents(){
     const i = b.equipment.indexOf(k);
     if (i===-1) b.equipment.push(k); else b.equipment.splice(i,1);
     if (b.equipment.indexOf("bodyweight")===-1) b.equipment.push("bodyweight");
-    b.draft = null;
+    builderInvalidate();
     renderWorkoutBuilder();
   }));
   $$("[data-bld-duration]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.duration = +x.dataset.bldDuration;
-    b.draft = null;
+    builderInvalidate();
     renderWorkoutBuilder();
   }));
   $$("[data-bld-level]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.difficulty = x.dataset.bldLevel;
-    b.draft = null;
+    builderInvalidate();
     renderWorkoutBuilder();
   }));
   const ageIn = $("[data-bld-age]", host);
-  if (ageIn) ageIn.addEventListener("input", ()=>{ b.age = ageIn.value; b.draft = null; });
+  if (ageIn) ageIn.addEventListener("input", ()=>{ b.age = ageIn.value; builderInvalidate(); });
   const bwIn = $("[data-bld-bw]", host);
-  if (bwIn) bwIn.addEventListener("input", ()=>{ b.bodyWeight = bwIn.value; b.draft = null; });
+  if (bwIn) bwIn.addEventListener("input", ()=>{ b.bodyWeight = bwIn.value; builderInvalidate(); });
   const expSel = $("[data-bld-exp]", host);
-  if (expSel) expSel.addEventListener("change", ()=>{ b.experience = expSel.value; b.draft = null; });
+  if (expSel) expSel.addEventListener("change", ()=>{ b.experience = expSel.value; builderInvalidate(); });
   const back = $("[data-bld-back]", host);
   if (back) back.addEventListener("click", ()=>{
     if (b.step>0){ b.step--; renderWorkoutBuilder(); }
@@ -9245,17 +9382,16 @@ function bindBuilderEvents(){
   const next = $("[data-bld-next]", host);
   if (next) next.addEventListener("click", ()=>{
     if (!builderValidate()) return;
-    if (b.step<5){
+    if (b.step<BUILDER_STEPS.length-1){
       b.step++;
-      if (b.step===5) b.draft = generateWorkout(b);
+      if (b.step===BUILDER_STEPS.length-1 && !b.draft){ builderBuild(); return; }
       renderWorkoutBuilder();
     }
   });
   const shuffle = $("[data-bld-shuffle]", host);
   if (shuffle) shuffle.addEventListener("click", ()=>{
     b.attempt++;
-    b.draft = generateWorkout(b);
-    renderWorkoutBuilder();
+    builderBuild();
   });
   const save = $("[data-bld-save]", host);
   if (save) save.addEventListener("click", ()=>builderSave(false));
@@ -9264,14 +9400,18 @@ function bindBuilderEvents(){
 }
 function builderValidate(){
   const b = builderState;
-  if (b.step===1 && b.focus==="pick" && !b.muscles.length){
+  if (b.step===1 && b.format==="specific" && !BUILDER_STYLES[b.style]){
+    toast("Pick a session structure");
+    return false;
+  }
+  if (b.step===2 && b.focus==="pick" && !b.muscles.length){
     toast("Pick at least one muscle group");
     return false;
   }
-  if (b.step===2 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
+  if (b.step===3 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
     b.equipment = (b.equipment||[]).concat(["bodyweight"]);
   }
-  if (b.step===4){
+  if (b.step===5){
     if (b.age!==""){
       const age = +b.age;
       if (!isFinite(age) || age<13 || age>100){ toast("Enter an age between 13 and 100, or leave it blank"); return false; }
@@ -9284,7 +9424,17 @@ function builderValidate(){
   return true;
 }
 function builderSeedStr(b){
-  return [b.goal,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+  return [b.goal,b.format,b.style,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+}
+/* Any change to the brief discards the old draft and cancels an in-flight AI
+   build, so a late response can never overwrite the user's newer request. */
+function builderInvalidate(){
+  const b = builderState;
+  if (!b) return;
+  b.draft = null;
+  b.aiNote = "";
+  b.building = false;
+  b.buildToken = (b.buildToken||0) + 1;
 }
 function builderRng(seed){
   let h = 2166136261 >>> 0;
@@ -9331,6 +9481,7 @@ function builderSets(b){
 function builderUseFinisher(b){
   if (b.experience==="beginner") return false;
   if (+b.age>=55) return false;
+  if (b.format==="fun" || b.format==="surprise") return true;
   return b.goal==="endurance" || b.difficulty==="hard";
 }
 function builderRestSec(b){
@@ -9388,7 +9539,68 @@ function builderDe(ex, b, rnd, opts){
     de.setWeights = Array.from({length:sets}, ()=>w);
   }
   if (opts && opts.failure) de.setTypes[sets-1] = "failure";
+  else if (opts && opts.drop) de.setTypes[sets-1] = "drop";
   return de;
+}
+function builderGroup(type, members, b){
+  const labels = { straight:"Straight sets", superset:"Superset", circuit:"Circuit" };
+  return { type:type, label:labels[type] || "Straight sets", restSec:builderRestSec(b), members:members };
+}
+function builderChunk(list, size){
+  const out = [];
+  for (let i=0;i<list.length;i+=size) out.push(list.slice(i, i+size));
+  return out;
+}
+/* Translate the requested format into structural blocks. This is the single
+   place that decides whether a session gets supersets, a circuit, or plain
+   straight sets — so the local fallback and the AI validator share one rule. */
+function builderShapeGroups(des, b, rnd){
+  const style = b.format==="specific" ? b.style : b.format;
+  if (!des.length) return [];
+  if (b.format==="regular" || style==="ladder" || style==="dropset" || style==="straight"){
+    return des.map(de=>builderGroup("straight", [de], b));
+  }
+  if (style==="superset"){
+    return builderPairUp(des).map(members=>builderGroup(members.length>1?"superset":"straight", members, b));
+  }
+  if (style==="circuit"){
+    return builderChunk(des, 3).map(members=>builderGroup(members.length>1?"circuit":"straight", members, b));
+  }
+  if (b.format==="fun"){
+    if (des.length>=7){
+      return [builderGroup("circuit", des.slice(0,3), b), builderGroup("superset", des.slice(3,5), b), builderGroup("straight", des.slice(5), b)];
+    }
+    if (des.length>=5){
+      return [builderGroup("circuit", des.slice(0,3), b), builderGroup("straight", des.slice(3), b)];
+    }
+    if (des.length===4){
+      return [builderGroup("superset", des.slice(0,2), b), builderGroup("straight", des.slice(2), b)];
+    }
+    if (des.length===3){
+      return [builderGroup("superset", des.slice(0,2), b), builderGroup("straight", des.slice(2), b)];
+    }
+    return des.map(de=>builderGroup("straight", [de], b));
+  }
+  if (b.format==="surprise"){
+    if (des.length>=6){
+      return [builderGroup("circuit", des.slice(0,3), b), builderGroup("superset", des.slice(3,5), b), builderGroup("straight", des.slice(5), b)];
+    }
+    if (des.length>=5){
+      return rnd()<.5
+        ? [builderGroup("superset", des.slice(0,2), b), builderGroup("circuit", des.slice(2,5), b)]
+        : [builderGroup("circuit", des.slice(0,3), b), builderGroup("straight", des.slice(3), b)];
+    }
+    if (des.length>=4){
+      return rnd()<.5
+        ? [builderGroup("superset", des.slice(0,2), b), builderGroup("straight", des.slice(2), b)]
+        : [builderGroup("circuit", des.slice(0,3), b), builderGroup("straight", des.slice(3), b)];
+    }
+    if (des.length===3){
+      return [builderGroup("superset", des.slice(0,2), b), builderGroup("straight", des.slice(2), b)];
+    }
+    return des.map(de=>builderGroup("straight", [de], b));
+  }
+  return des.map(de=>builderGroup("straight", [de], b));
 }
 function builderFocusLabel(b){
   if (b.focus==="pick" && b.muscles.length){
@@ -9435,6 +9647,52 @@ function builderPairUp(items){
   }
   return pairs;
 }
+function builderShapeSentence(b){
+  if (b.format==="regular") return "Straight sets with rest between them — no supersets.";
+  if (b.format==="fun") return "A playful mix of a circuit or superset with straight work and a finisher.";
+  if (b.format==="specific"){
+    const s = BUILDER_STYLES[b.style] || BUILDER_STYLES.superset;
+    return s.label + " — " + s.desc;
+  }
+  return "A surprise session that combines different structures instead of repeating one template.";
+}
+function builderDraftFromGroups(b, groups, meta){
+  meta = meta || {};
+  const exercises = [];
+  groups.forEach(g=>g.members.forEach(de=>exercises.push(de)));
+  const finisher = meta.finisher || null;
+  if (finisher) exercises.push(finisher);
+  const supersets = groups.filter(g=>g.members.length>1).map(g=>({
+    id:"ss-bld-"+Math.random().toString(36).slice(2,8),
+    exIds:g.members.map(m=>m.exId)
+  }));
+  const focusLabel = builderFocusLabel(b);
+  const rnd = builderRng(builderSeedStr(b));
+  return {
+    name: meta.name || builderSessionName(b, focusLabel, rnd),
+    goal: b.goal,
+    focus: b.focus,
+    focusLabel: focusLabel,
+    duration: b.duration,
+    difficulty: b.difficulty,
+    format: b.format,
+    style: b.style,
+    styleLabel: builderStyleLabel(b),
+    source: meta.source || "local",
+    rationale: meta.rationale || builderShapeSentence(b),
+    warmup: meta.warmup || builderWarmup(b),
+    cooldown: meta.cooldown || ["Easy walk","Chest opener","Box breathing"],
+    groups: groups,
+    exercises: exercises,
+    supersets: supersets,
+    finisher: finisher,
+    rest: meta.rest || builderRestSec(b),
+    stats: {
+      sets: exercises.reduce((a,x)=>a+(x.targetSets||0),0),
+      movements: exercises.length
+    }
+  };
+}
 function generateWorkout(b){
   const rnd = builderRng(builderSeedStr(b));
   const parts = builderFocusParts(b);
@@ -9460,12 +9718,12 @@ function generateWorkout(b){
     if (!used[e.id]){ chosen.push(e); used[e.id] = 1; }
   }
   if (!chosen.length){
-    return {
-      name:"No matching session", goal:b.goal, focus:b.focus, focusLabel:builderFocusLabel(b),
-      duration:b.duration, difficulty:b.difficulty, warmup:[], cooldown:[],
-      exercises:[], supersets:[], pairs:[], finisher:null, rest:builderRestSec(b),
-      stats:{sets:0,movements:0}
-    };
+    return builderDraftFromGroups(b, [], {
+      name:"No matching session",
+      source:"local",
+      rationale:"No movements match that setup.",
+      warmup:[], cooldown:[]
+    });
   }
   let finisherEx = null;
   if (builderUseFinisher(b)){
@@ -9476,38 +9734,318 @@ function generateWorkout(b){
       finisherEx = chosen.pop();
     }
   }
-  const mainDes = chosen.map(ex=>builderDe(ex, b, rnd));
+  const style = b.format==="specific" ? b.style : "";
+  const mainDes = chosen.map(ex=>builderDe(ex, b, rnd, {drop:style==="dropset"}));
   const finisherDe = finisherEx ? builderDe(finisherEx, b, rnd, {sets:2, failure:true}) : null;
-  const pairs = builderPairUp(mainDes);
-  const supersets = [];
-  pairs.forEach(pair=>{
-    if (pair.length===2){
-      supersets.push({ id:"ss-bld-"+Math.random().toString(36).slice(2,8), exIds:pair.map(x=>x.exId) });
+  const groups = builderShapeGroups(mainDes, b, rnd);
+  return builderDraftFromGroups(b, groups, {
+    name: builderSessionName(b, builderFocusLabel(b), rnd),
+    finisher: finisherDe,
+    source: "local",
+    rationale: builderShapeSentence(b)
+  });
+}
+/* -------------------------------------------------------------------------
+   GROQ WORKOUT ARCHITECT
+   The user's format choice is the contract. The model may design the session,
+   but it may not silently turn everything into supersets: a regular session
+   is straight sets, and every other structure has to be explicitly requested.
+   ------------------------------------------------------------------------- */
+const WORKOUT_SYSTEM_PROMPT = [
+  "You are the workout architect inside Perseus, a calisthenics strength-coach app.",
+  "Design ONE complete training session and return strict JSON only.",
+  "The user's requested format and style are a hard contract. Never default to supersets:",
+  "a superset or circuit is allowed only when the request explicitly asks for that structure.",
+  "For a regular session every group MUST be type \"straight\" and no movements may be paired.",
+  "Use ONLY exercise ids from the supplied library. Never invent ids, exercises, or fields.",
+  "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
+  "A group is one structural block: straight = one exercise performed as its own sets;",
+  "superset = exactly 2 exercises alternated with one rest after the pair;",
+  "circuit = 2-4 exercises performed back to back with one rest after the round.",
+  "Every exercise needs sets 1-6 and either a reps array (1-50 each) or, for holds,",
+  "a time array (5-120 seconds each), with exactly one set type per set.",
+  "Set types are regular, warmup, drop, or failure. For weighted movements provide a",
+  "sensible weight; bodyweight movements use 0 unless the movement accepts added load.",
+  "Warm-up and cool-down have at most 3 short items each. A finisher is optional.",
+  "JSON shape:",
+  '{"name":"...","rationale":"one sentence on why this shape","restSec":90,',
+  ' "warmup":["..."],"cooldown":["..."],',
+  ' "groups":[{"type":"straight|superset|circuit","exercises":[{"exId":"...","sets":3,"reps":[8,8,8],"setTypes":["regular","regular","regular"],"weight":0}]}],',
+  ' "finisher":{"exId":"...","sets":2,"reps":[10,10],"setTypes":["regular","failure"],"weight":0}}',
+  "For a timed hold use \"time\":[30,30,30] instead of reps. Return no prose outside the JSON."
+].join("\n");
+function workoutShapeRules(b){
+  const rules = [];
+  if (b.format==="regular"){
+    rules.push("REQUESTED FORMAT: regular. Use straight sets only. Every group must be type \"straight\"; supersets and circuits are forbidden.");
+    rules.push("Give each movement 2-4 sets with a normal rest between sets. Do not invent a finisher just to add variety.");
+  } else if (b.format==="fun"){
+    rules.push("REQUESTED FORMAT: fun mix. Include exactly one non-straight group (superset or circuit) AND at least one straight group, so the session is playful without becoming all supersets.");
+    rules.push("Add a short finisher if time allows and vary the rep scheme a little. Keep it coherent and doable.");
+  } else if (b.format==="specific"){
+    if (b.style==="superset"){
+      rules.push("REQUESTED STYLE: supersets. Pair movements into supersets of exactly 2; an odd leftover may be a single straight group. Do not use circuits.");
+    } else if (b.style==="circuit"){
+      rules.push("REQUESTED STYLE: circuit. Group 3-4 movements per circuit round; a remainder may be a straight group. Do not use supersets.");
+    } else if (b.style==="ladder"){
+      rules.push("REQUESTED STYLE: ladder. Use straight sets only and make every rep array climb or fall across the sets.");
+    } else if (b.style==="dropset"){
+      rules.push("REQUESTED STYLE: drop sets. Use straight sets only and make the final set of every exercise type \"drop\".");
+    }
+  } else {
+    rules.push("REQUESTED FORMAT: surprise. Combine at least two distinct structures from straight, superset, and circuit. Keep at least one straight group and do not make the whole session a superset.");
+    rules.push("Use an unexpected but coherent name and a playful finisher.");
+  }
+  rules.push("Never make the whole session a superset. Only include a superset or circuit when the requested format or style calls for it.");
+  return rules;
+}
+function buildWorkoutPayload(b){
+  const pool = builderPool(b, 99);
+  return {
+    instruction:"Design the session described by request. Use only library exIds. Follow request.shapeRules exactly. Return JSON only.",
+    request:{
+      format:b.format,
+      style:b.format==="specific" ? b.style : b.format,
+      styleLabel:builderStyleLabel(b),
+      shapeRules:workoutShapeRules(b),
+      goal:b.goal,
+      goalLabel:sessionTypeLabel(b.goal),
+      repZones:getRepZones(),
+      focus:builderTargetLabel(b),
+      muscles:builderFocusParts(b),
+      durationMin:b.duration,
+      difficulty:b.difficulty,
+      experience:b.experience,
+      age:b.age==="" ? null : +b.age,
+      bodyWeightKg:b.bodyWeight==="" ? null : toKg(+b.bodyWeight),
+      targetMovements:builderTargetCount(b),
+      setsPerMovement:builderSets(b),
+      restSeconds:builderRestSec(b),
+      attempt:b.attempt
+    },
+    library:pool.map(e=>{
+      const shared = exercisePlan(e.id);
+      return {
+        exId:e.id,
+        name:e.name,
+        mode:e.mode || "reps",
+        equipment:e.equipment || [],
+        weightAvailable:!!e.weightAvailable,
+        perSide:!!e.perSide,
+        bodyParts:e.bodyParts || [],
+        primaryMuscles:e.primaryMuscles || [],
+        defaultReps:e.defaultReps,
+        defaultTime:e.defaultTime,
+        defaultWeight:e.defaultWeight,
+        currentWeight:(shared && shared.weight!=null) ? +shared.weight : (+e.defaultWeight || 0)
+      };
+    })
+  };
+}
+function callGroqWorkout(b){
+  const temp = b.format==="surprise" ? .85 : b.format==="fun" ? .7 : .35;
+  return groqJson(WORKOUT_SYSTEM_PROMPT, JSON.stringify(buildWorkoutPayload(b)), temp);
+}
+function builderAIClamp(v, lo, hi, fallback){
+  const n = +v;
+  if (!isFinite(n)) return fallback;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+function builderAIWords(v, max){
+  const s = (typeof v==="string") ? v.trim().replace(/\s+/g," ") : "";
+  return s ? s.slice(0,max) : "";
+}
+function builderAIItems(v, max, fallback){
+  const arr = Array.isArray(v)
+    ? v.filter(x=>typeof x==="string" && x.trim()).map(x=>x.trim().replace(/\s+/g," ").slice(0,48)).slice(0,max)
+    : [];
+  return arr.length ? arr : fallback;
+}
+function builderAINormalizeDe(raw, ex, b, setsHint){
+  if (!raw || !ex) return null;
+  const isTime = ex.mode==="time";
+  const sets = Math.max(1, Math.min(6, setsHint || builderAIClamp(raw.sets,1,6,builderSets(b))));
+  const fallbackRnd = builderRng(builderSeedStr(b)+"|"+ex.id);
+  const fallbackArr = isTime ? builderTimeLadder(b, sets, fallbackRnd) : builderRepLadder(b, sets, fallbackRnd);
+  const rawArr = isTime ? raw.time : raw.reps;
+  const vals = [];
+  for (let i=0;i<sets;i++){
+    let v = (Array.isArray(rawArr) && rawArr[i]!=null) ? +rawArr[i] : null;
+    if (!isFinite(v)) v = (Array.isArray(rawArr) && rawArr.length) ? +rawArr[rawArr.length-1] : fallbackArr[i];
+    vals.push(builderAIClamp(v, isTime?5:1, isTime?600:50, fallbackArr[i] || (isTime?30:8)));
+  }
+  const validType = t => ["regular","warmup","drop","failure"].indexOf(t) !== -1;
+  const types = [];
+  for (let i=0;i<sets;i++){
+    const t = Array.isArray(raw.setTypes) ? raw.setTypes[i] : "";
+    types.push(validType(t) ? t : "regular");
+  }
+  if (b.format==="specific" && b.style==="dropset") types[sets-1] = "drop";
+  const de = {
+    exId:ex.id,
+    targetSets:sets,
+    reps:isTime ? 0 : vals[0],
+    time:isTime ? vals[0] : 0,
+    weight:0,
+    setTypes:types,
+    modifiedAt:Date.now()
+  };
+  if (isTime) de.setTimes = vals; else de.setReps = vals;
+  if (usesWeightFor(ex)){
+    let w = +raw.weight;
+    if (!isFinite(w) || w < 0){
+      const shared = exercisePlan(ex.id);
+      w = (shared && shared.weight!=null) ? +shared.weight : (+ex.defaultWeight || 0);
+    }
+    if (!isFinite(w) || w < 0) w = 0;
+    if (ex.maxWeight) w = Math.min(w, +ex.maxWeight);
+    de.weight = w;
+    de.setWeights = Array.from({length:sets}, ()=>w);
+  }
+  return de;
+}
+function builderAIEqualize(group){
+  if (!group || group.type==="straight" || group.members.length<2) return;
+  const n = Math.max.apply(null, group.members.map(m=>m.targetSets||1));
+  group.members.forEach(de=>{
+    const ex = getEx(de.exId);
+    const isTime = ex && ex.mode==="time";
+    const arr = isTime ? de.setTimes : de.setReps;
+    if (Array.isArray(arr) && arr.length){
+      const last = arr[arr.length-1];
+      while (arr.length < n) arr.push(last);
+      de.targetSets = n;
+      if (isTime) de.time = arr[0]; else de.reps = arr[0];
+    } else {
+      de.targetSets = n;
+    }
+    while (de.setTypes.length < n) de.setTypes.push(de.setTypes[de.setTypes.length-1] || "regular");
+    if (Array.isArray(de.setWeights)){
+      const lw = de.setWeights[de.setWeights.length-1] || 0;
+      while (de.setWeights.length < n) de.setWeights.push(lw);
     }
   });
-  const ordered = [];
-  pairs.forEach(pair=>pair.forEach(de=>ordered.push(de)));
-  const exercises = ordered.concat(finisherDe ? [finisherDe] : []);
-  const focusLabel = builderFocusLabel(b);
-  return {
-    name: builderSessionName(b, focusLabel, rnd),
-    goal: b.goal,
-    focus: b.focus,
-    focusLabel: focusLabel,
-    duration: b.duration,
-    difficulty: b.difficulty,
-    warmup: builderWarmup(b),
-    cooldown: ["Easy walk","Chest opener","Box breathing"],
-    exercises: exercises,
-    supersets: supersets,
-    pairs: pairs,
-    finisher: finisherDe,
-    rest: builderRestSec(b),
-    stats: {
-      sets: exercises.reduce((a,x)=>a+(x.targetSets||0),0),
-      movements: exercises.length
+}
+function builderAILadderOK(groups){
+  const monotonic = arr => Array.isArray(arr) && arr.length > 1 &&
+    (arr.every((v,i)=>i===0 || v>=arr[i-1]) || arr.every((v,i)=>i===0 || v<=arr[i-1]));
+  return groups.every(g=>g.members.every(de=>monotonic(de.setReps) || monotonic(de.setTimes)));
+}
+function builderAIShapeOK(b, groups){
+  const nonStraight = groups.filter(g=>g.type!=="straight");
+  if (b.format==="regular") return nonStraight.length === 0;
+  if (b.format==="fun"){
+    if (groups.length < 3) return nonStraight.length <= 1;
+    return nonStraight.length > 0 && groups.some(g=>g.type==="straight");
+  }
+  if (b.format==="specific"){
+    if (b.style==="superset") return nonStraight.length > 0 && nonStraight.every(g=>g.type==="superset");
+    if (b.style==="circuit") return nonStraight.length > 0 && nonStraight.every(g=>g.type==="circuit");
+    if (b.style==="ladder") return nonStraight.length === 0 && builderAILadderOK(groups);
+    return nonStraight.length === 0;
+  }
+  if (b.format==="surprise"){
+    if (groups.length < 3) return true;
+    const kinds = {};
+    groups.forEach(g=>{ kinds[g.type] = 1; });
+    return Object.keys(kinds).length >= 2;
+  }
+  return true;
+}
+function normalizeAIDraft(raw, b){
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.groups)) return null;
+  const pool = builderPool(b, 99);
+  const byId = {};
+  pool.forEach(e=>{ byId[e.id] = e; });
+  const seen = {};
+  const groups = [];
+  raw.groups.forEach(rg=>{
+    if (!rg || !Array.isArray(rg.exercises)) return;
+    let type = (rg.type==="superset" || rg.type==="circuit") ? rg.type : "straight";
+    const members = [];
+    rg.exercises.forEach(r=>{
+      const id = r && typeof r.exId==="string" ? r.exId : "";
+      const ex = byId[id];
+      if (!ex || seen[id]) return;
+      const de = builderAINormalizeDe(r, ex, b);
+      if (!de) return;
+      seen[id] = 1;
+      members.push(de);
+    });
+    if (!members.length) return;
+    if (type==="straight"){
+      members.forEach(de=>groups.push(builderGroup("straight", [de], b)));
+    } else if (type==="superset"){
+      if (members.length === 2) groups.push(builderGroup("superset", members, b));
+      else members.forEach(de=>groups.push(builderGroup("straight", [de], b)));
+    } else {
+      const take = members.slice(0,4);
+      if (take.length >= 2) groups.push(builderGroup("circuit", take, b));
+      else take.forEach(de=>groups.push(builderGroup("straight", [de], b)));
+      members.slice(4).forEach(de=>groups.push(builderGroup("straight", [de], b)));
     }
-  };
+  });
+  if (!groups.length) return null;
+  groups.forEach(builderAIEqualize);
+  if (!builderAIShapeOK(b, groups)) return null;
+  let finisher = null;
+  if (raw.finisher && raw.finisher.exId && byId[raw.finisher.exId] && !seen[raw.finisher.exId]){
+    finisher = builderAINormalizeDe(raw.finisher, byId[raw.finisher.exId], b, 2);
+  }
+  const rest = builderAIClamp(raw.restSec, 20, 300, builderRestSec(b));
+  const name = builderAIWords(raw.name, 80) || builderSessionName(b, builderFocusLabel(b), builderRng(builderSeedStr(b)));
+  const rationale = builderAIWords(raw.rationale, 180) || builderShapeSentence(b);
+  return builderDraftFromGroups(b, groups, {
+    name:name,
+    rationale:rationale,
+    warmup:builderAIItems(raw.warmup, 3, builderWarmup(b)),
+    cooldown:builderAIItems(raw.cooldown, 3, ["Easy walk","Chest opener","Box breathing"]),
+    rest:rest,
+    finisher:finisher,
+    source:"ai"
+  });
+}
+/* Build the preview. With an API key GroqCloud writes it; without one (or on
+   any failure) the same format request is filled by the local maker. */
+function builderBuild(){
+  const b = builderState;
+  if (!b) return Promise.resolve(null);
+  b.buildToken = (b.buildToken||0) + 1;
+  const token = b.buildToken;
+  b.step = BUILDER_STEPS.length - 1;
+  b.building = false;
+  b.aiNote = "";
+  const key = ((state.profile && state.profile.apiKey) || "").trim();
+  if (!key){
+    b.draft = generateWorkout(b);
+    b.aiNote = "Built locally. Add a GroqCloud API key in Settings to have the AI design the session.";
+    renderWorkoutBuilder();
+    return Promise.resolve(b.draft);
+  }
+  b.building = true;
+  b.draft = null;
+  renderWorkoutBuilder();
+  return callGroqWorkout(b).then(raw=>{
+    if (token !== b.buildToken) return b.draft;
+    const draft = normalizeAIDraft(raw, b);
+    if (draft){
+      b.draft = draft;
+      b.aiNote = "";
+    } else {
+      b.draft = generateWorkout(b);
+      b.aiNote = "GroqCloud returned a shape that did not match your request, so this session was built locally.";
+    }
+    b.building = false;
+    renderWorkoutBuilder();
+    return b.draft;
+  }).catch(err=>{
+    if (token !== b.buildToken) return b.draft;
+    b.draft = generateWorkout(b);
+    b.building = false;
+    b.aiNote = "GroqCloud was unavailable ("+String((err && err.message) || err).slice(0,90)+") — built locally instead.";
+    renderWorkoutBuilder();
+    return b.draft;
+  });
 }
 function builderSave(startNow){
   const b = builderState;
