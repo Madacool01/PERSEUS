@@ -9519,6 +9519,34 @@ function builderSave(startNow){
 /* =========================================================================
    HISTORY & PROGRESSION TRENDS
    ========================================================================= */
+/* Reveal a session detail with the same measured height language as its close:
+   the card unfolds from zero height while its content settles upward. Falls
+   back to instant for reduced motion / missing GSAP / any error. */
+function expandDetail(el, done){
+  if(!el){ if(done) done(); return; }
+  if(!FX.ok || FX.reduced()){ if(done) done(); return; }
+  try{
+    const g = window.gsap;
+    if(!g){ if(done) done(); return; }
+    const content = el.querySelectorAll(".day-head, .hist-exblock, .hist-checkins, .hist-detail > .micro");
+    el.style.overflow = "hidden";
+    g.from(el, {
+      height: 0, minHeight: 0, paddingTop: 0, paddingBottom: 0,
+      marginTop: 0, marginBottom: 0, borderTopWidth: 0, borderBottomWidth: 0,
+      opacity: 0, y: -10,
+      duration: .42, ease: "power3.out", overwrite: "auto",
+      clearProps: "height,minHeight,paddingTop,paddingBottom,marginTop,marginBottom,borderTopWidth,borderBottomWidth,overflow,transform,opacity",
+      onComplete: ()=>{ el.style.overflow = ""; if(done) done(); }
+    });
+    if(content.length){
+      g.from(content, {
+        opacity: 0, y: 10, duration: .36, ease: "power2.out",
+        stagger: .045, delay: .08, overwrite: "auto",
+        clearProps: "opacity,transform"
+      });
+    }
+  }catch(e){ if(done) done(); }
+}
 /* Smoothly collapse an open session detail (GSAP when available, else instant).
    Falls back to instant removal for reduced motion / missing GSAP / any error,
    per the FX motion-layer convention: nothing here may throw. */
@@ -9527,6 +9555,7 @@ function collapseDetail(el, done, delay){
   if(!FX.ok || FX.reduced()){ el.remove(); if(done) done(); return; }
   try{
     const g = window.gsap;
+    g.killTweensOf(el);
     el.style.overflow = "hidden";
     g.to(el, {
       height: 0, minHeight: 0, paddingTop: 0, paddingBottom: 0,
@@ -9657,6 +9686,7 @@ function renderHistory(){
         if(e.target.closest("[data-del-sess]")){ deleteSession(e.target.closest("[data-del-sess]").dataset.delSess); return; }
         if(e.target.closest("[data-close]")){ collapseDetail(bin, updateCloseAll); }
       });
+      expandDetail(bin);
     }
     updateCloseAll();
   }));
