@@ -8835,7 +8835,7 @@ function recAct(ds, actVal){
 /* =========================================================================
    WORKOUT MAKER
    -------------------------------------------------------------------------
-   A six-screen builder that reads the training goal, target, available gear,
+   A multi-screen builder that reads the training goal, programming approach, target, available gear,
    time budget, and athlete profile, then sequences a real routine from the
    user's own exercise library. Groq is not called here: generation is a
    deterministic, seeded builder so the flow works offline and instantly.
@@ -8843,7 +8843,7 @@ function recAct(ds, actVal){
    treat it like any other routine.
    ========================================================================= */
 const BUILDER_HOME_EQUIP = ["bodyweight","dumbbell","bands","pullup","bench"];
-const BUILDER_STEPS = ["Goal","Format","Focus","Gear","Time","You","Session"];
+const BUILDER_STEPS = ["Goal","Approach","Format","Focus","Gear","Time","You","Session"];
 /* Session shape comes before the exercise details. "Regular" is the default so
    the maker never assumes a superset; the other three are explicit requests for
    a particular structure or for the AI to combine structures. */
@@ -8868,6 +8868,81 @@ const BUILDER_FOCUS_META = {
 const BUILDER_MUSCLE_PARTS = ["Chest","Back","Shoulders","Biceps","Triceps","Forearms","Core","Glutes","Thighs","Calves"];
 const BUILDER_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Glutes:"glutes", Thighs:"quads", Calves:"calves" };
 const BUILDER_REST = { strength:[120,180], hypertrophy:[60,90], endurance:[30,45] };
+/* Evidence-based set approaches. The approach is a hard programming contract:
+   it fixes sets per movement, proximity to failure, and the rest window, while
+   difficulty still tunes finishers, movement count, and rest within the range.
+   Evidence behind each choice is stored on the approach and sent to the model.
+   Core sources:
+   - ACSM position stand (Med Sci Sports Exerc 2009;41:687-708): 1-6RM and
+     3-5 min rest for strength; 6-12RM and 1-2 min for hypertrophy; >15 reps
+     at 40-60% 1RM and <90s rest for local muscular endurance.
+   - Grgic et al., Sports Med 2018;48:137-151: >2 min rest maximizes strength
+     in trained lifters; 60-120s is enough for untrained lifters.
+   - Schoenfeld et al., J Strength Cond Res 2017;31:3508-3523: heavy loads are
+     superior for 1RM strength when volume is matched.
+   - Davies et al., Sports Med 2021;51:707-736 and Jukic et al., Sports Med
+     2021;51:1061-1086: cluster sets match traditional sets for strength with
+     less fatigue and can improve power/velocity.
+   - Garcia-Lopez et al., J Strength Cond Res 2007;21:1320-1324: short rest
+     preserves local muscular endurance and repetition velocity.
+   - McRae et al., Appl Physiol Nutr Metab 2012;37:1124-1131: low-volume,
+     interval-style whole-body work improved muscular endurance and VO2peak. */
+const BUILDER_APPROACHES = {
+  hypertrophy: [
+    { id:"volume", label:"High Volume", tag:"4 sets · 1-2 RIR", sets:4, rest:[60,90], failure:"none", rir:2,
+      evidence:"Schoenfeld et al. 2017; ACSM 2009",
+      desc:"Four working sets per movement, each stopped 1-2 reps shy of failure. More total volume, less systemic fatigue.",
+      rule:"Use 4 working sets per exercise, 6-12 reps, stopping 1-2 reps short of failure (2 RIR). Rest 60-90 seconds. Spread the sets across movements rather than adding extra exercises." },
+    { id:"intensity", label:"High Intensity, Low Volume", tag:"2 sets · 1 RIR → failure", sets:2, rest:[120,180], failure:"last", rir:1,
+      evidence:"Schoenfeld et al., Sports Med 2017; ACSM 2009",
+      desc:"Only two sets per movement: the first leaves one rep in reserve, the second goes to complete failure.",
+      rule:"Use exactly 2 working sets per exercise, 6-12 reps. The first set stops at 1 rep in reserve (1 RIR); the second set is taken to complete muscular failure and must be set type \"failure\". Rest 120-180 seconds so both sets stay high quality." },
+    { id:"balanced", label:"Balanced", tag:"3 sets · last to failure", sets:3, rest:[90,120], failure:"last", rir:2,
+      evidence:"Schoenfeld et al., Sports Med 2017; ACSM 2009",
+      desc:"Three working sets, the last taken to failure. A practical middle ground for most lifters.",
+      rule:"Use 3 working sets per exercise, 6-12 reps. The first two stop around 2 RIR; the final set is taken to failure and must be set type \"failure\". Rest 90-120 seconds." }
+  ],
+  strength: [
+    { id:"intensity", label:"Maximal Strength", tag:"4 sets · 3-5 reps · 3-4 min rest", sets:4, rest:[180,240], failure:"none", rir:2, zone:[3,5],
+      evidence:"ACSM 2009; Grgic et al., Sports Med 2018; Schoenfeld et al., JSCR 2017",
+      desc:"Heavy triples and fives with long rests. The most direct route to a bigger 1RM.",
+      rule:"Use 4 working sets per exercise, 3-5 reps at 85-90% 1RM, stopping 1-2 reps short of failure. Rest 3-4 minutes so every set is high quality. Do not take sets to failure. Heavy loads and long rests are what maximize 1RM strength." },
+    { id:"volume", label:"Volume Strength (5×5)", tag:"5 sets · 5 reps · 2-3 min rest", sets:5, rest:[150,180], failure:"none", rir:2, zone:[5,6],
+      evidence:"Schoenfeld et al., JSCR 2017; ACSM 2009",
+      desc:"Five sets of five at a heavy load. More quality volume to build strength and work capacity.",
+      rule:"Use 5 working sets per exercise, 5 reps at 80-85% 1RM, stopping 1-2 reps short of failure. Rest 2.5-3 minutes. Keep every rep crisp and avoid failure. This is a volume-oriented strength day, not a max-effort day." },
+    { id:"cluster", label:"Cluster Sets", tag:"5 sets · 3 reps · 20-30s intra-rest", sets:5, rest:[180,240], failure:"none", rir:2, zone:[3,3],
+      evidence:"Davies et al., Sports Med 2021; Jukic et al., Sports Med 2021",
+      cue:"pause 20-30 seconds between reps inside each set",
+      desc:"Heavy triples split by a short intra-set pause. Same strength with less fatigue and better bar speed.",
+      rule:"Use 5 sets of 3 reps at about 85% 1RM. Within each set, pause 20-30 seconds between individual reps (a cluster), then rest 2-3 minutes between sets. Stop 2 reps short of failure. Do not take sets to failure. This preserves force output and reduces fatigue while matching traditional strength gains." }
+  ],
+  endurance: [
+    { id:"volume", label:"High-Repetition Sets", tag:"4 sets · 15-25 reps · 30-60s rest", sets:4, rest:[30,60], failure:"none", rir:2, zone:[15,25],
+      evidence:"ACSM 2009; García-López et al., JSCR 2007",
+      desc:"Light-to-moderate loads for high reps with short rests. The standard local muscular-endurance prescription.",
+      rule:"Use 4 working sets per exercise, 15-25 reps at 40-60% 1RM, stopping about 2 reps short of failure. Rest only 30-60 seconds. High reps and short rest are the evidence-based recipe for local muscular endurance." },
+    { id:"density", label:"Short-Rest Sets", tag:"3 sets · 15-20 reps · 30-45s rest", sets:3, rest:[30,45], failure:"none", rir:1, zone:[15,20],
+      evidence:"García-López et al., JSCR 2007; ACSM 2009",
+      desc:"Fewer sets with short rest. Short rest preserves rep velocity while keeping the set count manageable.",
+      rule:"Use 3 working sets per exercise, 15-20 reps at about 1 RIR, with 30-45 seconds rest. The short rest is the stimulus: keep reps smooth and repeatable rather than grinding to failure. Short rest preserves endurance and repetition velocity." },
+    { id:"intervals", label:"Interval Style", tag:"6 sets · 20-30s work · 20-30s rest", sets:6, rest:[20,30], failure:"last", rir:1, zone:[15,20], hold:[20,30],
+      evidence:"McRae et al., Appl Physiol Nutr Metab 2012",
+      cue:"treat every set as a short work interval, fast but repeatable",
+      desc:"Six short work intervals with equal rest. Low-volume interval work that lifts muscular endurance and aerobic fitness.",
+      rule:"Use 6 short work intervals per exercise: 20-30 seconds of fast work (or 15-20 fast reps) with 20-30 seconds rest. Keep each interval repeatable at about 1 RIR; take only the final interval to failure. This interval-style whole-body work improves muscular endurance and aerobic fitness with very low volume." }
+  ]
+};
+function builderApproaches(goal){ return BUILDER_APPROACHES[goal] || BUILDER_APPROACHES.hypertrophy; }
+function builderApproach(b){
+  const list = builderApproaches(b && b.goal);
+  const id = b && b.approach;
+  return list.filter(x=>x.id===id)[0] || list[0];
+}
+function builderApproachLabel(b){ return builderApproach(b).label; }
+function builderApproachTag(b){ return builderApproach(b).tag; }
+function builderApproachZone(b){ return builderApproach(b).zone || sessionZone(b.goal); }
+function builderApproachEvidence(b){ return builderApproach(b).evidence || ""; }
 const BUILDER_FUN_RX = /(renegade|muscle-up|archer|hindu|lever|rollout|negative)/i;
 let builderState = null;
 let builderEsc = null;
@@ -8877,6 +8952,7 @@ function openWorkoutBuilder(opts){
   builderState = {
     step: 0,
     goal: (p.defaultSessionType==="strength" || p.defaultSessionType==="endurance") ? p.defaultSessionType : "hypertrophy",
+    approach: "volume",
     format: "regular",
     style: "straight",
     focus: "upper",
@@ -8895,6 +8971,7 @@ function openWorkoutBuilder(opts){
     focusOnRender: true
   };
   if (opts && opts.goal && SESSION_TYPES[opts.goal]) builderState.goal = opts.goal;
+  builderState.approach = builderApproaches(builderState.goal)[0].id;
   const host = $("#builder-host");
   if (!host) return;
   if (builderEsc) document.removeEventListener("keydown", builderEsc);
@@ -8914,10 +8991,11 @@ function closeWorkoutBuilder(){
 function builderStepCopy(step){
   const copy = [
     { title:'Choose the <em>engine</em>.', sub:'Strength, hypertrophy, or endurance. Rep ranges, rest, and set dose all follow from this one choice.' },
+    { title:'Pick the <em>approach</em>.', sub:'How should the work be dosed? Volume, intensity, and proximity to failure change the stimulus — pick the one that matches your goal.' },
     { title:'Pick the <em>shape</em>.', sub:'Straight sets, a playful mix, a specific structure, or a surprise. Supersets are never assumed.' },
     { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or major in a specific muscle. The sequence follows your target.' },
     { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
-    { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty decides sets, rest, and whether a finisher appears.' },
+    { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty tunes rest, load targets, and whether a finisher appears.' },
     { title:'Make it <em>yours</em>.', sub:'Age tunes volume and rest. Body weight keeps your profile and volume math current. Experience sets how conservative the first session should be.' },
     { title:'Your session, <em>ready</em>.', sub:'A real structure, not a template. Shuffle it, or save it straight into Workouts.' }
   ];
@@ -8965,6 +9043,7 @@ function builderBriefHtml(){
   const b = builderState;
   const rows = [
     ["Goal", sessionTypeLabel(b.goal)],
+    ["Approach", builderApproachLabel(b)],
     ["Format", builderFormatLabel(b)],
     ["Target", builderTargetLabel(b)],
     ["Gear", builderGearLabel(b)],
@@ -9050,12 +9129,43 @@ function builderFootHtml(step){
 }
 function builderStageHtml(step){
   if (step===0) return builderGoalHtml();
-  if (step===1) return builderFormatHtml();
-  if (step===2) return builderFocusHtml();
-  if (step===3) return builderGearHtml();
-  if (step===4) return builderTimeHtml();
-  if (step===5) return builderYouHtml();
+  if (step===1) return builderApproachHtml();
+  if (step===2) return builderFormatHtml();
+  if (step===3) return builderFocusHtml();
+  if (step===4) return builderGearHtml();
+  if (step===5) return builderTimeHtml();
+  if (step===6) return builderYouHtml();
   return builderPreviewHtml();
+}
+function builderApproachHtml(){
+  const b = builderState;
+  const list = builderApproaches(b.goal);
+  const icons = {
+    volume: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19V8"/></svg>',
+    intensity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+    balanced: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 12h16"/><path d="M7 8v8M17 8v8"/><circle cx="12" cy="12" r="2.5"/></svg>',
+    topback: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6 4 3 6-8"/><path d="M14 6h6v6"/></svg>',
+    cluster: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><path d="M4 18h16"/></svg>',
+    density: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+    intervals: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>'
+  };
+  const zone = builderApproachZone(b);
+  const ap = builderApproach(b);
+  return '<h4 class="bld-q">How should this '+esc(sessionTypeLabel(b.goal).toLowerCase())+' work be dosed?</h4>'+
+    '<p class="bld-qsub">Each approach is a proven programming pattern. It fixes sets per movement, proximity to failure, and rest — the AI and the local maker both follow it.</p>'+
+    '<div class="bld-opts three">'+list.map(ap=>{
+      const on = b.approach===ap.id;
+      const ico = icons[ap.id] || icons.balanced;
+      return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-approach="'+esc(ap.id)+'" aria-pressed="'+on+'">'+
+        builderTick()+'<span class="bld-opt-ico">'+ico+'</span>'+
+        '<b>'+esc(ap.label)+'</b><small>'+esc(ap.desc)+'</small>'+
+        '<em class="bld-opt-zone">'+esc(ap.tag)+'</em></button>';
+    }).join("")+'</div>'+
+    '<p class="bld-hint"><b>Rep target:</b> '+zone[0]+'-'+zone[1]+' reps for '+esc(sessionTypeLabel(b.goal).toLowerCase())+'. '+
+      (ap.failure==="last" ? 'The final set is planned to failure.' : 'No set is planned to failure; effort stays just short of it.')+
+      (ap.cue ? ' <b>Execution:</b> '+esc(ap.cue)+'.' : '')+
+      (ap.evidence ? ' <b>Evidence:</b> '+esc(ap.evidence)+'.' : '')+
+      '</p>';
 }
 function builderGoalHtml(){
   const b = builderState;
@@ -9168,12 +9278,12 @@ function builderTimeHtml(){
     { v:60, label:"Long" }
   ];
   const levels = [
-    { id:"easy", label:"Easy", desc:"2 sets and generous rest.", bars:1 },
-    { id:"moderate", label:"Moderate", desc:"3 sets at a steady pace.", bars:2 },
-    { id:"hard", label:"Hard", desc:"4 sets and a final finisher.", bars:3 }
+    { id:"easy", label:"Easy", desc:"Longer rest, no finisher.", bars:1 },
+    { id:"moderate", label:"Moderate", desc:"Standard rest and effort.", bars:2 },
+    { id:"hard", label:"Hard", desc:"Shorter rest and a finisher.", bars:3 }
   ];
   return '<h4 class="bld-q">How much time and effort?</h4>'+
-    '<p class="bld-qsub">Time changes the number of movements. Difficulty changes sets, rest, and whether the session ends with a finisher.</p>'+
+    '<p class="bld-qsub">Time changes the number of movements. Difficulty tunes rest, load targets, and whether the session ends with a finisher — the approach fixes sets and failure.</p>'+
     '<div class="bld-durations">'+durs.map(d=>{
       const on = b.duration===d.v;
       return '<button type="button" class="bld-dur'+(on?' on':'')+'" data-bld-duration="'+d.v+'" aria-pressed="'+on+'">'+
@@ -9225,6 +9335,8 @@ function builderPreviewHtml(){
   const sets = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
   const meta = [
     bldPill(sessionTypeLabel(d.goal), true),
+    bldPill(builderApproachLabel(b)),
+    bldPill(builderApproachTag(b)),
     bldPill(builderFormatLabel(b)),
     bldPill(d.focusLabel),
     bldPill(d.duration + " min"),
@@ -9306,8 +9418,15 @@ function bindBuilderEvents(){
   }));
   $$("[data-bld-goal]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.goal = x.dataset.bldGoal;
+    b.approach = builderApproaches(b.goal)[0].id;
     builderInvalidate();
     b.step = 1;
+    renderWorkoutBuilder();
+  }));
+  $$("[data-bld-approach]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.approach = x.dataset.bldApproach;
+    builderInvalidate();
+    b.step = 2;
     renderWorkoutBuilder();
   }));
   $$("[data-bld-format]", host).forEach(x=>x.addEventListener("click", ()=>{
@@ -9315,24 +9434,24 @@ function bindBuilderEvents(){
     builderInvalidate();
     if (b.format==="specific"){
       if (!BUILDER_STYLES[b.style]) b.style = "superset";
-      b.step = 1;
+      b.step = 2;
       renderWorkoutBuilder();
     } else {
       b.style = b.format==="fun" ? "mix" : b.format==="surprise" ? "surprise" : "straight";
-      b.step = 2;
+      b.step = 3;
       renderWorkoutBuilder();
     }
   }));
   $$("[data-bld-style]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.style = x.dataset.bldStyle;
     builderInvalidate();
-    b.step = 2;
+    b.step = 3;
     renderWorkoutBuilder();
   }));
   $$("[data-bld-focus]", host).forEach(x=>x.addEventListener("click", ()=>{
     b.focus = x.dataset.bldFocus;
     builderInvalidate();
-    if (b.focus!=="pick"){ b.step = 3; renderWorkoutBuilder(); }
+    if (b.focus!=="pick"){ b.step = 4; renderWorkoutBuilder(); }
     else renderWorkoutBuilder();
   }));
   $$("[data-bld-muscle]", host).forEach(x=>x.addEventListener("click", ()=>{
@@ -9400,18 +9519,18 @@ function bindBuilderEvents(){
 }
 function builderValidate(){
   const b = builderState;
-  if (b.step===1 && b.format==="specific" && !BUILDER_STYLES[b.style]){
+  if (b.step===2 && b.format==="specific" && !BUILDER_STYLES[b.style]){
     toast("Pick a session structure");
     return false;
   }
-  if (b.step===2 && b.focus==="pick" && !b.muscles.length){
+  if (b.step===3 && b.focus==="pick" && !b.muscles.length){
     toast("Pick at least one muscle group");
     return false;
   }
-  if (b.step===3 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
+  if (b.step===4 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
     b.equipment = (b.equipment||[]).concat(["bodyweight"]);
   }
-  if (b.step===5){
+  if (b.step===6){
     if (b.age!==""){
       const age = +b.age;
       if (!isFinite(age) || age<13 || age>100){ toast("Enter an age between 13 and 100, or leave it blank"); return false; }
@@ -9424,7 +9543,7 @@ function builderValidate(){
   return true;
 }
 function builderSeedStr(b){
-  return [b.goal,b.format,b.style,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+  return [b.goal,b.approach,b.format,b.style,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
 }
 /* Any change to the brief discards the old draft and cancels an in-flight AI
    build, so a late response can never overwrite the user's newer request. */
@@ -9473,7 +9592,8 @@ function builderTargetCount(b){
   return n;
 }
 function builderSets(b){
-  let n = b.difficulty==="easy" ? 2 : b.difficulty==="hard" ? 4 : 3;
+  const ap = builderApproach(b);
+  let n = ap.sets || (b.difficulty==="easy" ? 2 : b.difficulty==="hard" ? 4 : 3);
   if (b.experience==="beginner" && n>3) n = 3;
   if (+b.age>=55 && n>3) n = 3;
   return n;
@@ -9485,7 +9605,8 @@ function builderUseFinisher(b){
   return b.goal==="endurance" || b.difficulty==="hard";
 }
 function builderRestSec(b){
-  const r = BUILDER_REST[b.goal] || BUILDER_REST.hypertrophy;
+  const ap = builderApproach(b);
+  const r = ap.rest || BUILDER_REST[b.goal] || BUILDER_REST.hypertrophy;
   let v = b.difficulty==="easy" ? r[1] : b.difficulty==="hard" ? r[0] : Math.round((r[0]+r[1])/2);
   if (+b.age>=55) v += 15;
   return v;
@@ -9495,25 +9616,27 @@ function builderRestLabel(sec){
   return Math.floor(sec/60) + ":" + String(sec%60).padStart(2,"0");
 }
 function builderRepLadder(b, n, rnd){
-  const z = sessionZone(b.goal);
+  const z = builderApproachZone(b);
   const lo = z[0], hi = z[1];
   const bias = b.difficulty==="easy" ? .3 : b.difficulty==="hard" ? .7 : .5;
   const anchor = Math.round(lo + (hi-lo)*bias);
-  const dir = rnd() < .5 ? 1 : -1;
+  const dir = hi===lo ? 0 : (rnd() < .5 ? 1 : -1);
   const out = [];
   for (let i=0;i<n;i++){
-    const shift = dir>0 ? Math.min(i, hi-anchor) : -Math.min(i, anchor-lo);
+    const shift = dir>0 ? Math.min(i, hi-anchor) : dir<0 ? -Math.min(i, anchor-lo) : 0;
     out.push(Math.max(1, Math.min(50, anchor + shift)));
   }
   return out;
 }
 function builderTimeLadder(b, n, rnd){
-  const base = b.goal==="endurance" ? 45 : b.goal==="strength" ? 20 : 30;
+  const hold = builderApproach(b).hold;
+  const base = hold ? Math.round((hold[0]+hold[1])/2) : (b.goal==="endurance" ? 45 : b.goal==="strength" ? 20 : 30);
+  const step = hold ? Math.max(1, Math.round((hold[1]-hold[0])/Math.max(1, n-1))) : 5;
   const dir = rnd() < .5 ? 1 : -1;
   const out = [];
   for (let i=0;i<n;i++){
-    const shift = dir>0 ? Math.min(i*5, 15) : -Math.min(i*5, 10);
-    out.push(Math.max(10, Math.min(90, base + shift)));
+    const shift = dir>0 ? Math.min(i*step, 15) : -Math.min(i*step, 10);
+    out.push(Math.max(hold?hold[0]:10, Math.min(hold?hold[1]:90, base + shift)));
   }
   return out;
 }
@@ -9540,6 +9663,7 @@ function builderDe(ex, b, rnd, opts){
   }
   if (opts && opts.failure) de.setTypes[sets-1] = "failure";
   else if (opts && opts.drop) de.setTypes[sets-1] = "drop";
+  else if (builderApproach(b).failure==="last") de.setTypes[sets-1] = "failure";
   return de;
 }
 function builderGroup(type, members, b){
@@ -9671,6 +9795,7 @@ function builderDraftFromGroups(b, groups, meta){
   return {
     name: meta.name || builderSessionName(b, focusLabel, rnd),
     goal: b.goal,
+    approach: { id: builderApproach(b).id, label: builderApproachLabel(b), tag: builderApproachTag(b) },
     focus: b.focus,
     focusLabel: focusLabel,
     duration: b.duration,
@@ -9759,6 +9884,10 @@ const WORKOUT_SYSTEM_PROMPT = [
   "For a regular session every group MUST be type \"straight\" and no movements may be paired.",
   "Use ONLY exercise ids from the supplied library. Never invent ids, exercises, or fields.",
   "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
+  "The request.approach field is a hard programming contract. Every exercise must use exactly its set count,",
+  "the stated proximity to failure, and the stated rest. If its failure policy is 'last', the final working",
+  "set of every exercise MUST have setTypes value \"failure\"; otherwise no working set may be a failure set.",
+  "Do not add or remove sets to show initiative. The approach is why the session exists.",
   "A group is one structural block: straight = one exercise performed as its own sets;",
   "superset = exactly 2 exercises alternated with one rest after the pair;",
   "circuit = 2-4 exercises performed back to back with one rest after the round.",
@@ -9776,6 +9905,11 @@ const WORKOUT_SYSTEM_PROMPT = [
 ].join("\n");
 function workoutShapeRules(b){
   const rules = [];
+  const ap = builderApproach(b);
+  const az = builderApproachZone(b);
+  rules.push("TRAINING APPROACH (" + ap.label + " · " + ap.tag + "): " + ap.rule);
+  rules.push("Rep targets must sit inside the approach range of " + az[0] + "-" + az[1] + " reps" + (ap.hold ? " (timed holds: " + ap.hold[0] + "-" + ap.hold[1] + " seconds)" : "") + ". Do not drift outside it.");
+  rules.push("For this athlete use exactly " + builderSets(b) + " working sets per exercise (the approach's dose, capped only for beginner/older athletes). Proximity to failure follows the approach: " + (ap.failure==="last" ? "final working set to failure, earlier sets about " + ap.rir + " RIR." : "stop every working set about " + ap.rir + " RIR; no failure sets."));
   if (b.format==="regular"){
     rules.push("REQUESTED FORMAT: regular. Use straight sets only. Every group must be type \"straight\"; supersets and circuits are forbidden.");
     rules.push("Give each movement 2-4 sets with a normal rest between sets. Do not invent a finisher just to add variety.");
@@ -9801,6 +9935,8 @@ function workoutShapeRules(b){
 }
 function buildWorkoutPayload(b){
   const pool = builderPool(b, 99);
+  const zones = Object.assign({}, getRepZones());
+  zones[b.goal] = builderApproachZone(b);
   return {
     instruction:"Design the session described by request. Use only library exIds. Follow request.shapeRules exactly. Return JSON only.",
     request:{
@@ -9810,7 +9946,20 @@ function buildWorkoutPayload(b){
       shapeRules:workoutShapeRules(b),
       goal:b.goal,
       goalLabel:sessionTypeLabel(b.goal),
-      repZones:getRepZones(),
+      approach:{
+        id:builderApproach(b).id,
+        label:builderApproachLabel(b),
+        summary:builderApproach(b).desc,
+        setCount:builderSets(b),
+        repRange:builderApproachZone(b),
+        rir:builderApproach(b).rir,
+        failurePolicy:builderApproach(b).failure,
+        restSeconds:builderRestSec(b),
+        cue:builderApproach(b).cue || "",
+        evidence:builderApproachEvidence(b),
+        instruction:builderApproach(b).rule
+      },
+      repZones:zones,
       focus:builderTargetLabel(b),
       muscles:builderFocusParts(b),
       durationMin:b.duration,
@@ -9868,11 +10017,13 @@ function builderAINormalizeDe(raw, ex, b, setsHint){
   const fallbackRnd = builderRng(builderSeedStr(b)+"|"+ex.id);
   const fallbackArr = isTime ? builderTimeLadder(b, sets, fallbackRnd) : builderRepLadder(b, sets, fallbackRnd);
   const rawArr = isTime ? raw.time : raw.reps;
+  const ap = builderApproach(b);
+  const targetZone = isTime ? (ap.hold || [5,600]) : builderApproachZone(b);
   const vals = [];
   for (let i=0;i<sets;i++){
-    let v = (Array.isArray(rawArr) && rawArr[i]!=null) ? +rawArr[i] : null;
+    let v = (Array.isArray(rawArr) && rawArr[i]!=null) ? +rawArr[i] : NaN;
     if (!isFinite(v)) v = (Array.isArray(rawArr) && rawArr.length) ? +rawArr[rawArr.length-1] : fallbackArr[i];
-    vals.push(builderAIClamp(v, isTime?5:1, isTime?600:50, fallbackArr[i] || (isTime?30:8)));
+    vals.push(builderAIClamp(v, targetZone[0], targetZone[1], fallbackArr[i] || (isTime?30:8)));
   }
   const validType = t => ["regular","warmup","drop","failure"].indexOf(t) !== -1;
   const types = [];
@@ -9881,6 +10032,12 @@ function builderAINormalizeDe(raw, ex, b, setsHint){
     types.push(validType(t) ? t : "regular");
   }
   if (b.format==="specific" && b.style==="dropset") types[sets-1] = "drop";
+  else if (builderApproach(b).failure==="last"){
+    for (let i=0;i<sets-1;i++) if (types[i]==="failure") types[i] = "regular";
+    types[sets-1] = "failure";
+  } else {
+    for (let i=0;i<sets;i++) if (types[i]==="failure") types[i] = "regular";
+  }
   const de = {
     exId:ex.id,
     targetSets:sets,
@@ -9967,7 +10124,7 @@ function normalizeAIDraft(raw, b){
       const id = r && typeof r.exId==="string" ? r.exId : "";
       const ex = byId[id];
       if (!ex || seen[id]) return;
-      const de = builderAINormalizeDe(r, ex, b);
+      const de = builderAINormalizeDe(r, ex, b, builderSets(b));
       if (!de) return;
       seen[id] = 1;
       members.push(de);
@@ -10073,6 +10230,7 @@ function builderSave(startNow){
     id: id,
     name: name,
     type: d.goal,
+    approach: d.approach || null,
     exercises: d.exercises.map(de=>({
       exId: de.exId,
       targetSets: de.targetSets,
