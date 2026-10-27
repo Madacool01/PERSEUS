@@ -2772,6 +2772,21 @@
   .bld-eq-tile.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
   .bld-eq-tile img { flex: none; width: 24px; height: 24px; object-fit: contain; }
   .bld-eq-tile span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .71rem; font-weight: 600; }
+  .bld-eq-other-ico { flex: none; width: 24px; height: 24px; display: grid; place-items: center; font-size: 1.05rem; font-weight: 700; line-height: 1; color: var(--accent-deep); }
+  .bld-other-list { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .65rem; }
+  .bld-other-chip {
+    display: inline-flex; align-items: center; gap: .3rem;
+    border: 1px solid var(--accent-line); border-radius: 999px; background: var(--accent-soft);
+    color: var(--ink); font-size: .7rem; font-weight: 600; padding: .22rem .28rem .22rem .62rem;
+  }
+  .bld-other-x {
+    display: grid; place-items: center; width: 1.05rem; height: 1.05rem; padding: 0;
+    border: none; border-radius: 999px; background: transparent; color: var(--ink-3);
+    font-size: .6rem; line-height: 1; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .bld-other-x:hover, .bld-other-x:focus-visible { background: var(--line); color: var(--ink); }
+  .bld-other-add { display: flex; align-items: center; gap: .4rem; margin-top: .6rem; }
+  .bld-other-input { flex: 1; min-width: 0; padding: .5rem .65rem; font-size: .82rem; }
   .bld-muscles { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: .4rem; margin-top: .8rem; }
   .bld-muscle {
     display: flex; flex-direction: column; align-items: center; gap: .28rem;
@@ -8958,6 +8973,8 @@ function openWorkoutBuilder(opts){
     focus: "upper",
     muscles: [],
     equipment: BUILDER_HOME_EQUIP.slice(),
+    customEquipment: [],
+    customOpen: false,
     duration: 30,
     difficulty: "moderate",
     age: (p.age!=null) ? String(p.age) : "",
@@ -9020,12 +9037,14 @@ function builderTargetLabel(b){
   return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
 }
 function builderGearLabel(b){
-  if (builderSameSet(b.equipment, BUILDER_HOME_EQUIP)) return "Home setup";
-  if (builderSameSet(b.equipment, ALL_EQUIP)) return "Full gym";
+  const custom = (b.customEquipment||[]).filter(Boolean);
+  const tail = custom.length ? " + " + custom.join(", ") : "";
+  if (builderSameSet(b.equipment, BUILDER_HOME_EQUIP)) return "Home setup" + tail;
+  if (builderSameSet(b.equipment, ALL_EQUIP)) return "Full gym" + tail;
   const kit = (b.equipment||[]).filter(k=>k!=="bodyweight");
-  if (!kit.length) return "Body weight";
-  if (kit.length===1) return EQUIP_FILTER_LABELS[kit[0]] || kit[0];
-  return kit.length + " pieces";
+  if (!kit.length) return (custom.length ? custom.join(", ") : "Body weight");
+  if (kit.length===1) return (EQUIP_FILTER_LABELS[kit[0]] || kit[0]) + tail;
+  return kit.length + " pieces" + tail;
 }
 function builderLevelLabel(id){
   return id==="easy" ? "Easy" : id==="hard" ? "Hard" : "Moderate";
@@ -9256,6 +9275,7 @@ function builderGearHtml(){
   const isHome = builderSameSet(b.equipment, BUILDER_HOME_EQUIP);
   const isGym = builderSameSet(b.equipment, ALL_EQUIP);
   const isBody = builderSameSet(b.equipment, ["bodyweight"]);
+  const custom = (b.customEquipment||[]).filter(Boolean);
   return '<h4 class="bld-q">What can you train with?</h4>'+
     '<p class="bld-qsub">Choose a preset or build your own kit. Body weight is always available; the rest filters the movement pool.</p>'+
     '<div class="bld-presets">'+presets.map(p=>{
@@ -9266,8 +9286,17 @@ function builderGearHtml(){
       const on = k==="bodyweight" || b.equipment.indexOf(k)!==-1;
       return '<button type="button" class="bld-eq-tile'+(on?' on':'')+'" data-bld-equip="'+esc(k)+'" aria-pressed="'+on+'" title="'+esc(EQUIP_LABELS[k]||k)+'">'+
         '<img src="'+EQUIP_ICONS[k]+'" alt="" loading="lazy"/><span>'+esc(EQUIP_FILTER_LABELS[k]||k)+'</span></button>';
-    }).join("")+'</div>'+
-    '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have.</p>';
+    }).join("")+
+      '<button type="button" class="bld-eq-tile'+(b.customOpen?' on':'')+'" data-bld-other="1" aria-pressed="'+!!b.customOpen+'" title="Add other equipment">'+
+        '<span class="bld-eq-other-ico" aria-hidden="true">+</span><span>Other</span></button>'+
+    '</div>'+
+    (custom.length ? '<div class="bld-other-list">'+custom.map(t=>
+      '<span class="bld-other-chip">'+esc(t)+'<button type="button" class="bld-other-x" data-bld-other-del="'+esc(t)+'" aria-label="Remove '+esc(t)+'">&#10005;</button></span>'
+    ).join("")+'</div>' : "")+
+    (b.customOpen ? '<div class="bld-other-add">'+
+      '<input type="text" class="bld-other-input" data-bld-other-input maxlength="40" autocomplete="off" placeholder="e.g. Cable machine, trap bar, sled"/>'+
+      '<button type="button" class="btn small" data-bld-other-add>Add</button></div>' : "")+
+    '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have. Use <b>Other</b> to add anything the list misses and the AI will program around it.</p>';
 }
 function builderTimeHtml(){
   const b = builderState;
@@ -9475,6 +9504,31 @@ function bindBuilderEvents(){
     const i = b.equipment.indexOf(k);
     if (i===-1) b.equipment.push(k); else b.equipment.splice(i,1);
     if (b.equipment.indexOf("bodyweight")===-1) b.equipment.push("bodyweight");
+    builderInvalidate();
+    renderWorkoutBuilder();
+  }));
+  const otherToggle = $("[data-bld-other]", host);
+  if (otherToggle) otherToggle.addEventListener("click", ()=>{ b.customOpen = !b.customOpen; renderWorkoutBuilder(); });
+  const otherInput = $("[data-bld-other-input]", host);
+  const otherAdd = $("[data-bld-other-add]", host);
+  const addCustomEquip = ()=>{
+    if (!otherInput) return;
+    const v = String(otherInput.value||"").replace(/\s+/g," ").trim().slice(0,40);
+    if (!v) return;
+    b.customEquipment = b.customEquipment || [];
+    if (b.customEquipment.indexOf(v)===-1){
+      if (b.customEquipment.length>=8){ toast("Up to 8 custom pieces"); return; }
+      b.customEquipment.push(v);
+    }
+    builderInvalidate();
+    renderWorkoutBuilder();
+    const next = $("[data-bld-other-input]", host);
+    if (next) next.focus();
+  };
+  if (otherAdd) otherAdd.addEventListener("click", addCustomEquip);
+  if (otherInput) otherInput.addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); addCustomEquip(); } });
+  $$("[data-bld-other-del]", host).forEach(x=>x.addEventListener("click", ()=>{
+    b.customEquipment = (b.customEquipment||[]).filter(t=>t!==x.dataset.bldOtherDel);
     builderInvalidate();
     renderWorkoutBuilder();
   }));
@@ -9931,6 +9985,10 @@ function workoutShapeRules(b){
     rules.push("Use an unexpected but coherent name and a playful finisher.");
   }
   rules.push("Never make the whole session a superset. Only include a superset or circuit when the requested format or style calls for it.");
+  const customGear = (b.customEquipment||[]).filter(Boolean);
+  if (customGear.length){
+    rules.push("ADDITIONAL EQUIPMENT the athlete owns: " + customGear.join(", ") + ". These are not library equipment tags; where the library offers movements that suit this gear, prefer them, and mention how the session uses it in the rationale.");
+  }
   return rules;
 }
 function buildWorkoutPayload(b){
@@ -9962,6 +10020,7 @@ function buildWorkoutPayload(b){
       repZones:zones,
       focus:builderTargetLabel(b),
       muscles:builderFocusParts(b),
+      customEquipment:(b.customEquipment||[]).filter(Boolean),
       durationMin:b.duration,
       difficulty:b.difficulty,
       experience:b.experience,
