@@ -2774,8 +2774,6 @@
   .bld-eq-tile span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .71rem; font-weight: 600; }
   .bld-eq-other-ico { flex: none; width: 24px; height: 24px; display: grid; place-items: center; font-size: 1.05rem; font-weight: 700; line-height: 1; color: var(--accent-deep); }
   .bld-eq-custom { position: relative; padding-right: 1.7rem; cursor: default; }
-  .bld-eq-custom-ico { flex: none; width: 24px; height: 24px; display: grid; place-items: center; color: var(--accent-deep); }
-  .bld-eq-custom-ico svg { width: 20px; height: 20px; }
   .bld-eq-trash {
     position: absolute; top: .18rem; right: .18rem;
     display: grid; place-items: center; width: 1.2rem; height: 1.2rem; padding: 0;
@@ -9267,7 +9265,6 @@ function builderFocusHtml(){
 function builderGearHtml(){
   const b = builderState;
   const trashIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.6h6V7"/><path d="M6.5 7 7.5 19.4h9L17.5 7"/></svg>';
-  const customIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg>';
   const presets = [
     { id:"home", label:"Home setup" },
     { id:"gym", label:"Full gym" },
@@ -9290,7 +9287,6 @@ function builderGearHtml(){
     }).join("")+
       custom.map(t=>
         '<div class="bld-eq-tile on bld-eq-custom" title="'+esc(t)+'">'+
-          '<span class="bld-eq-custom-ico" aria-hidden="true">'+customIcon+'</span>'+
           '<span>'+esc(t)+'</span>'+
           '<button type="button" class="bld-eq-trash" data-bld-other-del="'+esc(t)+'" aria-label="Remove '+esc(t)+'">'+trashIcon+'</button>'+
         '</div>'
