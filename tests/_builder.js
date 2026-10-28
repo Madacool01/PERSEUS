@@ -324,6 +324,12 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   E("openWorkoutBuilder()");
   check($("#builder-host .bld-stage") !== stageNode, "reopening the maker starts a fresh shell");
 
+  section("The focus step shows the right artwork");
+  E("openWorkoutBuilder()");
+  E("builderState.step = 3; renderWorkoutBuilder()");
+  const fullCardImg = $("#builder-host [data-bld-focus='full'] img");
+  check(!!fullCardImg && fullCardImg.getAttribute("src") === "icon_muscles/full-body.png", "the full-body card uses the muscle map artwork");
+
   section("Runtime health");
   check(errors.length === 0, "no page errors (got " + errors.length + (errors.length ? ": " + errors.join("; ") : "") + ")");
 
