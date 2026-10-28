@@ -2675,6 +2675,17 @@
   }
   .bld-brief-v { min-width: 0; text-align: right; font-size: .76rem; font-weight: 600; color: var(--ink); }
   .bld-stage { min-height: 0; overflow-y: auto; padding: 1.35rem 1.45rem 1.1rem; }
+  /* Workout maker motion: the interface settles into place instead of
+     blinking out. Blocks fade, values pop, and controls answer the press. */
+  @keyframes bldPop { from { opacity: .2; transform: translateY(4px); } }
+  @keyframes bldSwap { from { opacity: 0; transform: translateY(-5px); } }
+  @keyframes bldEnter { from { opacity: 0; transform: translateY(8px); } }
+  .bld-brief-v.bld-pop { animation: bldPop .5s cubic-bezier(.22,1,.36,1); }
+  .bld-rail-title.bld-swap, .bld-rail-sub.bld-swap { animation: bldSwap .4s cubic-bezier(.22,1,.36,1); }
+  .bld-enter { animation: bldEnter .3s cubic-bezier(.22,1,.36,1); }
+  .bld-stage:focus { outline: none; }
+  .bld-stage:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -4px; }
+  .bld-eq-tile, .bld-muscle, .bld-preset, .bld-dur, .bld-level, .bld-style, .bld-opt, .bld-step, .bld-foot .btn { -webkit-tap-highlight-color: transparent; }
   .bld-q { margin: 0; font-family: var(--font-display); font-size: clamp(1.12rem, 1.9vw, 1.38rem); font-weight: 700; letter-spacing: -.025em; color: var(--ink); }
   .bld-qsub { margin: .35rem 0 0; max-width: 62ch; font-size: .82rem; line-height: 1.6; color: var(--ink-2); }
   .bld-block-gap { margin-top: 1.15rem; }
@@ -2918,6 +2929,11 @@
     .bld-foot .spacer { display: none; }
     .bld-band .btn { margin-left: 0; width: 100%; justify-content: center; }
   }
+  /* Press physics come last so they win over the base hover lifts. */
+  .bld-eq-tile:active, .bld-muscle:active, .bld-preset:active, .bld-dur:active, .bld-level:active, .bld-style:active { transform: scale(.95); transition-duration: .08s; }
+  .bld-opt:active { transform: translateY(0) scale(.985); transition-duration: .08s; }
+  .bld-foot .btn:active { transform: scale(.97); }
+  .bld-step:not(.on):hover b { background: var(--accent-line); }
 
   /* ---------- Focus / reduced motion ---------- */
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -8997,7 +9013,16 @@ function openWorkoutBuilder(opts){
 }
 function closeWorkoutBuilder(){
   const host = $("#builder-host");
-  if (host){ host.innerHTML = ""; host.onclick = null; }
+  if (host){
+    host.innerHTML = ""; host.onclick = null;
+    if (host._bldBound){
+      host._bldBound = false;
+      host.removeEventListener("click", builderOnClick);
+      host.removeEventListener("input", builderOnField);
+      host.removeEventListener("change", builderOnField);
+      host.removeEventListener("keydown", builderOnKeydown);
+    }
+  }
   if (builderEsc){ document.removeEventListener("keydown", builderEsc); builderEsc = null; }
   builderState = null;
   try{ document.body.style.overflow = ""; }catch(e){}
@@ -9058,9 +9083,9 @@ function builderStyleLabel(b){
   if (b.format==="specific") return (BUILDER_STYLES[b.style]||BUILDER_STYLES.superset).label;
   return builderFormatLabel(b);
 }
-function builderBriefHtml(){
+function builderBriefRows(){
   const b = builderState;
-  const rows = [
+  return [
     ["Goal", sessionTypeLabel(b.goal)],
     ["Approach", builderApproachLabel(b)],
     ["Format", builderFormatLabel(b)],
@@ -9069,23 +9094,48 @@ function builderBriefHtml(){
     ["Time", b.duration + " min"],
     ["Level", builderLevelLabel(b.difficulty)]
   ];
-  return '<div class="bld-brief">' + rows.map(r=>
+}
+function builderBriefHtml(){
+  return '<div class="bld-brief">' + builderBriefRows().map(r=>
     '<div class="bld-brief-row"><span class="bld-brief-k">'+esc(r[0])+'</span><span class="bld-brief-v">'+esc(r[1])+'</span></div>'
   ).join("") + '</div>';
 }
+function builderReducedMotion(){
+  try{ return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){ return false; }
+}
+/* The shell is mounted once and then updated in place, so an interaction never
+   wipes the interface: unchanged nodes keep their identity, and only what truly
+   changed is swapped or animated. */
 function renderWorkoutBuilder(){
   const host = $("#builder-host");
   if (!host || !builderState) return;
   const b = builderState;
   const step = Math.max(0, Math.min(BUILDER_STEPS.length-1, b.step));
-  const changedStep = b._lastStep !== step;
+  const prevStep = (b._lastStep==null) ? step : b._lastStep;
+  const changedStep = prevStep !== step;
   b._lastStep = step;
+  if (!b._mounted){
+    host.innerHTML = builderShellHtml(step);
+    bindBuilderEvents();
+    b._mounted = true;
+  } else {
+    builderUpdateChrome(host, step);
+  }
+  builderUpdateStage(host, step, changedStep ? (step > prevStep ? 1 : -1) : 0);
+  if (b.focusOnRender){
+    b.focusOnRender = false;
+    const close = $("[data-bld-close]", host);
+    if (close) close.focus({preventScroll:true});
+  }
+}
+function builderShellHtml(step){
   const copy = builderStepCopy(step);
   const stepsHtml = BUILDER_STEPS.map((label,i)=>
     '<button type="button" class="bld-step'+(i<step?' done':'')+(i===step?' on':'')+'" data-bld-step="'+i+'" aria-current="'+(i===step?'step':'false')+'"><b></b>'+esc(label)+'</button>'
   ).join("");
-  host.innerHTML =
-    '<div class="bld-shell" role="dialog" aria-modal="true" aria-labelledby="bld-title">'+
+  builderState._stageHtml = builderStageHtml(step);
+  builderState._footHtml = builderFootHtml(step);
+  return '<div class="bld-shell" role="dialog" aria-modal="true" aria-labelledby="bld-title">'+
       '<div class="bld-top">'+
         '<span class="bld-mark" aria-hidden="true">P</span>'+
         '<div class="bld-head-t">'+
@@ -9102,31 +9152,136 @@ function renderWorkoutBuilder(){
           '<p class="bld-rail-sub">'+copy.sub+'</p>'+
           builderBriefHtml()+
         '</aside>'+
-        '<div class="bld-stage" data-bld-stage>'+builderStageHtml(step)+'</div>'+
+        '<div class="bld-stage" data-bld-stage tabindex="-1">'+builderState._stageHtml+'</div>'+
       '</div>'+
-      builderFootHtml(step)+
+      builderState._footHtml+
     '</div>';
-  bindBuilderEvents();
-  if (changedStep) builderAnimateStage(host);
-  if (b.focusOnRender){
-    b.focusOnRender = false;
-    const close = $("[data-bld-close]", host);
-    if (close) close.focus({preventScroll:true});
+}/* Chrome that must survive every interaction: step chips animate via their own
+   class transitions, rail copy and brief values swap in place, and the footer
+   is replaced only when its structure actually changes. */
+function builderUpdateChrome(host, step){
+  const b = builderState;
+  $$("[data-bld-step]", host).forEach((el,i)=>{
+    const on = i===step, done = i<step;
+    if (el.classList.contains("on") !== on) el.classList.toggle("on", on);
+    if (el.classList.contains("done") !== done) el.classList.toggle("done", done);
+    el.setAttribute("aria-current", on ? "step" : "false");
+  });
+  const copy = builderStepCopy(step);
+  const title = $(".bld-rail-title", host);
+  const sub = $(".bld-rail-sub", host);
+  if (title && title.innerHTML !== copy.title){ title.innerHTML = copy.title; builderSwapFx(title); }
+  if (sub && sub.innerHTML !== copy.sub){ sub.innerHTML = copy.sub; builderSwapFx(sub); }
+  const rows = builderBriefRows();
+  $$(".bld-brief-row", host).forEach((row,i)=>{
+    const r = rows[i];
+    if (!r) return;
+    const v = $(".bld-brief-v", row);
+    if (v && v.textContent !== r[1]){ v.textContent = r[1]; builderPopFx(v); }
+  });
+  const footHtml = builderFootHtml(step);
+  if (b._footHtml !== footHtml){
+    b._footHtml = footHtml;
+    const old = $(".bld-foot", host);
+    if (old){
+      const tpl = document.createElement("div");
+      tpl.innerHTML = footHtml;
+      const fresh = tpl.firstChild;
+      old.replaceWith(fresh);
+      builderAnimateFoot(fresh);
+    }
   }
 }
-function builderAnimateStage(host){
+function builderPopFx(el){
   try{
-    if (!window.gsap) return;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const stage = $(".bld-stage", host);
-    if (!stage) return;
-    const items = $$(".bld-q, .bld-qsub, .bld-opts, .bld-presets, .bld-eq, .bld-muscles, .bld-durations, .bld-levels, .bld-fields, .bld-hint, .bld-field-note, .bld-sheet, .bld-save-note, .bld-empty", stage);
-    if (items.length){
-      window.gsap.fromTo(items, {y:14, opacity:0}, {
-        y:0, opacity:1, duration:.46, stagger:.045, ease:"power3.out",
-        overwrite:"auto", clearProps:"transform,opacity"
-      });
+    if (!el || builderReducedMotion()) return;
+    el.classList.remove("bld-pop");
+    void el.offsetWidth;
+    el.classList.add("bld-pop");
+    el.addEventListener("animationend", ()=>el.classList.remove("bld-pop"), {once:true});
+  }catch(e){}
+}
+function builderSwapFx(el){
+  try{
+    if (!el || builderReducedMotion()) return;
+    el.classList.remove("bld-swap");
+    void el.offsetWidth;
+    el.classList.add("bld-swap");
+    el.addEventListener("animationend", ()=>el.classList.remove("bld-swap"), {once:true});
+  }catch(e){}
+}
+function builderAnimateFoot(el){
+  try{
+    if (!window.gsap || builderReducedMotion()) return;
+    window.gsap.fromTo(el, {y:8, opacity:0}, {y:0, opacity:1, duration:.3, ease:"power2.out", clearProps:"transform,opacity"});
+  }catch(e){}
+}
+/* Stage updates come in two flavours: a step change glides the old blocks out
+   and settles the new ones in from the chosen direction, while an in-step
+   change keeps every identical block in place and only fades in what changed. */
+function builderUpdateStage(host, step, dir){
+  const b = builderState;
+  const stage = $(".bld-stage", host);
+  if (!stage) return;
+  const nextHtml = builderStageHtml(step);
+  stage.setAttribute("data-bld-dir", String(dir || 0));
+  if (nextHtml === b._stageHtml && stage.childElementCount) return;
+  b._stageHtml = nextHtml;
+  if (dir === 0) builderMorphStage(stage, nextHtml);
+  else builderSwapStage(stage, nextHtml, dir);
+}
+function builderMorphStage(stage, html){
+  const tpl = document.createElement("div");
+  tpl.innerHTML = html;
+  const next = Array.from(tpl.children);
+  const pool = Array.from(stage.children);
+  const nodes = next.map(el=>{
+    const i = pool.findIndex(o=>o.outerHTML === el.outerHTML);
+    if (i !== -1) return pool.splice(i,1)[0];
+    const fresh = el.cloneNode(true);
+    fresh.classList.add("bld-enter");
+    fresh.addEventListener("animationend", ()=>fresh.classList.remove("bld-enter"), {once:true});
+    return fresh;
+  });
+  while (stage.firstChild) stage.removeChild(stage.firstChild);
+  nodes.forEach(n=>stage.appendChild(n));
+  try{
+    if (window.gsap && !builderReducedMotion()){
+      const entering = nodes.filter(n=>n.classList.contains("bld-enter"));
+      if (entering.length){
+        window.gsap.fromTo(entering, {y:8, opacity:0}, {y:0, opacity:1, duration:.3, stagger:.03, ease:"power2.out", clearProps:"transform,opacity"});
+      }
     }
+  }catch(e){}
+}
+function builderSwapStage(stage, html, dir){
+  const apply = ()=>{
+    stage.innerHTML = html;
+    stage.scrollTop = 0;
+    builderAnimateStageItems(stage, dir);
+  };
+  try{
+    if (!window.gsap || builderReducedMotion()){ apply(); return; }
+    const items = builderStageItems(stage);
+    if (!items.length){ apply(); return; }
+    window.gsap.to(items, {
+      y: dir>0 ? -18 : 18, opacity: 0, duration: .16, stagger: .015, ease: "power2.in",
+      overwrite:"auto", onComplete: apply
+    });
+  }catch(e){ apply(); }
+}
+function builderStageItems(stage){
+  return $$(".bld-q, .bld-qsub, .bld-opts, .bld-presets, .bld-eq, .bld-muscles, .bld-durations, .bld-levels, .bld-fields, .bld-hint, .bld-field-note, .bld-sheet, .bld-save-note, .bld-empty", stage);
+}
+function builderAnimateStageItems(stage, dir){
+  try{
+    if (!window.gsap || builderReducedMotion()) return;
+    const items = builderStageItems(stage);
+    if (!items.length) return;
+    window.gsap.fromTo(items, {y: dir<0 ? -14 : 14, opacity:0}, {
+      y:0, opacity:1, duration:.42, stagger:.045, ease:"power3.out",
+      overwrite:"auto", clearProps:"transform,opacity"
+    });
   }catch(e){}
 }
 function builderFootHtml(step){
@@ -9439,142 +9594,169 @@ function builderExRow(de, label){
     '<div class="bld-ex-dose"><b>'+esc(dose)+'</b>'+de.targetSets+' sets'+esc(weight)+esc(fail)+'</div>'+
   '</div>';
 }
+/* One delegated listener per mount: nodes now persist across renders, so
+   binding per render would stack duplicate handlers. */
 function bindBuilderEvents(){
   const host = $("#builder-host");
-  if (!host || !builderState) return;
+  if (!host || !builderState || host._bldBound) return;
+  host._bldBound = true;
+  host.addEventListener("click", builderOnClick);
+  host.addEventListener("input", builderOnField);
+  host.addEventListener("change", builderOnField);
+  host.addEventListener("keydown", builderOnKeydown);
+}
+function builderOnClick(ev){
   const b = builderState;
-  $$("[data-bld-close]", host).forEach(x=>x.addEventListener("click", closeWorkoutBuilder));
-  $$("[data-bld-step]", host).forEach(x=>x.addEventListener("click", ()=>{
-    const i = Math.max(0, Math.min(BUILDER_STEPS.length-1, +x.dataset.bldStep));
+  if (!b || !ev.target || !ev.target.closest) return;
+  const hit = s => ev.target.closest(s);
+  let el;
+  if (hit("[data-bld-close]")){ closeWorkoutBuilder(); return; }
+  if ((el = hit("[data-bld-step]"))){
+    const i = Math.max(0, Math.min(BUILDER_STEPS.length-1, +el.dataset.bldStep));
     b.step = i;
     if (i===BUILDER_STEPS.length-1 && !b.draft){ builderBuild(); return; }
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-goal]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.goal = x.dataset.bldGoal;
+    return;
+  }
+  if ((el = hit("[data-bld-goal]"))){
+    b.goal = el.dataset.bldGoal;
     b.approach = builderApproaches(b.goal)[0].id;
     builderInvalidate();
     b.step = 1;
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-approach]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.approach = x.dataset.bldApproach;
+    return;
+  }
+  if ((el = hit("[data-bld-approach]"))){
+    b.approach = el.dataset.bldApproach;
     builderInvalidate();
     b.step = 2;
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-format]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.format = x.dataset.bldFormat;
+    return;
+  }
+  if ((el = hit("[data-bld-format]"))){
+    b.format = el.dataset.bldFormat;
     builderInvalidate();
     if (b.format==="specific"){
       if (!BUILDER_STYLES[b.style]) b.style = "superset";
-      b.step = 2;
       renderWorkoutBuilder();
     } else {
       b.style = b.format==="fun" ? "mix" : b.format==="surprise" ? "surprise" : "straight";
       b.step = 3;
       renderWorkoutBuilder();
     }
-  }));
-  $$("[data-bld-style]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.style = x.dataset.bldStyle;
+    return;
+  }
+  if ((el = hit("[data-bld-style]"))){
+    b.style = el.dataset.bldStyle;
     builderInvalidate();
     b.step = 3;
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-focus]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.focus = x.dataset.bldFocus;
+    return;
+  }
+  if ((el = hit("[data-bld-focus]"))){
+    b.focus = el.dataset.bldFocus;
     builderInvalidate();
-    if (b.focus!=="pick"){ b.step = 4; renderWorkoutBuilder(); }
-    else renderWorkoutBuilder();
-  }));
-  $$("[data-bld-muscle]", host).forEach(x=>x.addEventListener("click", ()=>{
-    const p = x.dataset.bldMuscle;
+    if (b.focus!=="pick") b.step = 4;
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-muscle]"))){
+    const p = el.dataset.bldMuscle;
     const i = b.muscles.indexOf(p);
     if (i===-1) b.muscles.push(p); else b.muscles.splice(i,1);
     builderInvalidate();
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-preset]", host).forEach(x=>x.addEventListener("click", ()=>{
-    const id = x.dataset.bldPreset;
+    return;
+  }
+  if ((el = hit("[data-bld-preset]"))){
+    const id = el.dataset.bldPreset;
     if (id==="home") b.equipment = BUILDER_HOME_EQUIP.slice();
     else if (id==="gym") b.equipment = ALL_EQUIP.slice();
     else b.equipment = ["bodyweight"];
     builderInvalidate();
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-equip]", host).forEach(x=>x.addEventListener("click", ()=>{
-    const k = x.dataset.bldEquip;
+    return;
+  }
+  if ((el = hit("[data-bld-equip]"))){
+    const k = el.dataset.bldEquip;
     if (k==="bodyweight"){ toast("Body weight is always available"); return; }
     const i = b.equipment.indexOf(k);
     if (i===-1) b.equipment.push(k); else b.equipment.splice(i,1);
     if (b.equipment.indexOf("bodyweight")===-1) b.equipment.push("bodyweight");
     builderInvalidate();
     renderWorkoutBuilder();
-  }));
-  const otherToggle = $("[data-bld-other]", host);
-  if (otherToggle) otherToggle.addEventListener("click", ()=>{ b.customOpen = !b.customOpen; renderWorkoutBuilder(); });
-  const otherInput = $("[data-bld-other-input]", host);
-  const otherAdd = $("[data-bld-other-add]", host);
-  const addCustomEquip = ()=>{
-    if (!otherInput) return;
-    const v = String(otherInput.value||"").replace(/\s+/g," ").trim().slice(0,40);
-    if (!v) return;
-    b.customEquipment = b.customEquipment || [];
-    if (b.customEquipment.indexOf(v)===-1){
-      if (b.customEquipment.length>=8){ toast("Up to 8 custom pieces"); return; }
-      b.customEquipment.push(v);
-    }
+    return;
+  }
+  if (hit("[data-bld-other]")){ b.customOpen = !b.customOpen; renderWorkoutBuilder(); return; }
+  if (hit("[data-bld-other-add]")){ builderAddCustomEquip(); return; }
+  if ((el = hit("[data-bld-other-del]"))){
+    b.customEquipment = (b.customEquipment||[]).filter(t=>t!==el.dataset.bldOtherDel);
     builderInvalidate();
     renderWorkoutBuilder();
-    const next = $("[data-bld-other-input]", host);
-    if (next) next.focus();
-  };
-  if (otherAdd) otherAdd.addEventListener("click", addCustomEquip);
-  if (otherInput) otherInput.addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); addCustomEquip(); } });
-  $$("[data-bld-other-del]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.customEquipment = (b.customEquipment||[]).filter(t=>t!==x.dataset.bldOtherDel);
+    return;
+  }
+  if ((el = hit("[data-bld-duration]"))){
+    b.duration = +el.dataset.bldDuration;
     builderInvalidate();
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-duration]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.duration = +x.dataset.bldDuration;
+    return;
+  }
+  if ((el = hit("[data-bld-level]"))){
+    b.difficulty = el.dataset.bldLevel;
     builderInvalidate();
     renderWorkoutBuilder();
-  }));
-  $$("[data-bld-level]", host).forEach(x=>x.addEventListener("click", ()=>{
-    b.difficulty = x.dataset.bldLevel;
-    builderInvalidate();
-    renderWorkoutBuilder();
-  }));
-  const ageIn = $("[data-bld-age]", host);
-  if (ageIn) ageIn.addEventListener("input", ()=>{ b.age = ageIn.value; builderInvalidate(); });
-  const bwIn = $("[data-bld-bw]", host);
-  if (bwIn) bwIn.addEventListener("input", ()=>{ b.bodyWeight = bwIn.value; builderInvalidate(); });
-  const expSel = $("[data-bld-exp]", host);
-  if (expSel) expSel.addEventListener("change", ()=>{ b.experience = expSel.value; builderInvalidate(); });
-  const back = $("[data-bld-back]", host);
-  if (back) back.addEventListener("click", ()=>{
+    return;
+  }
+  if (hit("[data-bld-back]")){
     if (b.step>0){ b.step--; renderWorkoutBuilder(); }
-  });
-  const next = $("[data-bld-next]", host);
-  if (next) next.addEventListener("click", ()=>{
+    return;
+  }
+  if (hit("[data-bld-next]")){
     if (!builderValidate()) return;
     if (b.step<BUILDER_STEPS.length-1){
       b.step++;
       if (b.step===BUILDER_STEPS.length-1 && !b.draft){ builderBuild(); return; }
       renderWorkoutBuilder();
     }
-  });
-  const shuffle = $("[data-bld-shuffle]", host);
-  if (shuffle) shuffle.addEventListener("click", ()=>{
-    b.attempt++;
-    builderBuild();
-  });
-  const save = $("[data-bld-save]", host);
-  if (save) save.addEventListener("click", ()=>builderSave(false));
-  const start = $("[data-bld-start]", host);
-  if (start) start.addEventListener("click", ()=>builderSave(true));
+    return;
+  }
+  if (hit("[data-bld-shuffle]")){ b.attempt++; builderBuild(); return; }
+  if (hit("[data-bld-save]")){ builderSave(false); return; }
+  if (hit("[data-bld-start]")){ builderSave(true); return; }
+}
+function builderOnField(ev){
+  const b = builderState;
+  const t = ev.target;
+  if (!b || !t || !t.matches) return;
+  if (t.matches("[data-bld-age]")){ b.age = t.value; builderInvalidate(); return; }
+  if (t.matches("[data-bld-bw]")){ b.bodyWeight = t.value; builderInvalidate(); return; }
+  if (t.matches("[data-bld-exp]")){ b.experience = t.value; builderInvalidate(); }
+}
+function builderOnKeydown(ev){
+  if (ev.key !== "Enter") return;
+  const t = ev.target;
+  if (!t || !t.matches || !t.matches("[data-bld-other-input]")) return;
+  ev.preventDefault();
+  builderAddCustomEquip();
+}
+function builderAddCustomEquip(){
+  const b = builderState;
+  if (!b) return;
+  const host = $("#builder-host");
+  const input = $("[data-bld-other-input]", host);
+  if (!input) return;
+  const v = String(input.value||"").replace(/\s+/g," ").trim().slice(0,40);
+  if (!v) return;
+  b.customEquipment = b.customEquipment || [];
+  if (b.customEquipment.indexOf(v)===-1){
+    if (b.customEquipment.length>=8){ toast("Up to 8 custom pieces"); return; }
+    b.customEquipment.push(v);
+  }
+  input.value = "";
+  builderInvalidate();
+  renderWorkoutBuilder();
+  const next = $("[data-bld-other-input]", host);
+  if (next) next.focus();
 }
 function builderValidate(){
   const b = builderState;

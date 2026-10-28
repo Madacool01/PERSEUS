@@ -281,6 +281,40 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   const bodyPayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
   check(bodyPayload.request.machineBias === false, "body-weight-only gear carries no machine bias");
 
+  section("The maker keeps the interface steady while it moves");
+  E("openWorkoutBuilder()");
+  E("builderState.step = 4; builderState.equipment = BUILDER_HOME_EQUIP.slice(); renderWorkoutBuilder()");
+  const stageNode = $("#builder-host .bld-stage");
+  const chipNode = $$("#builder-host [data-bld-step]")[0];
+  const qNode = $("#builder-host .bld-q");
+  check(!!stageNode && !!chipNode && !!qNode, "the gear step is mounted");
+
+  E("builderState.equipment.push('kettlebell'); builderInvalidate(); renderWorkoutBuilder()");
+  check($("#builder-host .bld-stage") === stageNode, "toggling gear does not rebuild the stage node");
+  check($$("#builder-host [data-bld-step]")[0] === chipNode, "toggling gear does not rebuild the step chips");
+  check($("#builder-host .bld-q") === qNode, "the question heading survives an in-step render");
+
+  E("renderWorkoutBuilder()");
+  check($("#builder-host .bld-q") === qNode, "a render with nothing changed touches nothing");
+
+  E("builderState.step = 5; renderWorkoutBuilder()");
+  check($("#builder-host .bld-stage") === stageNode, "the stage node survives a step change");
+  check(stageNode.getAttribute("data-bld-dir") === "1", "moving forward is marked as a forward motion");
+  check(($$("#builder-host [data-bld-step]")[4].className || "").indexOf("done") !== -1, "the gear chip reads as done after moving on");
+  check(/time and effort/i.test($("#builder-host .bld-q").textContent), "the stage now shows the time question");
+  E("builderState.step = 4; renderWorkoutBuilder()");
+  check(stageNode.getAttribute("data-bld-dir") === "-1", "going back is marked as a backward motion");
+
+  const timeVal = $$("#builder-host .bld-brief-v")[5];
+  check(timeVal.textContent === "30 min", "the brief starts at 30 min");
+  E("builderState.duration = 45; renderWorkoutBuilder()");
+  check($$("#builder-host .bld-brief-v")[5] === timeVal, "the brief value keeps its node");
+  check(timeVal.textContent === "45 min", "the brief value updates in place");
+
+  E("closeWorkoutBuilder()");
+  E("openWorkoutBuilder()");
+  check($("#builder-host .bld-stage") !== stageNode, "reopening the maker starts a fresh shell");
+
   section("Runtime health");
   check(errors.length === 0, "no page errors (got " + errors.length + (errors.length ? ": " + errors.join("; ") : "") + ")");
 
