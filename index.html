@@ -9230,29 +9230,74 @@ function builderUpdateStage(host, step, dir){
   if (dir === 0) builderMorphStage(stage, nextHtml);
   else builderSwapStage(stage, nextHtml, dir);
 }
+/* Same-step updates patch the live tree: blocks that only changed classes or
+   text are edited in place, so icons never reload and nothing flickers. Only
+   genuinely new or gone blocks animate. */
 function builderMorphStage(stage, html){
   const tpl = document.createElement("div");
   tpl.innerHTML = html;
   const next = Array.from(tpl.children);
   const pool = Array.from(stage.children);
-  const nodes = next.map(el=>{
-    const i = pool.findIndex(o=>o.outerHTML === el.outerHTML);
-    if (i !== -1) return pool.splice(i,1)[0];
+  const used = new Set();
+  const plan = next.map(el=>{
+    const i = pool.findIndex(o=>!used.has(o) && o.outerHTML === el.outerHTML);
+    if (i === -1) return null;
+    used.add(pool[i]);
+    return pool[i];
+  });
+  next.forEach((el, i)=>{
+    if (plan[i]) return;
+    const j = pool.findIndex(o=>!used.has(o) && o.nodeName === el.nodeName);
+    if (j === -1) return;
+    used.add(pool[j]);
+    builderPatchNode(pool[j], el);
+    plan[i] = pool[j];
+  });
+  const created = [];
+  const nodes = next.map((el, i)=>{
+    if (plan[i]) return plan[i];
     const fresh = el.cloneNode(true);
-    fresh.classList.add("bld-enter");
-    fresh.addEventListener("animationend", ()=>fresh.classList.remove("bld-enter"), {once:true});
+    created.push(fresh);
     return fresh;
   });
-  while (stage.firstChild) stage.removeChild(stage.firstChild);
-  nodes.forEach(n=>stage.appendChild(n));
+  pool.forEach(o=>{ if (!used.has(o)) stage.removeChild(o); });
+  nodes.forEach((n, i)=>{
+    const cur = stage.children[i];
+    if (cur !== n) stage.insertBefore(n, cur || null);
+  });
   try{
     if (window.gsap && !builderReducedMotion()){
-      const entering = nodes.filter(n=>n.classList.contains("bld-enter"));
-      if (entering.length){
-        window.gsap.fromTo(entering, {y:8, opacity:0}, {y:0, opacity:1, duration:.3, stagger:.03, ease:"power2.out", clearProps:"transform,opacity"});
+      if (created.length){
+        window.gsap.fromTo(created, {y:8, opacity:0}, {y:0, opacity:1, duration:.3, stagger:.03, ease:"power2.out", clearProps:"transform,opacity"});
       }
+    } else {
+      created.forEach(fresh=>{
+        fresh.classList.add("bld-enter");
+        fresh.addEventListener("animationend", ()=>fresh.classList.remove("bld-enter"), {once:true});
+      });
     }
   }catch(e){}
+}
+/* Copy the shape of newEl onto oldEl: attributes and text are updated on the
+   live node, and children recurse as long as the structure matches. */
+function builderPatchNode(oldEl, newEl){
+  Array.from(newEl.attributes).forEach(a=>{
+    if (oldEl.getAttribute(a.name) !== a.value) oldEl.setAttribute(a.name, a.value);
+  });
+  Array.from(oldEl.attributes).forEach(a=>{
+    if (!newEl.hasAttribute(a.name)) oldEl.removeAttribute(a.name);
+  });
+  const ok = Array.from(oldEl.childNodes);
+  const nk = Array.from(newEl.childNodes);
+  const sameShape = ok.length === nk.length && ok.every((k,i)=>k.nodeType === nk[i].nodeType && k.nodeName === nk[i].nodeName);
+  if (sameShape){
+    ok.forEach((k,i)=>{
+      if (k.nodeType === 1) builderPatchNode(k, nk[i]);
+      else if (k.nodeValue !== nk[i].nodeValue) k.nodeValue = nk[i].nodeValue;
+    });
+  } else {
+    oldEl.innerHTML = newEl.innerHTML;
+  }
 }
 function builderSwapStage(stage, html, dir){
   const apply = ()=>{

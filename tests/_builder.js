@@ -294,6 +294,15 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   check($$("#builder-host [data-bld-step]")[0] === chipNode, "toggling gear does not rebuild the step chips");
   check($("#builder-host .bld-q") === qNode, "the question heading survives an in-step render");
 
+  const dumbTile = $("#builder-host [data-bld-equip='dumbbell']");
+  const presetTile = $("#builder-host [data-bld-preset='home']");
+  click($("#builder-host [data-bld-equip='dumbbell']"));
+  check($("#builder-host [data-bld-equip='dumbbell']") === dumbTile, "the clicked gear tile survives its own click");
+  check(!dumbTile.classList.contains("on"), "clicking the tile turns it off in place");
+  check($("#builder-host [data-bld-preset='home']") === presetTile, "the preset chips keep their nodes");
+  click($("#builder-host [data-bld-equip='dumbbell']"));
+  check(dumbTile.classList.contains("on"), "clicking it again turns it back on in place");
+
   E("renderWorkoutBuilder()");
   check($("#builder-host .bld-q") === qNode, "a render with nothing changed touches nothing");
 
