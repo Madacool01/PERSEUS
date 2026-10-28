@@ -262,6 +262,25 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   check(failed.groups.some(g => g.type === "circuit"), "local fallback keeps the requested circuit");
   check(/unavailable/i.test(E("builderState.aiNote")), "the failure note is shown");
 
+  section("Full gym gear leans on the machines in a commercial gym");
+  setBrief({ goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()"), customEquipment: [] });
+  const gymRules = E("workoutShapeRules(builderState).join(' ')");
+  check(/machine/i.test(gymRules), "full-gym gear asks the AI to program machines");
+  check(/leg press/i.test(gymRules), "the machine rule names kit common in gyms");
+  const gymPayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(gymPayload.request.machineBias === true, "the payload flags a machine bias");
+  check(gymPayload.request.shapeRules.join(" ") === gymRules, "the payload carries the same machine rules");
+
+  setBrief({ equipment: E("BUILDER_HOME_EQUIP.slice()") });
+  const homeRules = E("workoutShapeRules(builderState).join(' ')");
+  check(homeRules.indexOf("leg press") === -1, "home gear does not ask for gym machines");
+  const homePayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(homePayload.request.machineBias === false, "home gear carries no machine bias");
+
+  setBrief({ equipment: ["bodyweight"] });
+  const bodyPayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(bodyPayload.request.machineBias === false, "body-weight-only gear carries no machine bias");
+
   section("Runtime health");
   check(errors.length === 0, "no page errors (got " + errors.length + (errors.length ? ": " + errors.join("; ") : "") + ")");
 

@@ -9033,11 +9033,14 @@ function builderTargetLabel(b){
   }
   return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
 }
+function builderIsFullGym(b){
+  return builderSameSet(b.equipment, ALL_EQUIP);
+}
 function builderGearLabel(b){
   const custom = (b.customEquipment||[]).filter(Boolean);
   const tail = custom.length ? " + " + custom.join(", ") : "";
   if (builderSameSet(b.equipment, BUILDER_HOME_EQUIP)) return "Home setup" + tail;
-  if (builderSameSet(b.equipment, ALL_EQUIP)) return "Full gym" + tail;
+  if (builderIsFullGym(b)) return "Full gym" + tail;
   const kit = (b.equipment||[]).filter(k=>k!=="bodyweight");
   if (!kit.length) return (custom.length ? custom.join(", ") : "Body weight");
   if (kit.length===1) return (EQUIP_FILTER_LABELS[kit[0]] || kit[0]) + tail;
@@ -9271,7 +9274,7 @@ function builderGearHtml(){
     { id:"body", label:"Body weight only" }
   ];
   const isHome = builderSameSet(b.equipment, BUILDER_HOME_EQUIP);
-  const isGym = builderSameSet(b.equipment, ALL_EQUIP);
+  const isGym = builderIsFullGym(b);
   const isBody = builderSameSet(b.equipment, ["bodyweight"]);
   const custom = (b.customEquipment||[]).filter(Boolean);
   return '<h4 class="bld-q">What can you train with?</h4>'+
@@ -9297,7 +9300,8 @@ function builderGearHtml(){
     (b.customOpen ? '<div class="bld-other-add">'+
       '<input type="text" class="bld-other-input" data-bld-other-input maxlength="40" autocomplete="off" placeholder="e.g. Cable machine, trap bar, sled"/>'+
       '<button type="button" class="btn small" data-bld-other-add>Add</button></div>' : "")+
-    '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have. Use <b>Other</b> to add anything the list misses and the AI will program around it.</p>';
+    '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have. Use <b>Other</b> to add anything the list misses and the AI will program around it.'+
+    (isGym ? ' <b>Full gym</b> picked: the AI leads with the machines you find on a commercial gym floor — leg press, cables, pulldown, chest press — and only goes free-weight when your library has no machine for the job.' : "")+'</p>';
 }
 function builderTimeHtml(){
   const b = builderState;
@@ -9986,6 +9990,10 @@ function workoutShapeRules(b){
     rules.push("Use an unexpected but coherent name and a playful finisher.");
   }
   rules.push("Never make the whole session a superset. Only include a superset or circuit when the requested format or style calls for it.");
+  if (builderIsFullGym(b)){
+    rules.push("GYM CONTEXT: the athlete trains in a full commercial gym, so the standard machine floor is in play and should lead the session: leg press, hack squat, lat pulldown, seated cable row, converging chest and incline press, shoulder press machine, pec deck, cable crossover, leg extension, leg curl, hip abduction and adduction, assisted pull-up and dip machine, smith machine, and a full cable stack.");
+    rules.push("Bias the session toward machines: for each muscle the session works, prefer a machine or cable movement from the library when one exists, and only fall back to barbell, dumbbell, or bodyweight when the library offers no machine option for that muscle.");
+  }
   const customGear = (b.customEquipment||[]).filter(Boolean);
   if (customGear.length){
     rules.push("ADDITIONAL EQUIPMENT the athlete owns: " + customGear.join(", ") + ". These are not library equipment tags; where the library offers movements that suit this gear, prefer them, and mention how the session uses it in the rationale.");
@@ -10022,6 +10030,7 @@ function buildWorkoutPayload(b){
       focus:builderTargetLabel(b),
       muscles:builderFocusParts(b),
       customEquipment:(b.customEquipment||[]).filter(Boolean),
+      machineBias:builderIsFullGym(b),
       durationMin:b.duration,
       difficulty:b.difficulty,
       experience:b.experience,
