@@ -2716,6 +2716,12 @@
      level with the icons on the other cards. */
   .bld-opt-ico.full { width: 63px; height: 42px; place-items: center start; }
   .bld-opt-ico.full img { width: 63px; height: 42px; }
+  /* A stretched card is a button, and a button vertically centres whatever it
+     holds: a description that wrapped to a second line lifted that card's icon
+     above its neighbours. Lay the focus cards out from the top instead. Every
+     icon slot is 42px tall, so all four maps now share one top edge and their
+     labels share one baseline, whatever the copy below does. */
+  .bld-opts.focus .bld-opt { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
   .bld-opt b { display: block; font-family: var(--font-display); font-size: .98rem; letter-spacing: -.02em; }
   .bld-opt small { display: block; margin-top: .3rem; font-size: .72rem; line-height: 1.45; color: var(--ink-2); }
   .bld-opt-zone {
@@ -9454,7 +9460,7 @@ function builderFocusHtml(){
   ];
   let html = '<h4 class="bld-q">Where should the work land?</h4>'+
     '<p class="bld-qsub">A broad target gives a balanced session. Target muscles narrows the pool to the areas you choose.</p>'+
-    '<div class="bld-opts four">'+cards.map(c=>{
+    '<div class="bld-opts four focus">'+cards.map(c=>{
       const on = b.focus===c.id;
       return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-focus="'+c.id+'" aria-pressed="'+on+'">'+
         builderTick()+'<span class="bld-opt-ico'+(c.id==="full"?" full":"")+'"><img src="'+c.img+'" alt="" loading="lazy"/></span>'+
