@@ -1,0 +1,19 @@
+In the Workouts tab, we have the AI Workout Maker. Today we're going to finalize it and add a feature I've been wanting to add for too long but hadn't finalized yet.
+We're going to add another interview question when making the exercise, and that's going to be about which movement we should choose. I'm going to explain this in more detail. We're going to ask the user whether we should use only exercises from their existing exercise library or give them the option to pick exercises not from their library. Those exercises are the ones the AI comes up with. They could be from their exercise library but are not necessarily the exact ones from their library.
+You can also decide for yourself. You can add exercises you think are better and are not in your exercise library, or choose a mix of both: the exercises the AI comes up with and the exercises in your library.
+Now let's assume we have a workout with exercises from our library, for which we already have data and which is already saved. We also have exercises made up by AI. What happens to those exercises? They are created and added to the user's movement library.
+With that in mind, the AI always has to include the following for every new exercise it invents:
+- A name
+- Instructions (optional)
+- Whether it is a duration exercise, bodyweight, or weight and reps
+- Whether load can be added to it later
+- Per side
+- Bodyweight load
+- Equipment needed
+- Body parts
+- Primary muscles
+- Secondary muscles
+The AI always needs to include those.
+Now the user has new exercises made by the AI and also a new workout made by AI. Imagine the user deletes the workout the AI made for them. What happens to the exercises the AI created?
+If the routine was not edited in any way by the user, the exercises that were also made with it will be removed. If the user edits the routine even once, even by changing the rep or the weight, deleting the workout will not delete the exercises the AI made. If no edit was made, only the exercises the AI made will be deleted, not exercises from the user's library.
+Does this make sense? If so go and implement it.

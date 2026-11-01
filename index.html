@@ -2759,6 +2759,15 @@
     border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-3);
   }
   .bld-source.ai { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
+  /* A movement the AI wrote for this session rather than one already in the
+     library: tagged in the preview so the session is never ambiguous. */
+  .bld-new {
+    display: inline-block; margin-left: .4rem; padding: .1rem .4rem;
+    border-radius: 999px; vertical-align: middle;
+    font-family: var(--font-mono); font-size: .5rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent-deep);
+  }
   .bld-why { margin: .55rem 0 0; max-width: 66ch; font-size: .74rem; line-height: 1.5; color: var(--ink-2); }
   .bld-circuit .bld-pair-rail::before { background: var(--amber-line); }
   .bld-circuit .bld-pair-tag { color: var(--amber); }
@@ -4182,6 +4191,9 @@ const MUSCLES = [
   ["Forearms","Brachioradialis"],["Forearms","Wrist flexors"],["Forearms","Wrist extensors"],
   ["Calves","Gastrocnemius (calf)"],["Calves","Soleus (calf)"]
 ];
+/* Flat list of the muscle names a movement may claim — used to validate
+   movements written by the AI instead of picked by hand. */
+const MUSCLE_NAMES = MUSCLES.map(pair=>pair[1]);
 /* Multi-select of specific muscles, grouped by region. */
 function musclePills(sel){
   const s = new Set(sel||[]);
@@ -5870,9 +5882,9 @@ function renderRoutineList(){
         const day = getDay(dayId);
         if (!day) return;
         if (!confirm(progDeletePrompt(day.name, day.id))) return;
-        state.days = state.days.filter(x=>x.id!==dayId);
-        progForgetRoutine(dayId);
-        saveState(); render(); toast("Routine deleted");
+        const res = deleteRoutineDay(dayId);
+        render();
+        toast(deleteRoutineToast(res));
       }
     });
   });
@@ -6019,6 +6031,7 @@ function openGapEditor(dayId, prevExId){
       if (v == null){ toast("Enter rest in seconds, 0-3600"); return; }
       de.restAfterSec = v;
     }
+    markRoutineEdited(day.id);
     saveState(); render();
     toast(de.restAfterSec == null ? "Specific rest cleared — inherits the previous exercise" : "Rest between exercises: " + fmtRest(de.restAfterSec));
   };
@@ -6067,7 +6080,7 @@ function bindRestGaps(scope, day){
   $$("[data-gap-clear]", scope).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     const de = day.exercises.find(x=>x.exId===b.dataset.gapClear);
-    if (de){ de.restAfterSec = null; saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
+    if (de){ de.restAfterSec = null; markRoutineEdited(day.id); saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
   }));
 }
 /* Equalize a superset's round count across every member: lengthen or trim the
@@ -6077,6 +6090,7 @@ function setSupersetRounds(dayId, bandId, n){
   const day = getDay(dayId);
   const grp = day ? (day.supersets||[]).find(g=>g.id===bandId) : null;
   if (!grp) return;
+  markRoutineEdited(dayId);
   n = Math.max(1, Math.min(12, Math.round(+n)||1));
   supersetMembers(day, grp).forEach(de => {
     const ex = getEx(de.exId);
@@ -6158,16 +6172,16 @@ function renderWorkoutEditor(){
   $$("[data-day-type]", s).forEach(b=>b.addEventListener("click", ()=>{
     $$("[data-day-type]", s).forEach(x=>x.classList.toggle("active", x===b));
     d.type = b.dataset.dayType;
+    markRoutineEdited(d.id);
     const dd = $("#day-type-desc", s); if (dd) dd.textContent = sessionTypeDesc(d.type);
     saveState();
   }));
   $("#plan-back", s).addEventListener("click", ()=>{ planMode="list"; planEditId=null; render(); });
   $("#plan-del-day", s).addEventListener("click", ()=>{
     if(!confirm(progDeletePrompt(d.name, d.id))) return;
-    state.days = state.days.filter(x=>x.id!==d.id);
-    progForgetRoutine(d.id);
-    saveState();
+    const res = deleteRoutineDay(d.id);
     planMode="list"; planEditId=null; render();
+    toast(deleteRoutineToast(res));
   });
   $$("input[data-dayname]", s).forEach(inp => inp.addEventListener("change", ev=>{
     const day = getDay(inp.dataset.dayname); if(!day) return;
@@ -6175,7 +6189,7 @@ function renderWorkoutEditor(){
     if (!val){ inp.value = day.name; return; }
     const dup = nameTaken(state.days, val, day.id);
     if (dup){ toast('A routine named "'+dup.name+'" already exists'); inp.value = day.name; return; }
-    day.name = val; saveState();
+    day.name = val; markRoutineEdited(day.id); saveState();
   }));
   const dayRestIn = $("#day-rest", s);
   const saveDayRest = ()=>{
@@ -6183,12 +6197,13 @@ function renderWorkoutEditor(){
     const raw = dayRestIn.value.trim();
     d.defaultRestSec = raw === "" ? null : normRestSec(+raw);
     if (raw !== "" && d.defaultRestSec == null){ toast("Enter rest in seconds, 0-3600"); return; }
+    markRoutineEdited(d.id);
     saveState(); render();
     toast(d.defaultRestSec == null ? "Routine default rest cleared" : "Routine default rest: " + fmtRest(d.defaultRestSec));
   };
   if (dayRestIn){
     $("#day-rest-save", s).addEventListener("click", saveDayRest);
-    $("#day-rest-clear", s).addEventListener("click", ()=>{ if (d){ d.defaultRestSec = null; saveState(); render(); toast("Routine default rest cleared"); } });
+    $("#day-rest-clear", s).addEventListener("click", ()=>{ if (d){ d.defaultRestSec = null; markRoutineEdited(d.id); saveState(); render(); toast("Routine default rest cleared"); } });
   }
   $$("[data-add-ex]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddEx(b.dataset.addEx)));
@@ -6211,12 +6226,14 @@ function renderWorkoutEditor(){
       grp.exIds = grp.exIds.filter(x=>x!==exId);
       if ((grp.exIds||[]).length < 2) d.supersets = (d.supersets||[]).filter(g=>g!==grp);
     }
+    markRoutineEdited(d.id);
     saveState(); render();
   }));
   $$("[data-unlink]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     if(!d) return;
     d.supersets = (d.supersets||[]).filter(g=>g.id!==b.dataset.unlink);
+    markRoutineEdited(d.id);
     saveState(); render();
     toast("Superset unlinked — those exercises now log separately");
   }));
@@ -6305,6 +6322,7 @@ function reorderDayExercises(dayId, from, to){
   units.splice(to, 0, moved);
   d.exercises = [];
   units.forEach(u => u.entries.forEach(de => d.exercises.push(de)));
+  markRoutineEdited(dayId);
   saveState();
   return true;
 }
@@ -6700,6 +6718,7 @@ function openAddEx(dayId, exId){
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
     else delete entry.focus;
     if (!editing) day.exercises.push(entry);
+    markRoutineEdited(dayId);
     // Stamp this as the latest modification, then write through: this routine's
     // plan becomes the shared prescription for the exercise, propagated to
     // every other routine that includes it.
@@ -6932,6 +6951,7 @@ function openAddSuperset(dayId){
     const grp = { id: "ss-"+uid(), exIds: exIds.slice() };
     if (!Array.isArray(day.supersets)) day.supersets = [];
     day.supersets.push(grp);
+    markRoutineEdited(day.id);
     saveState(); render();
     toast("Superset added — log it as paired rounds");
   }
@@ -8885,7 +8905,7 @@ function recAct(ds, actVal){
    treat it like any other routine.
    ========================================================================= */
 const BUILDER_HOME_EQUIP = ["bodyweight","dumbbell","bands","pullup","bench"];
-const BUILDER_STEPS = ["Goal","Approach","Format","Focus","Gear","Time","You","Session"];
+const BUILDER_STEPS = ["Goal","Approach","Format","Focus","Gear","Movements","Time","You","Session"];
 /* Session shape comes before the exercise details. "Regular" is the default so
    the maker never assumes a superset; the other three are explicit requests for
    a particular structure or for the AI to combine structures. */
@@ -8894,6 +8914,14 @@ const BUILDER_FORMATS = {
   fun:      { label:"More fun",         tag:"Playful",     desc:"A light mix: one circuit or superset, straight work, and a finisher." },
   specific: { label:"Specific type",    tag:"Your call",   desc:"Choose the exact structure you want from the styles below." },
   surprise: { label:"Surprise me",       tag:"Unique",      desc:"An unexpected session that combines different structures." }
+};
+/* Where the movements come from. The library is the safe default: nothing is
+   written. The other two let the model design movements that are not in the
+   library yet; those are added to it with the routine and carry origin "ai". */
+const BUILDER_MOVEMENTS = {
+  library: { label:"My library",    tag:"Nothing new", desc:"Only movements you already own, ready to log today." },
+  ai:      { label:"AI picks them", tag:"AI's call",   desc:"The AI may write better-fitting movements beside your library." },
+  mix:     { label:"Mix both",      tag:"Blend",       desc:"At least one library movement and at least one the AI writes." }
 };
 const BUILDER_STYLES = {
   superset: { label:"Supersets", desc:"Two movements back to back, then rest after the pair." },
@@ -8997,6 +9025,7 @@ function openWorkoutBuilder(opts){
     approach: "volume",
     format: "regular",
     style: "straight",
+    movement: "library",
     focus: "upper",
     muscles: [],
     equipment: BUILDER_HOME_EQUIP.slice(),
@@ -9048,6 +9077,7 @@ function builderStepCopy(step){
     { title:'Pick the <em>shape</em>.', sub:'Straight sets, a playful mix, a specific structure, or a surprise. Supersets are never assumed.' },
     { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or major in a specific muscle. The sequence follows your target.' },
     { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
+    { title:'Choose the <em>movements</em>.', sub:'Stay inside your library, or let the AI write movements that are not in it yet. Anything new joins your library with the session.' },
     { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty tunes rest, load targets, and whether a finisher appears.' },
     { title:'Make it <em>yours</em>.', sub:'Age tunes volume and rest. Body weight keeps your profile and volume math current. Experience sets how conservative the first session should be.' },
     { title:'Your session, <em>ready</em>.', sub:'A real structure, not a template. Shuffle it, or save it straight into Workouts.' }
@@ -9105,6 +9135,7 @@ function builderBriefRows(){
     ["Format", builderFormatLabel(b)],
     ["Target", builderTargetLabel(b)],
     ["Gear", builderGearLabel(b)],
+    ["Movements", builderMovementLabel(b)],
     ["Time", b.duration + " min"],
     ["Level", builderLevelLabel(b.difficulty)]
   ];
@@ -9366,8 +9397,9 @@ function builderStageHtml(step){
   if (step===2) return builderFormatHtml();
   if (step===3) return builderFocusHtml();
   if (step===4) return builderGearHtml();
-  if (step===5) return builderTimeHtml();
-  if (step===6) return builderYouHtml();
+  if (step===5) return builderMovementHtml();
+  if (step===6) return builderTimeHtml();
+  if (step===7) return builderYouHtml();
   return builderPreviewHtml();
 }
 function builderApproachHtml(){
@@ -9418,7 +9450,7 @@ function builderGoalHtml(){
         '<b>'+g.label+'</b><small>'+g.desc+'</small>'+
         '<em class="bld-opt-zone">'+z[0]+'-'+z[1]+' reps</em></button>';
     }).join("")+'</div>'+
-    '<p class="bld-hint"><b>Built from your own library.</b> Nothing is generated from a fixed template; the maker sequences movements you already own and can log.</p>';
+    '<p class="bld-hint"><b>Built around what you own.</b> Nothing comes from a fixed template; the maker sequences real movements you can log \u2014 from your library, or written for this session if you ask for that later.</p>';
 }
 function builderFormatHtml(){
   const b = builderState;
@@ -9517,6 +9549,32 @@ function builderGearHtml(){
     '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have. Use <b>Other</b> to add anything the list misses and the AI will program around it.'+
     (isGym ? ' <b>Full gym</b> picked: the AI leads with the machines you find on a commercial gym floor — leg press, cables, pulldown, chest press — and only goes free-weight when your library has no machine for the job.' : "")+'</p>';
 }
+function builderMovementLabel(b){
+  const m = BUILDER_MOVEMENTS[b && b.movement];
+  return m ? m.label : BUILDER_MOVEMENTS.library.label;
+}
+function builderMovementHtml(){
+  const b = builderState;
+  const icons = {
+    library: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h4v13H4zM10 5.5h4v13h-4z"/><path d="m17 5.2 3.6 12.4-3.8 1.2L13.2 6.4z"/></svg>',
+    ai:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3.6l1.7 4.9 4.9 1.7-4.9 1.7L11 16.8l-1.7-4.9L4.4 10.2l4.9-1.7z"/><path d="M18.4 15v3.6M16.6 16.8h3.6"/></svg>',
+    mix:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.4" cy="12" r="5.4"/><circle cx="14.6" cy="12" r="5.4"/></svg>'
+  };
+  const note = b.movement==="library"
+    ? '<b>Nothing is written.</b> Every movement comes from your library, so the Exercises tab stays exactly as it is.'
+    : '<b>New movements are saved with the routine.</b> Each one carries its name, movement type, gear, body parts, primary and secondary muscles, added-load flag, per-side flag, body-weight load, and instructions. Delete the routine without ever editing it and those movements leave with it; edit the routine once and they stay in your library.';
+  return '<h4 class="bld-q">Where should the movements come from?</h4>'+
+    '<p class="bld-qsub">Your library holds every movement you have built and logged. The other two options let the AI design movements that fit this session better, even when nothing in your library does.</p>'+
+    '<div class="bld-opts three">'+Object.keys(BUILDER_MOVEMENTS).map(id=>{
+      const m = BUILDER_MOVEMENTS[id];
+      const on = b.movement===id;
+      return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-movement="'+id+'" aria-pressed="'+on+'">'+
+        builderTick()+'<span class="bld-opt-ico">'+icons[id]+'</span>'+
+        '<b>'+esc(m.label)+'</b><small>'+esc(m.desc)+'</small>'+
+        '<em class="bld-opt-zone">'+esc(m.tag)+'</em></button>';
+    }).join("")+'</div>'+
+    '<p class="bld-hint">'+note+'</p>';
+}
 function builderTimeHtml(){
   const b = builderState;
   const durs = [
@@ -9578,7 +9636,7 @@ function builderPreviewHtml(){
   if (!d || !d.exercises.length){
     return '<h4 class="bld-q">No movements match that setup.</h4>'+
       '<p class="bld-qsub">Add a piece of equipment or broaden the target, then build again.</p>'+
-      '<div class="bld-empty">The maker only chooses from your exercise library. Open Exercises to add a movement, or go back and select more gear.</div>';
+      '<div class="bld-empty">Nothing in your library fits this setup. Open Exercises to add a movement, go back and select more gear, or let the AI write the movements on the Movements step.</div>';
   }
   const sets = d.exercises.reduce((a,x)=>a+(x.targetSets||0),0);
   const meta = [
@@ -9631,15 +9689,28 @@ function builderPreviewHtml(){
     '<div class="bld-prep">'+d.cooldown.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>'+
   '</div></div>'+
   (b.aiNote?'<p class="bld-ai-note">'+esc(b.aiNote)+'</p>':"")+
-  '<p class="bld-save-note">Saving writes this as a routine in Workouts. Targets sync to any routine that already uses the same movement; every set stays editable.</p>';
+  '<p class="bld-save-note">Saving writes this as a routine in Workouts. Targets sync to any routine that already uses the same movement; every set stays editable.'+
+    ((d.newExercises && d.newExercises.length) ? ' The ' + d.newExercises.length + ' AI-written movement' + (d.newExercises.length===1?"":"s") + ' here join your library and stay unless you delete this routine without editing it.' : "")+'</p>';
   return html;
 }
 function bldPill(text, accent){
   return '<span class="bld-pill'+(accent?' accent':'')+'">'+esc(text)+'</span>';
 }
+/* A draft row can point at a movement that only exists in this draft: the AI
+   wrote it, and it joins the library when the routine is saved. */
+function builderDraftEx(exId){
+  const d = builderState && builderState.draft;
+  if (d && Array.isArray(d.newExercises)){
+    const made = d.newExercises.find(x=>x.id===exId);
+    if (made) return made;
+  }
+  return getEx(exId);
+}
 function builderExRow(de, label){
-  const ex = getEx(de.exId);
+  const ex = builderDraftEx(de.exId);
   if (!ex) return "";
+  const d = builderState && builderState.draft;
+  const written = !!(d && Array.isArray(d.newExercises) && d.newExercises.some(x=>x.id===de.exId));
   const isTime = ex.mode==="time";
   const arr = isTime ? (de.setTimes||[]) : (de.setReps||[]);
   const dose = arr.length ? (arr.join(" / ") + (isTime?"s":"")) : "";
@@ -9649,7 +9720,7 @@ function builderExRow(de, label){
   const parts = (ex.bodyParts||[]).slice(0,2).join(" · ") || "Full body";
   return '<div class="bld-ex">'+
     '<span class="bld-ex-n">'+esc(label)+'</span>'+
-    '<div class="bld-ex-body"><div class="bld-ex-name">'+esc(ex.name)+'</div><div class="bld-ex-meta">'+esc(parts)+per+'</div></div>'+
+    '<div class="bld-ex-body"><div class="bld-ex-name">'+esc(ex.name)+(written?'<span class="bld-new">AI written</span>':"")+'</div><div class="bld-ex-meta">'+esc(parts)+per+'</div></div>'+
     '<div class="bld-ex-dose"><b>'+esc(dose)+'</b>'+de.targetSets+' sets'+esc(weight)+esc(fail)+'</div>'+
   '</div>';
 }
@@ -9716,6 +9787,12 @@ function builderOnClick(ev){
     b.focus = el.dataset.bldFocus;
     builderInvalidate();
     if (b.focus!=="pick") b.step = 4;
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-movement]"))){
+    b.movement = el.dataset.bldMovement;
+    builderInvalidate();
     renderWorkoutBuilder();
     return;
   }
@@ -9830,7 +9907,7 @@ function builderValidate(){
   if (b.step===4 && (!b.equipment.length || b.equipment.indexOf("bodyweight")===-1)){
     b.equipment = (b.equipment||[]).concat(["bodyweight"]);
   }
-  if (b.step===6){
+  if (b.step===7){
     if (b.age!==""){
       const age = +b.age;
       if (!isFinite(age) || age<13 || age>100){ toast("Enter an age between 13 and 100, or leave it blank"); return false; }
@@ -9843,7 +9920,7 @@ function builderValidate(){
   return true;
 }
 function builderSeedStr(b){
-  return [b.goal,b.approach,b.format,b.style,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+  return [b.goal,b.approach,b.format,b.style,b.movement,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
 }
 /* Any change to the brief discards the old draft and cancels an in-flight AI
    build, so a late response can never overwrite the user's newer request. */
@@ -10111,6 +10188,7 @@ function builderDraftFromGroups(b, groups, meta){
     exercises: exercises,
     supersets: supersets,
     finisher: finisher,
+    newExercises: (meta.newExercises || []).slice(),
     rest: meta.rest || builderRestSec(b),
     stats: {
       sets: exercises.reduce((a,x)=>a+(x.targetSets||0),0),
@@ -10182,7 +10260,11 @@ const WORKOUT_SYSTEM_PROMPT = [
   "The user's requested format and style are a hard contract. Never default to supersets:",
   "a superset or circuit is allowed only when the request explicitly asks for that structure.",
   "For a regular session every group MUST be type \"straight\" and no movements may be paired.",
-  "Use ONLY exercise ids from the supplied library. Never invent ids, exercises, or fields.",
+  "Use exercise ids from the supplied library. Never invent an id.",
+  "The request.movementSource field is a hard contract. \"library\" means every exercise must be an exId from the library and you may never write a new movement.",
+  "\"ai\" means you choose the movements and may write movements that are not in the library when they fit this athlete better; \"mix\" means at least one library exId and at least one written movement.",
+  "A written movement has no exId: it carries newMovement:true and every field listed in request.newMovementFields, using only the spellings in request.allowedEquipment, request.allowedBodyParts and request.allowedMuscles.",
+  "Never re-invent a movement that is already in the library under the same name: use its exId instead.",
   "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
   "The request.approach field is a hard programming contract. Every exercise must use exactly its set count,",
   "the stated proximity to failure, and the stated rest. If its failure policy is 'last', the final working",
@@ -10201,6 +10283,8 @@ const WORKOUT_SYSTEM_PROMPT = [
   ' "warmup":["..."],"cooldown":["..."],',
   ' "groups":[{"type":"straight|superset|circuit","exercises":[{"exId":"...","sets":3,"reps":[8,8,8],"setTypes":["regular","regular","regular"],"weight":0}]}],',
   ' "finisher":{"exId":"...","sets":2,"reps":[10,10],"setTypes":["regular","failure"],"weight":0}}',
+  "A written movement replaces exId with newMovement:true and the full field set in request.newMovementFields,",
+  "for example {\"newMovement\":true,\"name\":\"...\",\"movementType\":\"bodyweight\",\"instructions\":\"...\",\"canAddLoad\":true,\"perSide\":false,\"bodyweightLoad\":45,\"equipment\":[\"bodyweight\"],\"bodyParts\":[\"Chest\"],\"primaryMuscles\":[\"Pectoralis major\"],\"secondaryMuscles\":[\"Triceps brachii\"],\"sets\":3,\"reps\":[10,10,10],\"setTypes\":[\"regular\",\"regular\",\"regular\"],\"weight\":0}.",
   "For a timed hold use \"time\":[30,30,30] instead of reps. Return no prose outside the JSON."
 ].join("\n");
 function workoutShapeRules(b){
@@ -10231,6 +10315,13 @@ function workoutShapeRules(b){
     rules.push("Use an unexpected but coherent name and a playful finisher.");
   }
   rules.push("Never make the whole session a superset. Only include a superset or circuit when the requested format or style calls for it.");
+  if (b.movement==="library"){
+    rules.push("MOVEMENT SOURCE: library only. Every exercise must be an exId from the library; never write a movement, even when a better one exists.");
+  } else if (b.movement==="ai"){
+    rules.push("MOVEMENT SOURCE: the AI picks the movements. Use library exIds where they fit, and write your own movement when it fits this athlete better than anything available. Every written movement needs the full field set in request.newMovementFields.");
+  } else {
+    rules.push("MOVEMENT SOURCE: mix. Include at least one library exId and at least one written movement, so the session blends what the athlete already owns with what the AI designs. Every written movement needs the full field set in request.newMovementFields.");
+  }
   if (builderIsFullGym(b)){
     rules.push("GYM CONTEXT: the athlete trains in a full commercial gym, so the standard machine floor is in play and should lead the session: leg press, hack squat, lat pulldown, seated cable row, converging chest and incline press, shoulder press machine, pec deck, cable crossover, leg extension, leg curl, hip abduction and adduction, assisted pull-up and dip machine, smith machine, and a full cable stack.");
     rules.push("Bias the session toward machines: for each muscle the session works, prefer a machine or cable movement from the library when one exists, and only fall back to barbell, dumbbell, or bodyweight when the library offers no machine option for that muscle.");
@@ -10251,6 +10342,23 @@ function buildWorkoutPayload(b){
       format:b.format,
       style:b.format==="specific" ? b.style : b.format,
       styleLabel:builderStyleLabel(b),
+      movementSource:b.movement,
+      movementSourceLabel:builderMovementLabel(b),
+      newMovementFields:{
+        name:"unique movement name, 2-5 words",
+        movementType:"duration (timed hold) | bodyweight (reps) | weight (load and reps)",
+        instructions:"one or two sentences on setup and execution (optional but preferred)",
+        canAddLoad:"true when external load can be added later (vest, belt, dumbbell between the feet)",
+        perSide:"true when the reps count per side",
+        bodyweightLoad:"whole-number percent of the athlete's body weight the movement loads, 0-100",
+        equipment:"array of gear tags drawn from allowedEquipment",
+        bodyParts:"array of body parts drawn from allowedBodyParts",
+        primaryMuscles:"array of muscles drawn from allowedMuscles",
+        secondaryMuscles:"array of muscles drawn from allowedMuscles"
+      },
+      allowedEquipment:ALL_EQUIP.slice(),
+      allowedBodyParts:BODY_PARTS.slice(),
+      allowedMuscles:MUSCLE_NAMES.slice(),
       shapeRules:workoutShapeRules(b),
       goal:b.goal,
       goalLabel:sessionTypeLabel(b.goal),
@@ -10419,6 +10527,109 @@ function builderAIShapeOK(b, groups){
   }
   return true;
 }
+/* --- Movements the AI writes ------------------------------------------------
+   A written movement becomes a real library exercise, so it has to satisfy the
+   same contract as one the user typed by hand: a name, a movement type, gear,
+   body parts, primary and secondary muscles, the added-load and per-side
+   flags, and a body-weight load. Values outside the app's own lists are
+   dropped rather than trusted, and a movement with no name, no valid type or
+   no primary muscle is refused outright. */
+function builderMovementAllowsNew(b){
+  return !!(b && (b.movement==="ai" || b.movement==="mix"));
+}
+function builderAIMatchName(v, list){
+  const s = String(v==null ? "" : v).trim();
+  if (!s) return "";
+  return list.find(x=>x.toLowerCase()===s.toLowerCase()) || "";
+}
+function builderAIAllowedList(v, allowed, max){
+  const raw = Array.isArray(v) ? v : (typeof v==="string" ? v.split(/[,;\/]/) : []);
+  const out = [];
+  raw.forEach(x=>{
+    const hit = builderAIMatchName(x, allowed);
+    if (hit && out.indexOf(hit)===-1) out.push(hit);
+  });
+  return out.slice(0, max);
+}
+function builderPartForMuscle(m){
+  if (!m) return "";
+  return BODY_PARTS.find(p=>(PART_DETAILS[p]||[]).indexOf(m)!==-1) || "";
+}
+function builderFreshExId(){
+  let id;
+  do { id = "ex-" + uid(); } while (state.exercises.some(e=>e.id===id));
+  return id;
+}
+function builderAIMadeExercise(raw, b){
+  if (!raw || typeof raw!=="object") return null;
+  const name = builderAIWords(raw.name, 60);
+  if (!name) return null;
+  // A movement the library already has under that name is reused, never doubled.
+  const existing = state.exercises.find(e=>String(e.name||"").trim().toLowerCase()===name.toLowerCase());
+  if (existing) return existing;
+  const mt = String(raw.movementType==null ? "" : raw.movementType).trim().toLowerCase();
+  const isDuration = mt==="duration" || mt==="time";
+  const isWeight = !isDuration && (mt==="weight" || mt==="weights" || mt==="weight and reps" || mt==="weight & reps");
+  if (!isDuration && !isWeight && mt!=="bodyweight") return null;
+  const primary = builderAIAllowedList(raw.primaryMuscles, MUSCLE_NAMES, 4);
+  if (!primary.length) return null;
+  const secondary = builderAIAllowedList(raw.secondaryMuscles, MUSCLE_NAMES, 4).filter(m=>primary.indexOf(m)===-1);
+  let parts = builderAIAllowedList(raw.bodyParts, BODY_PARTS, 4);
+  if (!parts.length){
+    primary.concat(secondary).forEach(m=>{
+      const p = builderPartForMuscle(m);
+      if (p && parts.indexOf(p)===-1) parts.push(p);
+    });
+  }
+  // Only gear the athlete actually selected is kept; body weight always exists.
+  const have = (b.equipment||[]).filter(k=>ALL_EQUIP.indexOf(k)!==-1);
+  let kit = builderAIAllowedList(raw.equipment, ALL_EQUIP, 5).filter(k=>k==="bodyweight" || have.indexOf(k)!==-1);
+  if (!kit.length) kit = ["bodyweight"];
+  if (!isDuration && !isWeight && kit.indexOf("bodyweight")===-1) kit.unshift("bodyweight");
+  const type = isDuration ? "duration" : (isWeight ? "weight" : "bodyweight");
+  const reps = Array.isArray(raw.reps) ? raw.reps : [];
+  const times = Array.isArray(raw.time) ? raw.time : [];
+  const weight = +raw.weight;
+  let load = +raw.bodyweightLoad;
+  load = isFinite(load) ? Math.max(0, Math.min(100, Math.round(load))) : null;
+  const made = {
+    id: builderFreshExId(),
+    name: name,
+    type: type,
+    mode: isDuration ? "time" : "reps",
+    equipment: kit,
+    weightAvailable: type==="weight" ? true : !!raw.canAddLoad,
+    perSide: isDuration ? false : !!raw.perSide,
+    defaultSets: Math.max(1, Math.min(6, Math.round(+raw.sets) || builderSets(b))),
+    defaultReps: isDuration ? 0 : (reps.length && +reps[0] > 0 ? Math.round(+reps[0]) : 8),
+    defaultTime: isDuration ? (times.length && +times[0] > 0 ? Math.round(+times[0]) : 30) : 30,
+    defaultWeight: (isWeight && isFinite(weight) && weight > 0) ? weight : 0,
+    notes: "",
+    instructions: builderAIWords(raw.instructions, 400),
+    bodyParts: parts,
+    primaryMuscles: primary,
+    secondaryMuscles: secondary,
+    image: "",
+    origin: "ai"
+  };
+  // Weighted movements count their external load, so their body-weight share is 0.
+  if (type==="weight"){ made.loadFactor = 0; made.loadSource = "ai"; }
+  else if (load != null){ made.loadFactor = load; made.loadSource = "ai"; }
+  return made;
+}
+/* Resolve one exercise entry: a library id, or a movement the AI writes. */
+function builderAIEntryExercise(r, b, byId, created){
+  if (!r || typeof r!=="object") return null;
+  if (typeof r.exId==="string" && r.exId) return byId[r.exId] || null;
+  if (!builderMovementAllowsNew(b)) return null;
+  const ex = builderAIMadeExercise(r, b);
+  if (!ex) return null;
+  const dup = created.find(c=>c.id===ex.id || String(c.name).trim().toLowerCase()===String(ex.name).trim().toLowerCase());
+  if (dup) return dup;
+  if (getEx(ex.id)) return ex;
+  created.push(ex);
+  return ex;
+}
 function normalizeAIDraft(raw, b){
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.groups)) return null;
   const pool = builderPool(b, 99);
@@ -10426,13 +10637,14 @@ function normalizeAIDraft(raw, b){
   pool.forEach(e=>{ byId[e.id] = e; });
   const seen = {};
   const groups = [];
+  const written = [];
   raw.groups.forEach(rg=>{
     if (!rg || !Array.isArray(rg.exercises)) return;
     let type = (rg.type==="superset" || rg.type==="circuit") ? rg.type : "straight";
     const members = [];
     rg.exercises.forEach(r=>{
-      const id = r && typeof r.exId==="string" ? r.exId : "";
-      const ex = byId[id];
+      const ex = builderAIEntryExercise(r, b, byId, written);
+      const id = ex ? ex.id : "";
       if (!ex || seen[id]) return;
       const de = builderAINormalizeDe(r, ex, b, builderSets(b));
       if (!de) return;
@@ -10456,9 +10668,8 @@ function normalizeAIDraft(raw, b){
   groups.forEach(builderAIEqualize);
   if (!builderAIShapeOK(b, groups)) return null;
   let finisher = null;
-  if (raw.finisher && raw.finisher.exId && byId[raw.finisher.exId] && !seen[raw.finisher.exId]){
-    finisher = builderAINormalizeDe(raw.finisher, byId[raw.finisher.exId], b, 2);
-  }
+  const finEx = raw.finisher ? builderAIEntryExercise(raw.finisher, b, byId, written) : null;
+  if (finEx && !seen[finEx.id]) finisher = builderAINormalizeDe(raw.finisher, finEx, b, 2);
   const rest = builderAIClamp(raw.restSec, 20, 300, builderRestSec(b));
   const name = builderAIWords(raw.name, 80) || builderSessionName(b, builderFocusLabel(b), builderRng(builderSeedStr(b)));
   const rationale = builderAIWords(raw.rationale, 180) || builderShapeSentence(b);
@@ -10469,6 +10680,7 @@ function normalizeAIDraft(raw, b){
     cooldown:builderAIItems(raw.cooldown, 3, ["Easy walk","Chest opener","Box breathing"]),
     rest:rest,
     finisher:finisher,
+    newExercises:written,
     source:"ai"
   });
 }
@@ -10485,7 +10697,9 @@ function builderBuild(){
   const key = ((state.profile && state.profile.apiKey) || "").trim();
   if (!key){
     b.draft = generateWorkout(b);
-    b.aiNote = "Built locally. Add a GroqCloud API key in Settings to have the AI design the session.";
+    b.aiNote = b.movement==="library"
+      ? "Built locally. Add a GroqCloud API key in Settings to have the AI design the session."
+      : "Built locally from your library. Movements the AI writes need a GroqCloud API key in Settings.";
     renderWorkoutBuilder();
     return Promise.resolve(b.draft);
   }
@@ -10535,12 +10749,20 @@ function builderSave(startNow){
     while (nameTaken(state.days, name + " " + k)) k++;
     name = name + " " + k;
   }
+  /* Movements the AI wrote for this session join the library now. The routine
+     remembers their ids, so deleting it before any manual edit can take them
+     back out again without touching anything the user already owned. */
+  const written = (Array.isArray(d.newExercises) ? d.newExercises : []).filter(ex=>ex && ex.id && !getEx(ex.id));
+  written.forEach(ex=>state.exercises.push(ex));
+  if (written.length) resolveProgressions(state.exercises);
   const id = "day-" + uid();
   const day = {
     id: id,
     name: name,
     type: d.goal,
     approach: d.approach || null,
+    aiExIds: written.map(ex=>ex.id),
+    userEdited: false,
     exercises: d.exercises.map(de=>({
       exId: de.exId,
       targetSets: de.targetSets,
@@ -10564,13 +10786,14 @@ function builderSave(startNow){
   });
   saveState();
   closeWorkoutBuilder();
+  const added = written.length ? " · " + written.length + " new movement" + (written.length===1?"":"s") : "";
   if (startNow){
     switchView("log");
     startLog(id);
-    toast("Session ready — check in and start");
+    toast("Session ready — check in and start" + added);
   } else {
     switchView("workouts");
-    toast("Saved to your routines");
+    toast("Saved to your routines" + added);
   }
 }
 
@@ -12883,7 +13106,12 @@ function progRoutineUsage(id){
    training day. Falls back to the plain question when nothing references it. */
 function progDeletePrompt(name, id){
   const u = progRoutineUsage(id);
-  const plain = 'Delete "' + name + '" and its plan?';
+  const day = getDay(id);
+  const aiMoves = routineAiMoves(day).length;
+  const plainAi = (aiMoves && day && !day.userEdited)
+    ? " It also removes the " + aiMoves + " AI-written movement" + (aiMoves===1?"":"s") + " it added to your library \u2014 edit the routine once and those stay."
+    : "";
+  const plain = 'Delete "' + name + '" and its plan?' + plainAi;
   if (!u.current && !u.saved.length) return plain;
   const refs = [];
   if (u.current) refs.push("your current week");
@@ -12895,6 +13123,44 @@ function progDeletePrompt(name, id){
   }
   return plain + "\n\n" + "This routine is a training day in " + refs.join(" and ") +
     ". Those days will go back to rest \u2014 only the routine itself is deleted.";
+}
+/* Movements the AI wrote for a routine, as library exercises. */
+function routineAiMoves(day){
+  const ids = (day && Array.isArray(day.aiExIds)) ? day.aiExIds : [];
+  return ids.map(id=>getEx(id)).filter(Boolean);
+}
+/* Any manual change to a routine promotes the movements it brought in: they
+   stop belonging to the routine and stay in the library for good. */
+function markRoutineEdited(dayId){
+  const day = getDay(dayId);
+  if (day) day.userEdited = true;
+}
+/* Delete a routine and settle the movements it introduced. An untouched
+   AI-built routine takes its movements with it; a routine the user edited even
+   once leaves them in the library. Movements still used by another routine
+   always stay. */
+function deleteRoutineDay(dayId){
+  const day = getDay(dayId);
+  if (!day) return { removed: 0, kept: 0 };
+  const mine = routineAiMoves(day);
+  state.days = state.days.filter(x=>x.id!==dayId);
+  let removed = 0;
+  if (!day.userEdited && mine.length){
+    const stillUsed = {};
+    state.days.forEach(d=>(d.exercises||[]).forEach(de=>{ stillUsed[de.exId] = true; }));
+    const drop = mine.filter(ex=>!stillUsed[ex.id]).map(ex=>ex.id);
+    if (drop.length){
+      state.exercises = state.exercises.filter(ex=>drop.indexOf(ex.id)===-1);
+      removed = drop.length;
+    }
+  }
+  progForgetRoutine(dayId);
+  saveState();
+  return { removed: removed, kept: mine.length - removed };
+}
+function deleteRoutineToast(res){
+  if (!res || !res.removed) return "Routine deleted";
+  return "Routine deleted \u00b7 " + res.removed + " AI movement" + (res.removed===1?"":"s") + " removed";
 }
 /* Training-day indices in week order (Monday first). */
 function progSessionIdx(slots){

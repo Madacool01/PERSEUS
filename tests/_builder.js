@@ -48,7 +48,7 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   section("Approach question in the eight-step flow");
   W.switchView("workouts");
   click($("#view-workouts [data-builder-open]"));
-  check($$("#builder-host [data-bld-step]").length === 8, "builder has eight steps");
+  check($$("#builder-host [data-bld-step]").length === 9, "builder has nine steps");
   check($$("#builder-host [data-bld-step]")[1].textContent.trim().indexOf("Approach") !== -1, "step 2 is Approach");
   check(E("builderState.format") === "regular", "regular is the default format");
   check(E("builderState.approach") === "volume", "hypertrophy defaults to the High Volume approach");
@@ -152,7 +152,7 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   E("openWorkoutBuilder()");
   E("builderState.format = 'fun'");
   const noKey = await E("builderBuild()");
-  check(E("builderState.step") === 7, "build jumps to the preview step");
+  check(E("builderState.step") === 8, "build jumps to the preview step");
   check(noKey.source === "local", "no-key build is local");
   check(/GroqCloud API key/i.test(E("builderState.aiNote")), "the note explains how to enable AI");
 
@@ -306,7 +306,7 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   E("renderWorkoutBuilder()");
   check($("#builder-host .bld-q") === qNode, "a render with nothing changed touches nothing");
 
-  E("builderState.step = 5; renderWorkoutBuilder()");
+  E("builderState.step = 6; renderWorkoutBuilder()");
   check($("#builder-host .bld-stage") === stageNode, "the stage node survives a step change");
   check(stageNode.getAttribute("data-bld-dir") === "1", "moving forward is marked as a forward motion");
   check(($$("#builder-host [data-bld-step]")[4].className || "").indexOf("done") !== -1, "the gear chip reads as done after moving on");
@@ -314,10 +314,10 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   E("builderState.step = 4; renderWorkoutBuilder()");
   check(stageNode.getAttribute("data-bld-dir") === "-1", "going back is marked as a backward motion");
 
-  const timeVal = $$("#builder-host .bld-brief-v")[5];
+  const timeVal = $$("#builder-host .bld-brief-v")[6];
   check(timeVal.textContent === "30 min", "the brief starts at 30 min");
   E("builderState.duration = 45; renderWorkoutBuilder()");
-  check($$("#builder-host .bld-brief-v")[5] === timeVal, "the brief value keeps its node");
+  check($$("#builder-host .bld-brief-v")[6] === timeVal, "the brief value keeps its node");
   check(timeVal.textContent === "45 min", "the brief value updates in place");
 
   E("closeWorkoutBuilder()");
@@ -329,6 +329,110 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   E("builderState.step = 3; renderWorkoutBuilder()");
   const fullCardImg = $("#builder-host [data-bld-focus='full'] img");
   check(!!fullCardImg && fullCardImg.getAttribute("src") === "icon_muscles/full-body.png", "the full-body card uses the muscle map artwork");
+
+  section("The movements question decides who writes the exercises");
+  E("openWorkoutBuilder()");
+  E("builderState.step = 5; renderWorkoutBuilder()");
+  const moveBtns = $$("#builder-host [data-bld-movement]");
+  check(moveBtns.length === 3, "three movement sources offered");
+  check(E("builderState.movement") === "library", "the library is the default source");
+  const moveLabels = moveBtns.map(b => b.textContent.replace(/\s+/g, " ").trim());
+  check(moveLabels.some(t => /My library/i.test(t)), "library only offered");
+  check(moveLabels.some(t => /AI picks them/i.test(t)), "AI-chosen movements offered");
+  check(moveLabels.some(t => /Mix both/i.test(t)), "mix offered");
+  click(moveBtns.find(b => b.dataset.bldMovement === "mix"));
+  check(E("builderState.movement") === "mix", "clicking a source selects it");
+  check(E("builderState.step") === 5, "the movements step waits for Continue");
+  check($$("#builder-host .bld-brief-v")[5].textContent === "Mix both", "the brief names the movement source");
+
+  section("The AI can write a movement the library does not have");
+  const newMove = {
+    newMovement: true,
+    name: "Cable Squat Row",
+    movementType: "weight",
+    instructions: "Sit into a squat, then row the handle to the ribs.",
+    canAddLoad: true,
+    perSide: false,
+    bodyweightLoad: 20,
+    equipment: ["machine", "cable", "barbell"],
+    bodyParts: ["Back", "Thighs", "Arms"],
+    primaryMuscles: ["Latissimus dorsi", "Quadriceps"],
+    secondaryMuscles: ["Biceps brachii", "Imaginary muscle"],
+    sets: 3,
+    reps: [10, 10, 10],
+    setTypes: ["regular", "regular", "regular"],
+    weight: 25,
+  };
+  const writtenDraft = {
+    name: "Built Beside the Library",
+    rationale: "One written movement beside one the athlete already owns.",
+    restSec: 90,
+    groups: [
+      { type: "straight", exercises: [newMove] },
+      { type: "straight", exercises: [{ exId: lib[0].id, sets: 3, reps: [8, 8, 8], setTypes: ["regular", "regular", "regular"], weight: 0 }] },
+    ],
+  };
+  W.fetch = () => Promise.resolve({
+    ok: true,
+    json: async () => ({ choices: [{ message: { content: JSON.stringify(writtenDraft) } }] }),
+  });
+  E("state.profile.apiKey = 'test-key'");
+  setBrief({ movement: "mix", goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()") });
+  const mixed = await E("builderBuild()");
+  check(mixed.source === "ai", "a mixed session with a written movement is accepted");
+  check(mixed.newExercises.length === 1, "the written movement is held by the draft");
+  const made = mixed.newExercises[0];
+  check(made.name === "Cable Squat Row", "the written movement keeps its name");
+  check(made.mode === "reps" && made.weightAvailable === true, "a weighted movement takes load and reps");
+  check(made.perSide === false, "the per-side flag is read");
+  check(made.instructions.indexOf("squat") !== -1, "the instructions are kept");
+  check(made.equipment.indexOf("machine") !== -1 && made.equipment.indexOf("barbell") !== -1, "known gear is kept");
+  check(made.equipment.indexOf("cable") === -1, "gear with no app tag is dropped");
+  check(made.bodyParts.join(",") === "Back,Thighs", "unknown body parts are dropped (" + made.bodyParts.join(",") + ")");
+  check(made.primaryMuscles.length === 2, "both primary muscles are kept");
+  check(made.secondaryMuscles.join(",") === "Biceps brachii", "unknown muscles are dropped");
+  check(made.loadFactor === 0 && made.loadSource === "ai", "a weighted movement carries no body-weight share");
+  check(E("!!getEx(builderState.draft.newExercises[0].id)") === false, "nothing is written to the library before saving");
+  E("renderWorkoutBuilder()");
+  check($$("#builder-host .bld-new").length === 1, "the preview tags the written movement");
+  const libBefore = E("state.exercises.length");
+  E("builderSave(false)");
+  const savedDay = E("state.days[state.days.length - 1]");
+  check(E("state.exercises.length") === libBefore + 1, "saving adds the written movement to the library");
+  check(savedDay.aiExIds.length === 1 && savedDay.aiExIds[0] === made.id, "the routine remembers the movement it brought in");
+  check(savedDay.userEdited === false, "a freshly saved routine counts as untouched");
+  const libEx = E("getEx('" + made.id + "')");
+  check(!!libEx && libEx.origin === "ai" && libEx.instructions.length > 0, "the library copy keeps its instructions and AI origin");
+
+  section("Library-only never writes a movement");
+  E("openWorkoutBuilder()");
+  setBrief({ movement: "library", goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()") });
+  const libOnly = await E("builderBuild()");
+  check(libOnly.newExercises.length === 0, "nothing is written when only the library is allowed");
+  check(libOnly.exercises.length > 0, "the library movements are still used");
+  check(libOnly.exercises.every(de => de.exId !== made.id), "the written movement is dropped from the session");
+  E("closeWorkoutBuilder()");
+
+  section("Deleting an untouched AI routine takes its movements with it");
+  const beforeDelete = E("state.exercises.length");
+  E("deleteRoutineDay('" + savedDay.id + "')");
+  check(E("state.days.some(d=>d.id==='" + savedDay.id + "')") === false, "the routine is gone");
+  check(E("state.exercises.length") === beforeDelete - 1, "its AI movement left with it");
+  check(E("!!getEx('" + made.id + "')") === false, "the movement is no longer in the library");
+
+  section("Editing the routine once keeps its AI movements");
+  E("openWorkoutBuilder()");
+  setBrief({ movement: "mix", goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()") });
+  const second = await E("builderBuild()");
+  check(second.newExercises.length === 1, "the movement is written again for the new session");
+  const secondMade = second.newExercises[0];
+  E("builderSave(false)");
+  const day2 = E("state.days[state.days.length - 1]");
+  E("markRoutineEdited('" + day2.id + "')");
+  const keptBefore = E("state.exercises.length");
+  E("deleteRoutineDay('" + day2.id + "')");
+  check(E("state.exercises.length") === keptBefore, "an edited routine leaves its movement in the library");
+  check(E("!!getEx('" + secondMade.id + "')") === true, "the movement survives the delete");
 
   section("Runtime health");
   check(errors.length === 0, "no page errors (got " + errors.length + (errors.length ? ": " + errors.join("; ") : "") + ")");
