@@ -8920,7 +8920,7 @@ const BUILDER_FORMATS = {
    library yet; those are added to it with the routine and carry origin "ai". */
 const BUILDER_MOVEMENTS = {
   library: { label:"My library",    tag:"Nothing new", desc:"Only movements you already own, ready to log today." },
-  ai:      { label:"AI picks them", tag:"AI's call",   desc:"The AI may write better-fitting movements beside your library." },
+  ai:      { label:"AI picks them", tag:"AI's call",   desc:"The AI designs movements of its own beside your library." },
   mix:     { label:"Mix both",      tag:"Blend",       desc:"At least one library movement and at least one the AI writes." }
 };
 const BUILDER_STYLES = {
@@ -10260,7 +10260,7 @@ const WORKOUT_SYSTEM_PROMPT = [
   "The user's requested format and style are a hard contract. Never default to supersets:",
   "a superset or circuit is allowed only when the request explicitly asks for that structure.",
   "For a regular session every group MUST be type \"straight\" and no movements may be paired.",
-  "Use exercise ids from the supplied library. Never invent an id.",
+  "Use exIds exactly as they appear in the supplied library. Never invent or alter an exId.",
   "The request.movementSource field is a hard contract. \"library\" means every exercise must be an exId from the library and you may never write a new movement.",
   "\"ai\" means you choose the movements and may write movements that are not in the library when they fit this athlete better; \"mix\" means at least one library exId and at least one written movement.",
   "A written movement has no exId: it carries newMovement:true and every field listed in request.newMovementFields, using only the spellings in request.allowedEquipment, request.allowedBodyParts and request.allowedMuscles.",
@@ -10318,7 +10318,7 @@ function workoutShapeRules(b){
   if (b.movement==="library"){
     rules.push("MOVEMENT SOURCE: library only. Every exercise must be an exId from the library; never write a movement, even when a better one exists.");
   } else if (b.movement==="ai"){
-    rules.push("MOVEMENT SOURCE: the AI picks the movements. Use library exIds where they fit, and write your own movement when it fits this athlete better than anything available. Every written movement needs the full field set in request.newMovementFields.");
+    rules.push("MOVEMENT SOURCE: the AI picks the movements. Design at least one movement of your own that is not already in the library, chosen because it fits this athlete better than anything the library offers, and use library exIds for the rest where they are the best fit. Every written movement needs the full field set in request.newMovementFields.");
   } else {
     rules.push("MOVEMENT SOURCE: mix. Include at least one library exId and at least one written movement, so the session blends what the athlete already owns with what the AI designs. Every written movement needs the full field set in request.newMovementFields.");
   }
@@ -10337,7 +10337,9 @@ function buildWorkoutPayload(b){
   const zones = Object.assign({}, getRepZones());
   zones[b.goal] = builderApproachZone(b);
   return {
-    instruction:"Design the session described by request. Use only library exIds. Follow request.shapeRules exactly. Return JSON only.",
+    instruction:(b.movement==="library"
+      ? "Design the session described by request. Use only library exIds and write no new movements. Follow request.shapeRules exactly. Return JSON only."
+      : "Design the session described by request. Use library exIds where they fit and write your own movements exactly as request.movementSource requires. Follow request.shapeRules exactly. Return JSON only."),
     request:{
       format:b.format,
       style:b.format==="specific" ? b.style : b.format,
@@ -10409,9 +10411,12 @@ function buildWorkoutPayload(b){
     })
   };
 }
-function callGroqWorkout(b){
+function callGroqWorkout(b, opts){
   const temp = b.format==="surprise" ? .85 : b.format==="fun" ? .7 : .35;
-  return groqJson(WORKOUT_SYSTEM_PROMPT, JSON.stringify(buildWorkoutPayload(b)), temp);
+  const prompt = (opts && opts.demandNew)
+    ? WORKOUT_SYSTEM_PROMPT + "\nCORRECTION: your previous answer used only exercises from the library, but request.movementSource is \"" + b.movement + "\" and requires at least one written movement. Return the whole session again and include at least one movement of your own that is not in the library."
+    : WORKOUT_SYSTEM_PROMPT;
+  return groqJson(prompt, JSON.stringify(buildWorkoutPayload(b)), temp);
 }
 function builderAIClamp(v, lo, hi, fallback){
   const n = +v;
@@ -10542,12 +10547,59 @@ function builderAIMatchName(v, list){
   if (!s) return "";
   return list.find(x=>x.toLowerCase()===s.toLowerCase()) || "";
 }
-function builderAIAllowedList(v, allowed, max){
+/* The model is asked for the app's own spellings, but it drifts into everyday
+   words ("cables", "body weight", "Quads"). A close-enough word is resolved to
+   the app's tag instead of throwing the whole movement away. */
+const AI_EQUIP_ALIASES = {
+  "body weight":"bodyweight", "body-weight":"bodyweight", "no equipment":"bodyweight",
+  "pull-up bar":"pullup", "pull up bar":"pullup", "pullup bar":"pullup",
+  "dumbbells":"dumbbell", "barbells":"barbell", "kettlebells":"kettlebell",
+  "resistance band":"bands", "resistance bands":"bands", "band":"bands",
+  "cable":"machine", "cables":"machine", "cable machine":"machine", "machines":"machine",
+  "ez bar":"ezbar", "e-z bar":"ezbar", "trap bar":"trapbar",
+  "suspension trainer":"suspension", "trx":"suspension", "weight vest":"vest"
+};
+const AI_PART_ALIASES = {
+  "pecs":"Chest", "lats":"Back", "upper back":"Back", "lower back":"Back",
+  "delts":"Shoulders", "traps":"Shoulders", "quads":"Thighs", "quadriceps":"Thighs",
+  "hamstrings":"Thighs", "abs":"Core", "abdominals":"Core", "obliques":"Core",
+  "butt":"Glutes", "calves":"Calves"
+};
+function builderAIAllowedList(v, allowed, max, aliases){
   const raw = Array.isArray(v) ? v : (typeof v==="string" ? v.split(/[,;\/]/) : []);
   const out = [];
   raw.forEach(x=>{
-    const hit = builderAIMatchName(x, allowed);
+    const s = String(x==null ? "" : x).trim().replace(/\s+/g," ");
+    if (!s) return;
+    let hit = builderAIMatchName(s, allowed);
+    if (!hit && aliases && aliases[s.toLowerCase()]) hit = builderAIMatchName(aliases[s.toLowerCase()], allowed);
+    if (!hit && /s$/i.test(s)) hit = builderAIMatchName(s.slice(0,-1), allowed);
     if (hit && out.indexOf(hit)===-1) out.push(hit);
+  });
+  return out.slice(0, max);
+}
+/* A muscle is asked for by name, but the model often answers with a body part
+   ("Chest", "Quads") or a loose word. Those expand to the region's muscles
+   rather than being dropped, which is what used to lose the movement entirely. */
+function builderAIResolveMuscles(v, max){
+  const raw = Array.isArray(v) ? v : (typeof v==="string" ? v.split(/[,;\/]/) : []);
+  const out = [];
+  const push = m => { if (m && out.indexOf(m)===-1) out.push(m); };
+  raw.forEach(x=>{
+    const s = String(x==null ? "" : x).trim().replace(/\s+/g," ");
+    if (!s) return;
+    const exact = builderAIMatchName(s, MUSCLE_NAMES);
+    if (exact){ push(exact); return; }
+    const alias = AI_PART_ALIASES[s.toLowerCase()];
+    const part = builderAIMatchName(alias || s, BODY_PARTS);
+    if (part){ (PART_DETAILS[part]||[]).forEach(push); return; }
+    const loose = s.toLowerCase();
+    if (loose.length >= 4){
+      MUSCLE_NAMES.forEach(m=>{
+        const l = m.toLowerCase();
+        if (l.indexOf(loose)!==-1 || loose.indexOf(l)!==-1) push(m);
+      });
+    }
   });
   return out.slice(0, max);
 }
@@ -10571,10 +10623,10 @@ function builderAIMadeExercise(raw, b){
   const isDuration = mt==="duration" || mt==="time";
   const isWeight = !isDuration && (mt==="weight" || mt==="weights" || mt==="weight and reps" || mt==="weight & reps");
   if (!isDuration && !isWeight && mt!=="bodyweight") return null;
-  const primary = builderAIAllowedList(raw.primaryMuscles, MUSCLE_NAMES, 4);
+  const primary = builderAIResolveMuscles(raw.primaryMuscles, 4);
   if (!primary.length) return null;
-  const secondary = builderAIAllowedList(raw.secondaryMuscles, MUSCLE_NAMES, 4).filter(m=>primary.indexOf(m)===-1);
-  let parts = builderAIAllowedList(raw.bodyParts, BODY_PARTS, 4);
+  const secondary = builderAIResolveMuscles(raw.secondaryMuscles, 4).filter(m=>primary.indexOf(m)===-1);
+  let parts = builderAIAllowedList(raw.bodyParts, BODY_PARTS, 4, AI_PART_ALIASES);
   if (!parts.length){
     primary.concat(secondary).forEach(m=>{
       const p = builderPartForMuscle(m);
@@ -10583,7 +10635,7 @@ function builderAIMadeExercise(raw, b){
   }
   // Only gear the athlete actually selected is kept; body weight always exists.
   const have = (b.equipment||[]).filter(k=>ALL_EQUIP.indexOf(k)!==-1);
-  let kit = builderAIAllowedList(raw.equipment, ALL_EQUIP, 5).filter(k=>k==="bodyweight" || have.indexOf(k)!==-1);
+  let kit = builderAIAllowedList(raw.equipment, ALL_EQUIP, 5, AI_EQUIP_ALIASES).filter(k=>k==="bodyweight" || have.indexOf(k)!==-1);
   if (!kit.length) kit = ["bodyweight"];
   if (!isDuration && !isWeight && kit.indexOf("bodyweight")===-1) kit.unshift("bodyweight");
   const type = isDuration ? "duration" : (isWeight ? "weight" : "bodyweight");
@@ -10684,6 +10736,14 @@ function normalizeAIDraft(raw, b){
     source:"ai"
   });
 }
+function builderAdoptDraft(draft, note){
+  const b = builderState;
+  b.draft = draft;
+  b.aiNote = note || "";
+  b.building = false;
+  renderWorkoutBuilder();
+  return b.draft;
+}
 /* Build the preview. With an API key GroqCloud writes it; without one (or on
    any failure) the same format request is filled by the local maker. */
 function builderBuild(){
@@ -10709,23 +10769,25 @@ function builderBuild(){
   return callGroqWorkout(b).then(raw=>{
     if (token !== b.buildToken) return b.draft;
     const draft = normalizeAIDraft(raw, b);
-    if (draft){
-      b.draft = draft;
-      b.aiNote = "";
-    } else {
-      b.draft = generateWorkout(b);
-      b.aiNote = "GroqCloud returned a shape that did not match your request, so this session was built locally.";
+    if (!draft){
+      return builderAdoptDraft(generateWorkout(b), "GroqCloud returned a shape that did not match your request, so this session was built locally.");
     }
-    b.building = false;
-    renderWorkoutBuilder();
-    return b.draft;
+    /* The movement question is only answered if the session actually carries
+       what it promised, so a library-only answer gets one corrective pass. */
+    if (!builderMovementAllowsNew(b) || (draft.newExercises||[]).length) return builderAdoptDraft(draft, "");
+    return callGroqWorkout(b, {demandNew:true}).then(raw2=>{
+      if (token !== b.buildToken) return b.draft;
+      const second = normalizeAIDraft(raw2, b);
+      if (second && (second.newExercises||[]).length) return builderAdoptDraft(second, "");
+      return builderAdoptDraft(second || draft, "The AI stayed inside your library this time — no new movements were written.");
+    }).catch(()=>{
+      if (token !== b.buildToken) return b.draft;
+      return builderAdoptDraft(draft, "The AI stayed inside your library this time — no new movements were written.");
+    });
   }).catch(err=>{
     if (token !== b.buildToken) return b.draft;
-    b.draft = generateWorkout(b);
-    b.building = false;
-    b.aiNote = "GroqCloud was unavailable ("+String((err && err.message) || err).slice(0,90)+") — built locally instead.";
-    renderWorkoutBuilder();
-    return b.draft;
+    const why = String((err && err.message) || err).slice(0,90);
+    return builderAdoptDraft(generateWorkout(b), "GroqCloud was unavailable ("+why+") — built locally instead.");
   });
 }
 function builderSave(startNow){

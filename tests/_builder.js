@@ -434,6 +434,87 @@ const kinds = d => Array.from(new Set(d.groups.map(g => g.type)));
   check(E("state.exercises.length") === keptBefore, "an edited routine leaves its movement in the library");
   check(E("!!getEx('" + secondMade.id + "')") === true, "the movement survives the delete");
 
+  section("The request never tells the AI to stay inside the library when it may write");
+  E("openWorkoutBuilder()");
+  setBrief({ movement: "library", goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()") });
+  const libPayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(/Use only library exIds/.test(libPayload.instruction), "library mode still forbids writing");
+  setBrief({ movement: "ai" });
+  const aiModePayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(!/Use only library exIds/.test(aiModePayload.instruction), "AI mode does not demand library-only exercises");
+  check(/at least one movement of your own/i.test(aiModePayload.request.shapeRules.join(" ")), "AI mode asks for a movement of its own");
+  check(!/May write better-fitting/i.test(E("BUILDER_MOVEMENTS.ai.desc")), "the AI card no longer says it merely may write");
+  setBrief({ movement: "mix" });
+  const mixPayload = JSON.parse(E("JSON.stringify(buildWorkoutPayload(builderState))"));
+  check(!/Use only library exIds/.test(mixPayload.instruction), "mix mode does not demand library-only exercises");
+  check(!/Never invent an id/.test(E("WORKOUT_SYSTEM_PROMPT")), "the system prompt no longer forbids writing outright");
+
+  section("A movement written in everyday words is kept, not thrown away");
+  const everyday = {
+    newMovement: true,
+    name: "Sandbag Zercher Press",
+    movementType: "weight",
+    instructions: "Hold the bag in the crook of the elbows and press.",
+    canAddLoad: true,
+    perSide: false,
+    bodyweightLoad: 0,
+    equipment: ["cables", "body weight"],
+    bodyParts: ["Quads"],
+    primaryMuscles: ["Chest"],
+    secondaryMuscles: ["Triceps brachii"],
+    sets: 3,
+    reps: [10, 10, 10],
+    setTypes: ["regular", "regular", "regular"],
+    weight: 20,
+  };
+  const em = JSON.parse(E("JSON.stringify(builderAIMadeExercise(" + JSON.stringify(everyday) + ", builderState))"));
+  check(!!em, "a body part named as a muscle no longer drops the movement");
+  check(!!em && em.primaryMuscles.indexOf("Pectoralis major") !== -1, "the body part expands to real muscles (" + (em ? em.primaryMuscles.join(",") : "") + ")");
+  check(!!em && em.bodyParts.indexOf("Thighs") !== -1, "slang body parts resolve (Quads -> Thighs)");
+  check(!!em && em.equipment.indexOf("machine") !== -1, "a loose gear word resolves (cables -> machine)");
+
+  section("A library-only AI answer is corrected once");
+  const libOnlyDraft = name => ({
+    name: name,
+    rationale: "Straight sets from the library.",
+    restSec: 75,
+    groups: lib.slice(0, 3).map(x => ({
+      type: "straight",
+      exercises: [{ exId: x.id, sets: 3, reps: [8, 8, 8], setTypes: ["regular", "regular", "regular"], weight: 0 }],
+    })),
+  });
+  const retryMove = Object.assign({}, newMove, { name: "Weighted Hollow Rock Press" });
+  const retryDraft = {
+    name: "Corrected Engine",
+    rationale: "One written movement, as the source asked.",
+    restSec: 75,
+    groups: [
+      { type: "straight", exercises: [retryMove] },
+      { type: "straight", exercises: [{ exId: lib[0].id, sets: 3, reps: [8, 8, 8], setTypes: ["regular", "regular", "regular"], weight: 0 }] },
+    ],
+  };
+  let calls = 0;
+  W.fetch = () => {
+    calls++;
+    const content = JSON.stringify(calls === 1 ? libOnlyDraft("Library Only") : retryDraft);
+    return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content } }] }) });
+  };
+  setBrief({ movement: "ai", goal: "hypertrophy", approach: "volume", format: "regular", style: "straight", experience: "intermediate", duration: 45, equipment: E("ALL_EQUIP.slice()") });
+  const corrected = await E("builderBuild()");
+  check(calls === 2, "a library-only answer triggers one corrective request");
+  check(corrected.newExercises.length === 1, "the corrected answer's written movement is kept");
+  check(E("builderState.aiNote") === "", "no note when the correction lands");
+
+  calls = 0;
+  W.fetch = () => {
+    calls++;
+    return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(libOnlyDraft("Never Writes")) } }] }) });
+  };
+  const stayed = await E("builderBuild()");
+  check(calls === 2, "the correction is attempted only once");
+  check(stayed.newExercises.length === 0, "a still-library-only answer is used rather than discarded");
+  check(/no new movements/i.test(E("builderState.aiNote")), "the note says no movements were written");
+
   section("Runtime health");
   check(errors.length === 0, "no page errors (got " + errors.length + (errors.length ? ": " + errors.join("; ") : "") + ")");
 
