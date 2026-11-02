@@ -2820,6 +2820,7 @@
   .bld-other-input { flex: 1; min-width: 0; padding: .5rem .65rem; font-size: .82rem; }
   .bld-muscles { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: .4rem; margin-top: .8rem; }
   .bld-muscle {
+    position: relative;
     display: flex; flex-direction: column; align-items: center; gap: .28rem;
     padding: .5rem .25rem .45rem; border: 1px solid var(--line); border-radius: var(--r-md);
     background: var(--surface); cursor: pointer; font: inherit; color: var(--ink-2);
@@ -2829,6 +2830,67 @@
   .bld-muscle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
   .bld-muscle img { width: 34px; height: 34px; object-fit: contain; filter: saturate(.85); }
   .bld-muscle span { font-size: .63rem; font-weight: 600; }
+  .bld-muscle-rank {
+    position: absolute; top: .22rem; right: .26rem;
+    display: grid; place-items: center; min-width: .95rem; height: .82rem; padding: 0 .18rem;
+    border-radius: 999px; background: var(--accent-soft);
+    font-family: var(--font-mono); font-size: .46rem; font-weight: 700; font-style: normal;
+    letter-spacing: .02em; color: var(--accent-deep);
+  }
+  .bld-ladder { margin-top: .85rem; border-top: 1px dashed var(--line); padding-top: .75rem; }
+  .bld-ladder-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+  .bld-ladder-t { font-family: var(--font-mono); font-size: .55rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .bld-ladder-n { font-size: .66rem; color: var(--ink-3); }
+  .bld-ranks { list-style: none; margin: .55rem 0 0; padding: 0; display: grid; gap: .3rem; }
+  .bld-rank {
+    display: flex; align-items: center; gap: .5rem;
+    border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+    padding: .4rem .4rem .4rem .5rem;
+  }
+  .bld-rank-n {
+    flex: none; display: grid; place-items: center; width: 1.35rem; height: 1.35rem;
+    border-radius: 999px; background: var(--accent-soft); color: var(--accent-deep);
+    font-family: var(--font-mono); font-size: .58rem; font-weight: 700;
+  }
+  .bld-rank-body { display: flex; flex-wrap: wrap; gap: .3rem; flex: 1; min-width: 0; }
+  .bld-rank-muscle {
+    display: inline-flex; align-items: center; gap: .32rem; max-width: 100%;
+    border: 1px solid var(--line); border-radius: 999px; padding: .14rem .3rem .14rem .16rem;
+    background: var(--bg);
+  }
+  .bld-rank-muscle b { font-size: .72rem; font-weight: 600; color: var(--ink); }
+  .bld-rank-fin {
+    display: inline-flex; align-items: center; gap: .18rem;
+    border: 1px solid var(--line); border-radius: 999px; background: transparent;
+    padding: .12rem .3rem; cursor: pointer; font: inherit;
+    font-family: var(--font-mono); font-size: .46rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-3);
+    transition: border-color .18s, color .18s, background .18s;
+  }
+  .bld-rank-fin em { font-style: normal; }
+  .bld-rank-fin svg { width: .62rem; height: .62rem; }
+  .bld-rank-fin:hover, .bld-rank-fin:focus-visible { border-color: var(--accent-line); color: var(--ink); }
+  .bld-rank-fin.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-deep); }
+  .bld-rank-fin:disabled { opacity: .35; cursor: default; }
+  .bld-rank-x {
+    display: grid; place-items: center; width: 1.1rem; height: 1.1rem; padding: 0;
+    border: none; border-radius: 999px; background: transparent; color: var(--ink-3); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .bld-rank-x svg { width: .6rem; height: .6rem; }
+  .bld-rank-x:hover, .bld-rank-x:focus-visible { background: var(--accent-soft); color: var(--accent-deep); }
+  .bld-rank-tools { display: flex; align-items: center; gap: .16rem; flex: none; }
+  .bld-rank-btn {
+    display: grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0;
+    border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
+    color: var(--ink-3); cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+  }
+  .bld-rank-btn svg { width: .72rem; height: .72rem; }
+  .bld-rank-btn:hover:not(:disabled), .bld-rank-btn:focus-visible { border-color: var(--line); background: var(--bg); color: var(--ink); }
+  .bld-rank-btn:disabled { opacity: .3; cursor: default; }
+  .bld-rank-tie { font-family: var(--font-mono); font-size: .8rem; font-weight: 700; line-height: 1; }
+  .bld-ladder-key { margin: .5rem 0 0; font-size: .68rem; line-height: 1.5; color: var(--ink-3); }
+  .bld-ladder-key b { color: var(--ink-2); font-weight: 600; }
   .bld-durations { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .5rem; margin-top: .9rem; }
   .bld-dur {
     border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
@@ -2937,6 +2999,9 @@
     .bld-opts.three, .bld-opts.four { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .bld-eq { grid-template-columns: repeat(3, minmax(0,1fr)); }
     .bld-muscles { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .bld-rank { flex-wrap: wrap; }
+    .bld-rank-body { flex-basis: 100%; order: 3; }
+    .bld-rank-tools { margin-left: auto; }
   }
   @media (max-width: 600px) {
     .bld-steps { padding: .55rem .85rem 0; }
@@ -2953,7 +3018,7 @@
     .bld-band .btn { margin-left: 0; width: 100%; justify-content: center; }
   }
   /* Press physics come last so they win over the base hover lifts. */
-  .bld-eq-tile:active, .bld-muscle:active, .bld-preset:active, .bld-dur:active, .bld-level:active, .bld-style:active { transform: scale(.95); transition-duration: .08s; }
+  .bld-eq-tile:active, .bld-muscle:active, .bld-preset:active, .bld-dur:active, .bld-level:active, .bld-style:active, .bld-rank-btn:active, .bld-rank-fin:active { transform: scale(.95); transition-duration: .08s; }
   .bld-opt:active { transform: translateY(0) scale(.985); transition-duration: .08s; }
   .bld-foot .btn:active { transform: scale(.97); }
   .bld-step:not(.on):hover b { background: var(--accent-line); }
@@ -8963,10 +9028,10 @@ const BUILDER_APPROACHES = {
       evidence:"Schoenfeld et al. 2017; ACSM 2009",
       desc:"Four working sets per movement, each stopped 1-2 reps shy of failure. More total volume, less systemic fatigue.",
       rule:"Use 4 working sets per exercise, 6-12 reps, stopping 1-2 reps short of failure (2 RIR). Rest 60-90 seconds. Spread the sets across movements rather than adding extra exercises." },
-    { id:"intensity", label:"High Intensity, Low Volume", tag:"2 sets · 1 RIR → failure", sets:2, rest:[120,180], failure:"last", rir:1,
+    { id:"intensity", label:"High Intensity, Low Volume", tag:"2 sets · 1 RIR → failure", sets:2, rest:[120,180], failure:"last", rir:1, movements:[4,6],
       evidence:"Schoenfeld et al., Sports Med 2017; ACSM 2009",
-      desc:"Only two sets per movement: the first leaves one rep in reserve, the second goes to complete failure.",
-      rule:"Use exactly 2 working sets per exercise, 6-12 reps. The first set stops at 1 rep in reserve (1 RIR); the second set is taken to complete muscular failure and must be set type \"failure\". Rest 120-180 seconds so both sets stay high quality." },
+      desc:"Two high-quality sets per movement, spread across four to six movements. Every set is close to failure, so nothing is junk volume.",
+      rule:"Use exactly 2 working sets per exercise, 6-12 reps. The first set stops at 1 rep in reserve (1 RIR); the second set is taken to complete muscular failure and must be set type \"failure\". Rest 120-180 seconds so both sets stay high quality. Low volume means two sets per movement, not fewer movements: this approach still fills four to six movements, and a finisher is additional to that count rather than a replacement for a movement." },
     { id:"balanced", label:"Balanced", tag:"3 sets · last to failure", sets:3, rest:[90,120], failure:"last", rir:2,
       evidence:"Schoenfeld et al., Sports Med 2017; ACSM 2009",
       desc:"Three working sets, the last taken to failure. A practical middle ground for most lifters.",
@@ -9028,6 +9093,8 @@ function openWorkoutBuilder(opts){
     movement: "library",
     focus: "upper",
     muscles: [],
+    muscleTiers: [],
+    muscleFinisher: {},
     equipment: BUILDER_HOME_EQUIP.slice(),
     customEquipment: [],
     customOpen: false,
@@ -9075,10 +9142,10 @@ function builderStepCopy(step){
     { title:'Choose the <em>engine</em>.', sub:'Strength, hypertrophy, or endurance. Rep ranges, rest, and set dose all follow from this one choice.' },
     { title:'Pick the <em>approach</em>.', sub:'How should the work be dosed? Volume, intensity, and proximity to failure change the stimulus — pick the one that matches your goal.' },
     { title:'Pick the <em>shape</em>.', sub:'Straight sets, a playful mix, a specific structure, or a surprise. Supersets are never assumed.' },
-    { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or major in a specific muscle. The sequence follows your target.' },
+    { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or rank specific muscles. On the target ladder, order is priority: the top rank gets the most work.' },
     { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
     { title:'Choose the <em>movements</em>.', sub:'Stay inside your library, or let the AI write movements that are not in it yet. Anything new joins your library with the session.' },
-    { title:'Set the <em>dose</em>.', sub:'Time decides how many movements. Difficulty tunes rest, load targets, and whether a finisher appears.' },
+    { title:'Set the <em>dose</em>.', sub:'The approach fixes the movement range and sets per movement; time decides how much of it fits. A finisher is extra, never a smaller session.' },
     { title:'Make it <em>yours</em>.', sub:'Age tunes volume and rest. Body weight keeps your profile and volume math current. Experience sets how conservative the first session should be.' },
     { title:'Your session, <em>ready</em>.', sub:'A real structure, not a template. Shuffle it, or save it straight into Workouts.' }
   ];
@@ -9095,11 +9162,69 @@ function builderFocusParts(b){
   if (b.focus==="pick") return (b.muscles||[]).slice();
   return BUILDER_FOCUS_META[b.focus] ? BUILDER_FOCUS_META[b.focus].parts.slice() : [];
 }
+/* Target muscles form a priority ladder, not a flat list. Each inner array of
+   muscleTiers is one rank: parts inside the same array are equally important,
+   and earlier ranks outrank later ones. b.muscles stays the flat reading order
+   so the pool filter, the seed, and the payload all see one order. */
+function builderTiers(b){ return (b && Array.isArray(b.muscleTiers)) ? b.muscleTiers : []; }
+function builderSyncMuscles(b){
+  b = b || builderState;
+  if (!b) return;
+  const seen = {};
+  b.muscleTiers = builderTiers(b)
+    .map(t=>t.filter(p=>BUILDER_MUSCLE_PARTS.indexOf(p)!==-1 && !seen[p] && (seen[p]=1)))
+    .filter(t=>t.length);
+  b.muscles = [];
+  b.muscleTiers.forEach(t=>t.forEach(p=>b.muscles.push(p)));
+  b.muscleFinisher = b.muscleFinisher || {};
+  Object.keys(b.muscleFinisher).forEach(k=>{
+    if (!b.muscleFinisher[k] || b.muscles.indexOf(k)===-1) delete b.muscleFinisher[k];
+  });
+}
+function builderMuscleRank(b, part){
+  const tiers = builderTiers(b);
+  for (let i=0;i<tiers.length;i++) if (tiers[i].indexOf(part)!==-1) return i+1;
+  return 0;
+}
+function builderMuscleWeight(b, part){
+  const r = builderMuscleRank(b, part);
+  return r ? 1/r : 0;
+}
+/* Requested isolation finishers, in priority order. Two is the ceiling: the
+   session still has to fit the time budget it was given. */
+function builderFinisherParts(b){
+  if (!b || b.focus!=="pick") return [];
+  const out = [];
+  builderTiers(b).forEach(t=>t.forEach(p=>{
+    if (b.muscleFinisher && b.muscleFinisher[p]) out.push(p);
+  }));
+  return out.slice(0,2);
+}
+function builderPriorityPayload(b){
+  if (!b || b.focus!=="pick") return [];
+  return builderTiers(b).map((t,i)=>({
+    rank:i+1,
+    muscles:t.slice(),
+    isolationFinisher:t.filter(p=>b.muscleFinisher && b.muscleFinisher[p])
+  })).filter(x=>x.muscles.length);
+}
+function builderPrioritySentence(b){
+  const tiers = builderPriorityPayload(b);
+  if (!tiers.length) return "";
+  return tiers.map(t=>"rank "+t.rank+": "+t.muscles.join(" = ")+(t.isolationFinisher.length?" (isolation finisher for "+t.isolationFinisher.join(" and ")+")":"")).join("; ");
+}
+/* "Chest › Back = Biceps" — a leading rank, then ties joined with =, and a
+   count for whatever did not fit in the label. */
+function builderPriorityLabel(b){
+  const tiers = builderTiers(b).filter(t=>t.length);
+  if (!tiers.length) return "Pick muscles";
+  const shownTiers = tiers.slice(0,2);
+  const shown = shownTiers.reduce((a,t)=>a+t.length,0);
+  const total = tiers.reduce((a,t)=>a+t.length,0);
+  return shownTiers.map(t=>t.join(" = ")).join(" \u203a ") + (total>shown ? " +"+(total-shown) : "");
+}
 function builderTargetLabel(b){
-  if (b.focus==="pick"){
-    if (!b.muscles.length) return "Pick muscles";
-    return b.muscles.slice(0,2).join(" & ") + (b.muscles.length>2 ? " +"+(b.muscles.length-2) : "");
-  }
+  if (b.focus==="pick") return builderPriorityLabel(b);
   return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
 }
 function builderIsFullGym(b){
@@ -9429,6 +9554,7 @@ function builderApproachHtml(){
     '<p class="bld-hint"><b>Rep target:</b> '+zone[0]+'-'+zone[1]+' reps for '+esc(sessionTypeLabel(b.goal).toLowerCase())+'. '+
       (ap.failure==="last" ? 'The final set is planned to failure.' : 'No set is planned to failure; effort stays just short of it.')+
       (ap.cue ? ' <b>Execution:</b> '+esc(ap.cue)+'.' : '')+
+      (ap.movements ? ' <b>Session size:</b> '+ap.movements[0]+'-'+ap.movements[1]+' movements at '+builderSets(b)+' sets each \u2014 fewer sets, not fewer movements.' : '')+
       (ap.evidence ? ' <b>Evidence:</b> '+esc(ap.evidence)+'.' : '')+
       '</p>';
 }
@@ -9482,16 +9608,102 @@ function builderFormatHtml(){
   html += '<p class="bld-hint"><b>GroqCloud writes the plan</b> when an AI key is set in Settings. Without a key the same request is built locally, so the maker still works offline.</p>';
   return html;
 }
+const BLD_LADDER_ICON = {
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V6"/><path d="m6 12 6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v13"/><path d="m6 12 6 6 6-6"/></svg>',
+  untie:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15 6.5 17.5a2.5 2.5 0 0 1-3.5-3.5L5.5 11.5"/><path d="m15 9 2.5-2.5a2.5 2.5 0 0 1 3.5 3.5L18.5 12.5"/><path d="M4 4l16 16"/></svg>',
+  iso:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4.5 4.5L19 6.5"/></svg>'
+};
+function builderToggleMuscle(part){
+  const b = builderState;
+  if (!b) return;
+  builderSyncMuscles(b);
+  if (b.muscles.indexOf(part)===-1) b.muscleTiers.push([part]);
+  else b.muscleTiers = b.muscleTiers.map(t=>t.filter(x=>x!==part)).filter(t=>t.length);
+  builderSyncMuscles(b);
+}
+function builderToggleFinisher(part){
+  const b = builderState;
+  if (!b) return;
+  builderSyncMuscles(b);
+  if (b.muscles.indexOf(part)===-1) return;
+  b.muscleFinisher = b.muscleFinisher || {};
+  if (b.muscleFinisher[part]) delete b.muscleFinisher[part];
+  else b.muscleFinisher[part] = true;
+}
+function builderRankMove(i, dir){
+  const b = builderState;
+  if (!b) return;
+  builderSyncMuscles(b);
+  const j = i + dir;
+  if (i<0 || j<0 || i>=b.muscleTiers.length || j>=b.muscleTiers.length) return;
+  const moved = b.muscleTiers[i];
+  b.muscleTiers[i] = b.muscleTiers[j];
+  b.muscleTiers[j] = moved;
+  builderSyncMuscles(b);
+}
+/* Tie a rank with the one above it: both now sit at the same priority. */
+function builderRankTie(i){
+  const b = builderState;
+  if (!b) return;
+  builderSyncMuscles(b);
+  if (i<=0 || i>=b.muscleTiers.length) return;
+  const moved = b.muscleTiers.splice(i,1)[0];
+  b.muscleTiers[i-1] = b.muscleTiers[i-1].concat(moved);
+  builderSyncMuscles(b);
+}
+function builderRankUntie(part){
+  const b = builderState;
+  if (!b) return;
+  builderSyncMuscles(b);
+  const i = b.muscleTiers.findIndex(t=>t.indexOf(part)!==-1);
+  if (i===-1 || b.muscleTiers[i].length<2) return;
+  b.muscleTiers[i] = b.muscleTiers[i].filter(p=>p!==part);
+  b.muscleTiers.splice(i+1, 0, [part]);
+  builderSyncMuscles(b);
+}
+function builderLadderHtml(b){
+  const tiers = builderTiers(b);
+  if (!tiers.length) return "";
+  const fins = builderFinisherParts(b);
+  return '<div class="bld-ladder">'+
+      '<div class="bld-ladder-head">'+
+        '<span class="bld-ladder-t">Priority ladder</span>'+
+        '<span class="bld-ladder-n">Rank 1 sets the emphasis</span>'+
+      '</div>'+
+      '<ol class="bld-ranks" aria-label="Muscle priority">'+tiers.map((tier,i)=>{
+        return '<li class="bld-rank" aria-label="Priority rank '+(i+1)+'">'+
+          '<span class="bld-rank-n" aria-hidden="true">'+(i+1)+'</span>'+
+          '<div class="bld-rank-body">'+tier.map(p=>{
+            const fin = !!(b.muscleFinisher && b.muscleFinisher[p]);
+            const capped = !fin && fins.length>=2;
+            return '<span class="bld-rank-muscle">'+
+              '<button type="button" class="bld-rank-fin'+(fin?' on':'')+'" data-bld-fin="'+esc(p)+'" aria-pressed="'+fin+'" aria-label="Isolation finisher for '+esc(p)+'"'+(capped?' disabled':'')+' title="'+(capped?'Two isolation finishers are already requested':fin?'Remove the isolation finisher for ':'Add an isolation finisher for ')+esc(p)+'">'+
+                BLD_LADDER_ICON.iso+'<em>Iso</em></button>'+
+              '<b>'+esc(p)+'</b>'+
+              (tier.length>1 ? '<button type="button" class="bld-rank-x" data-bld-untie="'+esc(p)+'" aria-label="Give '+esc(p)+' its own rank" title="Give '+esc(p)+' its own rank">'+BLD_LADDER_ICON.untie+'</button>' : "")+
+            '</span>';
+          }).join("")+'</div>'+
+          '<div class="bld-rank-tools">'+
+            '<button type="button" class="bld-rank-btn" data-bld-rank-up="'+i+'"'+(i===0?' disabled':'')+' aria-label="Move rank '+(i+1)+' up">'+BLD_LADDER_ICON.up+'</button>'+
+            '<button type="button" class="bld-rank-btn" data-bld-rank-down="'+i+'"'+(i===tiers.length-1?' disabled':'')+' aria-label="Move rank '+(i+1)+' down">'+BLD_LADDER_ICON.down+'</button>'+
+            (i>0 ? '<button type="button" class="bld-rank-btn bld-rank-tie" data-bld-rank-tie="'+i+'" aria-label="Tie rank '+(i+1)+' with rank '+i+'" title="Tie with the rank above">=</button>' : "")+
+          '</div>'+
+        '</li>';
+      }).join("")+'</ol>'+
+      '<p class="bld-ladder-key">Moving a muscle up gives it more of the session. Tying it with the rank above makes both equally important. Tick <b>Iso</b> to end the session with an isolation movement for that muscle, up to two'+(fins.length? ' — now: <b>'+esc(fins.join(', '))+'</b>.' : '.')+'</p>'+
+    '</div>';
+}
 function builderFocusHtml(){
   const b = builderState;
   const cards = [
     { id:"upper", label:"Upper body", desc:"Chest, back, shoulders, arms.", img:"icon_muscles/chest.png" },
     { id:"lower", label:"Lower body", desc:"Glutes, thighs, calves, hips.", img:"icon_muscles/quads.png" },
     { id:"full", label:"Full body", desc:"A balanced head-to-toe sequence.", img:"icon_muscles/full-body.png" },
-    { id:"pick", label:"Target muscles", desc:"Major in one or two areas.", img:"icon_muscles/shoulders.png" }
+    { id:"pick", label:"Target muscles", desc:"Rank the areas to major in.", img:"icon_muscles/shoulders.png" }
   ];
   let html = '<h4 class="bld-q">Where should the work land?</h4>'+
-    '<p class="bld-qsub">A broad target gives a balanced session. Target muscles narrows the pool to the areas you choose.</p>'+
+    '<p class="bld-qsub">A broad target gives a balanced session. Target muscles narrows the pool, and the ladder below it decides which of those muscles gets the most work.</p>'+
     '<div class="bld-opts four focus">'+cards.map(c=>{
       const on = b.focus===c.id;
       return '<button type="button" class="bld-opt'+(on?' on':'')+'" data-bld-focus="'+c.id+'" aria-pressed="'+on+'">'+
@@ -9499,15 +9711,22 @@ function builderFocusHtml(){
         '<b>'+c.label+'</b><small>'+c.desc+'</small></button>';
     }).join("")+'</div>';
   if (b.focus==="pick"){
+    builderSyncMuscles(b);
+    const tiers = builderTiers(b);
     html += '<div class="bld-block-gap"><div class="bld-q" style="font-size:1rem">Which muscles?</div>'+
       '<div class="bld-muscles">'+BUILDER_MUSCLE_PARTS.map(p=>{
         const on = b.muscles.indexOf(p) !== -1;
+        const rank = builderMuscleRank(b, p);
         const key = BUILDER_PART_ICON[p] || "";
         const file = key ? ("icon_muscles/" + (RADAR_ICON_FILE[key] || key) + ".png") : "";
         return '<button type="button" class="bld-muscle'+(on?' on':'')+'" data-bld-muscle="'+esc(p)+'" aria-pressed="'+on+'">'+
-          (file?'<img src="'+file+'" alt="" loading="lazy"/>':"")+'<span>'+esc(p)+'</span></button>';
+          (file?'<img src="'+file+'" alt="" loading="lazy"/>':"")+'<span>'+esc(p)+'</span>'+
+          (on?'<em class="bld-muscle-rank" aria-hidden="true">'+rank+'</em>':"")+'</button>';
       }).join("")+'</div>'+
-      '<p class="bld-hint">Pick one or two. The maker fills the rest of the session from matching movements in your library.</p></div>';
+      (tiers.length
+        ? builderLadderHtml(b)
+        : '<p class="bld-hint">Pick at least one muscle. The order you pick becomes a priority ladder you can reorder here.</p>')+
+      '<p class="bld-hint">The maker fills the session from movements that train these areas, spending more of it on the muscles you rank highest.</p></div>';
   }
   return html;
 }
@@ -9589,7 +9808,7 @@ function builderTimeHtml(){
     { id:"hard", label:"Hard", desc:"Shorter rest and a finisher.", bars:3 }
   ];
   return '<h4 class="bld-q">How much time and effort?</h4>'+
-    '<p class="bld-qsub">Time changes the number of movements. Difficulty tunes rest, load targets, and whether the session ends with a finisher — the approach fixes sets and failure.</p>'+
+    '<p class="bld-qsub">The approach sets how many movements belong in the session; time fills that range. Difficulty tunes rest, load targets, and whether a finisher is added on top.</p>'+
     '<div class="bld-durations">'+durs.map(d=>{
       const on = b.duration===d.v;
       return '<button type="button" class="bld-dur'+(on?' on':'')+'" data-bld-duration="'+d.v+'" aria-pressed="'+on+'">'+
@@ -9678,10 +9897,11 @@ function builderPreviewHtml(){
     '<div class="bld-rest">Rest '+builderRestLabel(g.restSec||d.rest)+' after the '+(isCircuit?"round":"pair")+'</div>';
   });
   html += '</div>';
-  if (d.finisher){
+  const fins = (d.finisher ? [d.finisher] : []).concat(Array.isArray(d.extraFinishers) ? d.extraFinishers : []);
+  if (fins.length){
     html += '<div class="bld-block">'+
-      '<div class="bld-block-h"><span class="bld-block-t">Finisher</span><span class="bld-block-note">One last push</span></div>'+
-      builderExRow(d.finisher, "F")+
+      '<div class="bld-block-h"><span class="bld-block-t">Finisher'+(fins.length>1?"s":"")+'</span><span class="bld-block-note">'+(fins.length>1?"Isolation work, priority order":"One last push")+'</span></div>'+
+      fins.map((de,i)=>builderExRow(de, fins.length>1 ? ("F"+(i+1)) : "F")).join("")+
     '</div>';
   }
   html += '<div class="bld-block">'+
@@ -9797,9 +10017,37 @@ function builderOnClick(ev){
     return;
   }
   if ((el = hit("[data-bld-muscle]"))){
-    const p = el.dataset.bldMuscle;
-    const i = b.muscles.indexOf(p);
-    if (i===-1) b.muscles.push(p); else b.muscles.splice(i,1);
+    builderToggleMuscle(el.dataset.bldMuscle);
+    builderInvalidate();
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-fin]"))){
+    builderToggleFinisher(el.dataset.bldFin);
+    builderInvalidate();
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-rank-up]"))){
+    builderRankMove(+el.dataset.bldRankUp, -1);
+    builderInvalidate();
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-rank-down]"))){
+    builderRankMove(+el.dataset.bldRankDown, 1);
+    builderInvalidate();
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-rank-tie]"))){
+    builderRankTie(+el.dataset.bldRankTie);
+    builderInvalidate();
+    renderWorkoutBuilder();
+    return;
+  }
+  if ((el = hit("[data-bld-untie]"))){
+    builderRankUntie(el.dataset.bldUntie);
     builderInvalidate();
     renderWorkoutBuilder();
     return;
@@ -9920,7 +10168,7 @@ function builderValidate(){
   return true;
 }
 function builderSeedStr(b){
-  return [b.goal,b.approach,b.format,b.style,b.movement,b.focus,(b.muscles||[]).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
+  return [b.goal,b.approach,b.format,b.style,b.movement,b.focus,builderTiers(b).map(t=>t.join("=")).join(">"),builderFinisherParts(b).join(","),b.equipment.join(","),b.duration,b.difficulty,b.age,b.bodyWeight,b.experience,b.attempt].join("|");
 }
 /* Any change to the brief discards the old draft and cancels an in-flight AI
    build, so a late response can never overwrite the user's newer request. */
@@ -9956,14 +10204,34 @@ function builderPool(b, count){
   }
   return pool;
 }
-function builderFocusHits(e, parts){
-  if (!parts || !parts.length) return 0;
-  let n = 0;
-  parts.forEach(p=>{ if (libMatchParts(e,[p])) n++; });
-  return n;
+/* A movement that trains a rank-1 muscle scores higher than one that trains a
+   rank-3 muscle, so the session leans toward the top of the ladder. */
+function builderPriorityHits(b, e){
+  const parts = builderFocusParts(b);
+  if (!parts.length) return 0;
+  let s = 0;
+  parts.forEach(p=>{ if (libMatchParts(e,[p])) s += builderMuscleWeight(b, p); });
+  return s;
 }
+/* The most isolation-like untouched movement for one muscle: fewest primary
+   muscles first, and a compound name pushes a movement down the list. */
+function builderIsoCandidate(b, part, used){
+  used = used || {};
+  const pool = builderPool(b, 12).filter(e=>!used[e.id] && libMatchParts(e,[part]));
+  if (!pool.length) return null;
+  const compound = /(squat|deadlift|press|row|pull-?up|dip|lunge|clean|snatch|thruster|push-?up|swing|carry)/i;
+  const score = e=>(e.primaryMuscles||[]).length + (compound.test(e.name) ? 3 : 0) - (e.favorite ? .5 : 0);
+  return pool.slice().sort((a,c)=>score(a)-score(c))[0];
+}
+/* The clock sets the baseline session size, but a low-set approach gets one
+   more movement instead of a shorter session: two hard sets per movement across
+   four to six movements. Low volume trims sets, never movements. The approach's
+   own range wins wherever it has one, and conservative caps apply last. */
 function builderTargetCount(b){
+  const ap = builderApproach(b);
   let n = b.duration<=15 ? 3 : b.duration<=30 ? 4 : b.duration<=45 ? 5 : 6;
+  if ((ap.sets || 3) <= 2) n += 1;
+  if (ap.movements) n = Math.max(ap.movements[0], Math.min(ap.movements[1], n));
   if (b.experience==="beginner") n = Math.min(n, 4);
   if (+b.age>=55) n = Math.max(3, n-1);
   return n;
@@ -10088,7 +10356,7 @@ function builderShapeGroups(des, b, rnd){
     }
     if (des.length>=5){
       return rnd()<.5
-        ? [builderGroup("superset", des.slice(0,2), b), builderGroup("circuit", des.slice(2,5), b)]
+        ? [builderGroup("superset", des.slice(0,2), b), builderGroup("circuit", des.slice(2,4), b), builderGroup("straight", des.slice(4), b)]
         : [builderGroup("circuit", des.slice(0,3), b), builderGroup("straight", des.slice(3), b)];
     }
     if (des.length>=4){
@@ -10104,9 +10372,7 @@ function builderShapeGroups(des, b, rnd){
   return des.map(de=>builderGroup("straight", [de], b));
 }
 function builderFocusLabel(b){
-  if (b.focus==="pick" && b.muscles.length){
-    return b.muscles.slice(0,2).join(" & ") + (b.muscles.length>2 ? " +"+(b.muscles.length-2) : "");
-  }
+  if (b.focus==="pick" && (b.muscles||[]).length) return builderPriorityLabel(b);
   return (BUILDER_FOCUS_META[b.focus] || BUILDER_FOCUS_META.full).label;
 }
 function builderSessionName(b, focusLabel, rnd){
@@ -10163,6 +10429,8 @@ function builderDraftFromGroups(b, groups, meta){
   groups.forEach(g=>g.members.forEach(de=>exercises.push(de)));
   const finisher = meta.finisher || null;
   if (finisher) exercises.push(finisher);
+  const extraFinishers = (meta.extraFinishers || []).filter(Boolean);
+  extraFinishers.forEach(de=>exercises.push(de));
   const supersets = groups.filter(g=>g.members.length>1).map(g=>({
     id:"ss-bld-"+Math.random().toString(36).slice(2,8),
     exIds:g.members.map(m=>m.exId)
@@ -10188,6 +10456,7 @@ function builderDraftFromGroups(b, groups, meta){
     exercises: exercises,
     supersets: supersets,
     finisher: finisher,
+    extraFinishers: extraFinishers,
     newExercises: (meta.newExercises || []).slice(),
     rest: meta.rest || builderRestSec(b),
     stats: {
@@ -10203,19 +10472,29 @@ function generateWorkout(b){
   const pool = builderPool(b, count);
   const ranked = pool.map(e=>({
     e: e,
-    s: rnd()*2 + (e.favorite?0.7:0) + builderFocusHits(e, parts)*0.75 +
+    s: rnd()*2 + (e.favorite?0.7:0) + builderPriorityHits(b, e)*1.5 +
        (b.experience==="beginner" && e.mode!=="time" ? 0.25 : 0) -
        (b.experience==="beginner" && e.perSide ? 0.2 : 0)
   })).sort((a,c)=>c.s-a.s).map(x=>x.e);
   const chosen = [];
   const used = {};
-  let coverage = parts.length ? parts.slice() : ["Chest","Back","Shoulders","Thighs","Glutes","Core"];
-  for (let i=coverage.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=coverage[i]; coverage[i]=coverage[j]; coverage[j]=t; }
+  /* The ladder order is the coverage order: rank 1 is filled first, and ties
+     keep their order instead of being shuffled. */
+  const coverage = parts.length ? parts.slice() : ["Chest","Back","Shoulders","Thighs","Glutes","Core"];
   coverage.forEach(p=>{
     if (chosen.length>=count) return;
     const c = ranked.find(e=>!used[e.id] && libMatchParts(e,[p]));
     if (c){ chosen.push(c); used[c.id] = 1; }
   });
+  /* Slots left over go back down the ladder, so a rank-1 muscle can carry two
+     movements while a later rank still carries one. */
+  for (let pass=0; pass<2 && chosen.length<count; pass++){
+    coverage.forEach(p=>{
+      if (chosen.length>=count) return;
+      const c = ranked.find(e=>!used[e.id] && libMatchParts(e,[p]));
+      if (c){ chosen.push(c); used[c.id] = 1; }
+    });
+  }
   for (let i=0;i<ranked.length && chosen.length<count;i++){
     const e = ranked[i];
     if (!used[e.id]){ chosen.push(e); used[e.id] = 1; }
@@ -10228,8 +10507,15 @@ function generateWorkout(b){
       warmup:[], cooldown:[]
     });
   }
-  let finisherEx = null;
-  if (builderUseFinisher(b)){
+  /* An explicit isolation request outranks the difficulty default: the athlete
+     asked for that muscle to get its own single-joint work at the end. */
+  const isoPicks = [];
+  builderFinisherParts(b).forEach(part=>{
+    const pick = builderIsoCandidate(b, part, used);
+    if (pick){ used[pick.id] = 1; isoPicks.push(pick); }
+  });
+  let finisherEx = isoPicks.shift() || null;
+  if (!finisherEx && builderUseFinisher(b)){
     const fun = ranked.filter(e=>!used[e.id] && BUILDER_FUN_RX.test(e.name));
     if (fun.length){
       finisherEx = fun[Math.floor(rnd()*fun.length)];
@@ -10240,10 +10526,12 @@ function generateWorkout(b){
   const style = b.format==="specific" ? b.style : "";
   const mainDes = chosen.map(ex=>builderDe(ex, b, rnd, {drop:style==="dropset"}));
   const finisherDe = finisherEx ? builderDe(finisherEx, b, rnd, {sets:2, failure:true}) : null;
+  const extraFinishers = isoPicks.map(ex=>builderDe(ex, b, rnd, {sets:2, failure:true}));
   const groups = builderShapeGroups(mainDes, b, rnd);
   return builderDraftFromGroups(b, groups, {
     name: builderSessionName(b, builderFocusLabel(b), rnd),
     finisher: finisherDe,
+    extraFinishers: extraFinishers,
     source: "local",
     rationale: builderShapeSentence(b)
   });
@@ -10265,6 +10553,8 @@ const WORKOUT_SYSTEM_PROMPT = [
   "\"ai\" means you choose the movements and may write movements that are not in the library when they fit this athlete better; \"mix\" means at least one library exId and at least one written movement.",
   "A written movement has no exId: it carries newMovement:true and every field listed in request.newMovementFields, using only the spellings in request.allowedEquipment, request.allowedBodyParts and request.allowedMuscles.",
   "Never re-invent a movement that is already in the library under the same name: use its exId instead.",
+  "The request.focusTiers ladder is a contract: rank 1 muscles must receive the most work, muscles sharing a rank are equally important,",
+  "and every muscle listed in request.isolationFinishers must end the session with its own single-joint isolation movement.",
   "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
   "The request.approach field is a hard programming contract. Every exercise must use exactly its set count,",
   "the stated proximity to failure, and the stated rest. If its failure policy is 'last', the final working",
@@ -10294,6 +10584,7 @@ function workoutShapeRules(b){
   rules.push("TRAINING APPROACH (" + ap.label + " · " + ap.tag + "): " + ap.rule);
   rules.push("Rep targets must sit inside the approach range of " + az[0] + "-" + az[1] + " reps" + (ap.hold ? " (timed holds: " + ap.hold[0] + "-" + ap.hold[1] + " seconds)" : "") + ". Do not drift outside it.");
   rules.push("For this athlete use exactly " + builderSets(b) + " working sets per exercise (the approach's dose, capped only for beginner/older athletes). Proximity to failure follows the approach: " + (ap.failure==="last" ? "final working set to failure, earlier sets about " + ap.rir + " RIR." : "stop every working set about " + ap.rir + " RIR; no failure sets."));
+  rules.push("SESSION SIZE: plan " + builderTargetCount(b) + " main movements" + (ap.movements ? " (this approach runs " + ap.movements[0] + "-" + ap.movements[1] + " movements because each one carries only " + ap.sets + " hard sets — low volume means fewer sets per movement, never a shorter session)" : "") + ". A finisher is additional to that count, not a substitute for a movement. Do not add extra sets beyond the approach, or extra movements beyond it and any explicitly requested finisher.");
   if (b.format==="regular"){
     rules.push("REQUESTED FORMAT: regular. Use straight sets only. Every group must be type \"straight\"; supersets and circuits are forbidden.");
     rules.push("Give each movement 2-4 sets with a normal rest between sets. Do not invent a finisher just to add variety.");
@@ -10321,6 +10612,17 @@ function workoutShapeRules(b){
     rules.push("MOVEMENT SOURCE: the AI picks the movements. Design at least one movement of your own that is not already in the library, chosen because it fits this athlete better than anything the library offers, and use library exIds for the rest where they are the best fit. Every written movement needs the full field set in request.newMovementFields.");
   } else {
     rules.push("MOVEMENT SOURCE: mix. Include at least one library exId and at least one written movement, so the session blends what the athlete already owns with what the AI designs. Every written movement needs the full field set in request.newMovementFields.");
+  }
+  const tiers = builderPriorityPayload(b);
+  if (tiers.length){
+    rules.push("PRIORITY LADDER (highest first) — " + builderPrioritySentence(b) + ". Muscles listed on the same rank are equally important to the athlete; treat them the same.");
+    rules.push("Weight the work by rank. A rank-1 muscle must receive more of the session than a lower rank: more movements, or the most demanding movements, or both. Never give a lower rank more work than a higher rank. With " + builderTargetCount(b) + " movements there is room to give a rank-1 muscle two and a rank-2 muscle one.");
+    const fins = builderFinisherParts(b);
+    if (fins.length){
+      rules.push("ISOLATION FINISHERS REQUESTED for " + fins.join(" and ") + ". This is an explicit request, so it overrides a format that would not normally end with a finisher. Put a dedicated single-joint isolation movement for " + fins[0] + " in the finisher field with exactly 2 sets, and when a second muscle is listed add its isolation movement as a final straight group at the end of groups. Use only library exIds or written movements that actually train the requested muscle, and add no isolation finisher for any other muscle.");
+    } else if (b.format==="regular" || b.format==="specific"){
+      rules.push("No isolation finisher was requested for any target muscle, so do not end this session with a single-joint isolation movement.");
+    }
   }
   if (builderIsFullGym(b)){
     rules.push("GYM CONTEXT: the athlete trains in a full commercial gym, so the standard machine floor is in play and should lead the session: leg press, hack squat, lat pulldown, seated cable row, converging chest and incline press, shoulder press machine, pec deck, cable crossover, leg extension, leg curl, hip abduction and adduction, assisted pull-up and dip machine, smith machine, and a full cable stack.");
@@ -10369,6 +10671,7 @@ function buildWorkoutPayload(b){
         label:builderApproachLabel(b),
         summary:builderApproach(b).desc,
         setCount:builderSets(b),
+        movementRange:builderApproach(b).movements || null,
         repRange:builderApproachZone(b),
         rir:builderApproach(b).rir,
         failurePolicy:builderApproach(b).failure,
@@ -10380,6 +10683,9 @@ function buildWorkoutPayload(b){
       repZones:zones,
       focus:builderTargetLabel(b),
       muscles:builderFocusParts(b),
+      focusTiers:builderPriorityPayload(b),
+      isolationFinishers:builderFinisherParts(b),
+      prioritySummary:builderPrioritySentence(b),
       customEquipment:(b.customEquipment||[]).filter(Boolean),
       machineBias:builderIsFullGym(b),
       durationMin:b.duration,
@@ -10736,9 +11042,52 @@ function normalizeAIDraft(raw, b){
     source:"ai"
   });
 }
+/* An explicit finisher request is a promise, not a suggestion. When an AI
+   session does not end with one, the closest isolation movement from the
+   library is added so the request is still honored. */
+function builderEnsureFinishers(b, draft){
+  if (!b || !draft) return draft;
+  const wanted = builderFinisherParts(b);
+  if (!wanted.length) return draft;
+  const exOf = id=>{
+    const made = (draft.newExercises||[]).find(x=>x.id===id);
+    return made || getEx(id);
+  };
+  const used = {};
+  (draft.exercises||[]).forEach(de=>used[de.exId] = 1);
+  const missing = wanted.filter(part=>!(draft.exercises||[]).some(de=>{
+    const ex = exOf(de.exId);
+    return ex && libMatchParts(ex, [part]);
+  }));
+  if (!missing.length) return draft;
+  const rnd = builderRng(builderSeedStr(b) + "|finishers");
+  const added = [];
+  missing.forEach(part=>{
+    const pick = builderIsoCandidate(b, part, used);
+    if (!pick) return;
+    used[pick.id] = 1;
+    added.push(builderDe(pick, b, rnd, {sets:2, failure:true}));
+  });
+  if (!added.length) return draft;
+  const placed = [];
+  if (!draft.finisher){
+    draft.finisher = added.shift();
+    placed.push(draft.finisher);
+  }
+  if (added.length){
+    draft.extraFinishers = (draft.extraFinishers || []).concat(added);
+    added.forEach(de=>placed.push(de));
+  }
+  draft.exercises = draft.exercises.concat(placed);
+  draft.stats = {
+    sets: draft.exercises.reduce((a,x)=>a+(x.targetSets||0),0),
+    movements: draft.exercises.length
+  };
+  return draft;
+}
 function builderAdoptDraft(draft, note){
   const b = builderState;
-  b.draft = draft;
+  b.draft = builderEnsureFinishers(b, draft);
   b.aiNote = note || "";
   b.building = false;
   renderWorkoutBuilder();
