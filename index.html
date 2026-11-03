@@ -9190,7 +9190,7 @@ function builderMuscleWeight(b, part){
   const r = builderMuscleRank(b, part);
   return r ? 1/r : 0;
 }
-/* Requested isolation finishers, in priority order. Two is the ceiling: the
+/* Requested isolation work, in priority order. Two is the ceiling: the
    session still has to fit the time budget it was given. */
 function builderFinisherParts(b){
   if (!b || b.focus!=="pick") return [];
@@ -9678,7 +9678,7 @@ function builderLadderHtml(b){
             const fin = !!(b.muscleFinisher && b.muscleFinisher[p]);
             const capped = !fin && fins.length>=2;
             return '<span class="bld-rank-muscle">'+
-              '<button type="button" class="bld-rank-fin'+(fin?' on':'')+'" data-bld-fin="'+esc(p)+'" aria-pressed="'+fin+'" aria-label="Isolation finisher for '+esc(p)+'"'+(capped?' disabled':'')+' title="'+(capped?'Two isolation finishers are already requested':fin?'Remove the isolation finisher for ':'Add an isolation finisher for ')+esc(p)+'">'+
+              '<button type="button" class="bld-rank-fin'+(fin?' on':'')+'" data-bld-fin="'+esc(p)+'" aria-pressed="'+fin+'" aria-label="Isolation work for '+esc(p)+'"'+(capped?' disabled':'')+' title="'+(capped?'Two isolation movements are already requested':fin?'Remove the isolation work for ':'Add isolation work for ')+esc(p)+'">'+
                 BLD_LADDER_ICON.iso+'<em>Iso</em></button>'+
               '<b>'+esc(p)+'</b>'+
               (tier.length>1 ? '<button type="button" class="bld-rank-x" data-bld-untie="'+esc(p)+'" aria-label="Give '+esc(p)+' its own rank" title="Give '+esc(p)+' its own rank">'+BLD_LADDER_ICON.untie+'</button>' : "")+
@@ -10227,6 +10227,30 @@ function builderIsoCandidate(b, part, used){
    more movement instead of a shorter session: two hard sets per movement across
    four to six movements. Low volume trims sets, never movements. The approach's
    own range wins wherever it has one, and conservative caps apply last. */
+/* Profile-agnostic movement patterns: the unit of stimulus the model has to
+   cover once. Two variations of one pattern are one stimulus written twice. */
+const BUILDER_PATTERNS = ["horizontal press","vertical press","vertical pull","horizontal pull","fly","squat","hinge","lunge","knee flexion","hip extension","calf raise","elbow flexion","elbow extension","shoulder abduction","trunk"];
+const BUILDER_BUDGET = { workSec:40, overheadSec:480 };
+/* The clock is a hard constraint. A movement costs its sets in work plus the
+   rest between them, and the warm-up and cool-down are paid for up front, so
+   the session size an approach asks for is capped by what actually fits. */
+function builderTimeBudget(b){
+  const sets = builderSets(b);
+  const restSeconds = builderRestSec(b);
+  const durationMin = +b.duration || 30;
+  const availableSeconds = Math.max(60, durationMin * 60 - BUILDER_BUDGET.overheadSec);
+  const perMovementSeconds = sets * (restSeconds + BUILDER_BUDGET.workSec);
+  return {
+    durationMin: durationMin,
+    setsPerMovement: sets,
+    restSeconds: restSeconds,
+    workSeconds: BUILDER_BUDGET.workSec,
+    overheadSeconds: BUILDER_BUDGET.overheadSec,
+    availableSeconds: availableSeconds,
+    perMovementSeconds: perMovementSeconds,
+    maxMovements: Math.max(1, Math.floor(availableSeconds / perMovementSeconds))
+  };
+}
 function builderTargetCount(b){
   const ap = builderApproach(b);
   let n = b.duration<=15 ? 3 : b.duration<=30 ? 4 : b.duration<=45 ? 5 : 6;
@@ -10507,15 +10531,15 @@ function generateWorkout(b){
       warmup:[], cooldown:[]
     });
   }
-  /* An explicit isolation request outranks the difficulty default: the athlete
-     asked for that muscle to get its own single-joint work at the end. */
+  /* An explicit isolation request is real training, not a finisher: it takes
+     the approach's dose and closes the session as its own straight groups. */
   const isoPicks = [];
   builderFinisherParts(b).forEach(part=>{
     const pick = builderIsoCandidate(b, part, used);
     if (pick){ used[pick.id] = 1; isoPicks.push(pick); }
   });
-  let finisherEx = isoPicks.shift() || null;
-  if (!finisherEx && builderUseFinisher(b)){
+  let finisherEx = null;
+  if (builderUseFinisher(b)){
     const fun = ranked.filter(e=>!used[e.id] && BUILDER_FUN_RX.test(e.name));
     if (fun.length){
       finisherEx = fun[Math.floor(rnd()*fun.length)];
@@ -10526,12 +10550,12 @@ function generateWorkout(b){
   const style = b.format==="specific" ? b.style : "";
   const mainDes = chosen.map(ex=>builderDe(ex, b, rnd, {drop:style==="dropset"}));
   const finisherDe = finisherEx ? builderDe(finisherEx, b, rnd, {sets:2, failure:true}) : null;
-  const extraFinishers = isoPicks.map(ex=>builderDe(ex, b, rnd, {sets:2, failure:true}));
   const groups = builderShapeGroups(mainDes, b, rnd);
+  isoPicks.forEach(ex=>groups.push(builderGroup("straight", [builderDe(ex, b, rnd, {})], b)));
   return builderDraftFromGroups(b, groups, {
     name: builderSessionName(b, builderFocusLabel(b), rnd),
     finisher: finisherDe,
-    extraFinishers: extraFinishers,
+    extraFinishers: [],
     source: "local",
     rationale: builderShapeSentence(b)
   });
@@ -10543,7 +10567,7 @@ function generateWorkout(b){
    is straight sets, and every other structure has to be explicitly requested.
    ------------------------------------------------------------------------- */
 const WORKOUT_SYSTEM_PROMPT = [
-  "You are the workout architect inside Perseus, a calisthenics strength-coach app.",
+  "You are the workout architect inside Perseus, a calisthenics strength-bodybuilding-coach app.",
   "Design ONE complete training session and return strict JSON only.",
   "The user's requested format and style are a hard contract. Never default to supersets:",
   "a superset or circuit is allowed only when the request explicitly asks for that structure.",
@@ -10556,6 +10580,17 @@ const WORKOUT_SYSTEM_PROMPT = [
   "The request.focusTiers ladder is a contract: rank 1 muscles must receive the most work, muscles sharing a rank are equally important,",
   "and every muscle listed in request.isolationFinishers must end the session with its own single-joint isolation movement.",
   "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
+  "Classify every movement you program by joint action and plane, never by its name: horizontal press (push-up, bench press),",
+  "vertical press (overhead press, dip), vertical pull (pull-up, pulldown — the elbow travels down to the ribs),",
+  "horizontal pull (row — the elbow travels behind the torso), fly and reverse fly, squat, hinge, lunge, knee flexion,",
+  "hip extension, calf raise, elbow flexion, elbow extension, shoulder abduction, and the trunk patterns.",
+  "Cover each distinct pattern once, with the most demanding version the equipment allows. The pattern is the unit of stimulus,",
+  "not the movement: a pull-up and a neutral-grip pull-up, or a weighted push-up and a ring push-up, are one stimulus written twice,",
+  "and the second copy only adds fatigue on top of fatigue. A second movement for a pattern is allowed only when it changes",
+  "the joint angle or the resistance curve in a way that adds real stimulus (a horizontal press plus a vertical press,",
+  "a vertical pull plus a horizontal row), and only when the clock still allows it.",
+  "Muscles are targets, patterns are work: a session that needs chest and back gets one pressing pattern and one pulling pattern,",
+  "not two of each just to spend movements.",
   "The request.approach field is a hard programming contract. Every exercise must use exactly its set count,",
   "the stated proximity to failure, and the stated rest. If its failure policy is 'last', the final working",
   "set of every exercise MUST have setTypes value \"failure\"; otherwise no working set may be a failure set.",
@@ -10567,7 +10602,12 @@ const WORKOUT_SYSTEM_PROMPT = [
   "a time array (5-120 seconds each), with exactly one set type per set.",
   "Set types are regular, warmup, drop, or failure. For weighted movements provide a",
   "sensible weight; bodyweight movements use 0 unless the movement accepts added load.",
-  "Warm-up and cool-down have at most 3 short items each. A finisher is optional.",
+  "Warm-up and cool-down have at most 3 short items each. The finisher field is only for an optional flourish in a fun or surprise session.",
+  "The duration is a hard ceiling, not a suggestion. Cost one movement as its sets times (rest plus about 40 seconds of work),",
+  "then allow about 5 minutes of warm-up and 3 minutes of cool-down. If the requested movement count does not fit that arithmetic,",
+  "program fewer movements — never fewer sets, never shorter rest, never a skipped warm-up — and say so in the rationale.",
+  "Isolation work for a muscle the athlete explicitly prioritised is a real exercise, not a finisher: give it a final straight",
+  "group in groups at the approach's full set count, and leave the finisher field empty for it.",
   "JSON shape:",
   '{"name":"...","rationale":"one sentence on why this shape","restSec":90,',
   ' "warmup":["..."],"cooldown":["..."],',
@@ -10584,7 +10624,10 @@ function workoutShapeRules(b){
   rules.push("TRAINING APPROACH (" + ap.label + " · " + ap.tag + "): " + ap.rule);
   rules.push("Rep targets must sit inside the approach range of " + az[0] + "-" + az[1] + " reps" + (ap.hold ? " (timed holds: " + ap.hold[0] + "-" + ap.hold[1] + " seconds)" : "") + ". Do not drift outside it.");
   rules.push("For this athlete use exactly " + builderSets(b) + " working sets per exercise (the approach's dose, capped only for beginner/older athletes). Proximity to failure follows the approach: " + (ap.failure==="last" ? "final working set to failure, earlier sets about " + ap.rir + " RIR." : "stop every working set about " + ap.rir + " RIR; no failure sets."));
-  rules.push("SESSION SIZE: plan " + builderTargetCount(b) + " main movements" + (ap.movements ? " (this approach runs " + ap.movements[0] + "-" + ap.movements[1] + " movements because each one carries only " + ap.sets + " hard sets — low volume means fewer sets per movement, never a shorter session)" : "") + ". A finisher is additional to that count, not a substitute for a movement. Do not add extra sets beyond the approach, or extra movements beyond it and any explicitly requested finisher.");
+  rules.push("SESSION SIZE: plan " + builderTargetCount(b) + " main movements" + (ap.movements ? " (this approach runs " + ap.movements[0] + "-" + ap.movements[1] + " movements because each one carries only " + ap.sets + " hard sets — low volume means fewer sets per movement, never a shorter session)" : "") + ". A finisher is additional to that count, not a substitute for a movement. Do not add extra sets beyond the approach, or extra movements beyond it and any explicitly requested isolation work.");
+  const budget = builderTimeBudget(b);
+  rules.push("TIME BUDGET: " + budget.durationMin + " minutes is a hard ceiling. Warm-up plus cool-down cost about " + Math.round(budget.overheadSeconds/60) + " minutes, leaving " + Math.round(budget.availableSeconds/60) + " minutes. One movement costs " + budget.setsPerMovement + " sets of about " + budget.workSeconds + " seconds plus " + budget.restSeconds + " seconds of rest — about " + budget.perMovementSeconds + " seconds — so at most " + budget.maxMovements + " main movements fit. When that is fewer than the session size above, the clock wins: program fewer movements, never fewer sets, never shorter rest, never a shorter warm-up.");
+  rules.push("PATTERN COVERAGE: classify each movement by joint action and plane (" + BUILDER_PATTERNS.join(", ") + "). Cover each pattern once with its most demanding available version, and never program two versions of the same pattern and resistance profile — a pull-up and a neutral-grip pull-up, or a weighted push-up and a ring push-up, are one stimulus written twice. A second movement for a pattern must change the angle or the resistance curve (a horizontal press plus a vertical press, a vertical pull plus a horizontal row) and must still fit the time budget. Later movements run on the fatigue of earlier ones, so a redundant variation is the first thing to cut.");
   if (b.format==="regular"){
     rules.push("REQUESTED FORMAT: regular. Use straight sets only. Every group must be type \"straight\"; supersets and circuits are forbidden.");
     rules.push("Give each movement 2-4 sets with a normal rest between sets. Do not invent a finisher just to add variety.");
@@ -10619,9 +10662,9 @@ function workoutShapeRules(b){
     rules.push("Weight the work by rank. A rank-1 muscle must receive more of the session than a lower rank: more movements, or the most demanding movements, or both. Never give a lower rank more work than a higher rank. With " + builderTargetCount(b) + " movements there is room to give a rank-1 muscle two and a rank-2 muscle one.");
     const fins = builderFinisherParts(b);
     if (fins.length){
-      rules.push("ISOLATION FINISHERS REQUESTED for " + fins.join(" and ") + ". This is an explicit request, so it overrides a format that would not normally end with a finisher. Put a dedicated single-joint isolation movement for " + fins[0] + " in the finisher field with exactly 2 sets, and when a second muscle is listed add its isolation movement as a final straight group at the end of groups. Use only library exIds or written movements that actually train the requested muscle, and add no isolation finisher for any other muscle.");
+      rules.push("ISOLATION WORK REQUESTED for " + fins.join(" and ") + ". This is real exercise, not a finisher: finish groups with one straight-set group per requested muscle (" + fins.join(", ") + "), each holding a dedicated single-joint isolation movement at the approach's full set count. Leave the finisher field empty for this work. Use only library exIds or written movements that actually train the requested muscle, and add no isolation work for any other muscle.");
     } else if (b.format==="regular" || b.format==="specific"){
-      rules.push("No isolation finisher was requested for any target muscle, so do not end this session with a single-joint isolation movement.");
+      rules.push("No isolation work was requested for any target muscle, so do not end this session with a single-joint isolation movement and do not add a finisher.");
     }
   }
   if (builderIsFullGym(b)){
@@ -10696,6 +10739,8 @@ function buildWorkoutPayload(b){
       targetMovements:builderTargetCount(b),
       setsPerMovement:builderSets(b),
       restSeconds:builderRestSec(b),
+      timeBudget:builderTimeBudget(b),
+      movementPatterns:BUILDER_PATTERNS.slice(),
       attempt:b.attempt
     },
     library:pool.map(e=>{
@@ -11027,7 +11072,14 @@ function normalizeAIDraft(raw, b){
   if (!builderAIShapeOK(b, groups)) return null;
   let finisher = null;
   const finEx = raw.finisher ? builderAIEntryExercise(raw.finisher, b, byId, written) : null;
-  if (finEx && !seen[finEx.id]) finisher = builderAINormalizeDe(raw.finisher, finEx, b, 2);
+  if (finEx && !seen[finEx.id]){
+    /* Priority isolation work is a real exercise. When the answer parks it in
+       the finisher field, it closes the session as straight sets instead. */
+    const iso = builderFinisherParts(b).some(part=>libMatchParts(finEx, [part]));
+    const finDe = builderAINormalizeDe(raw.finisher, finEx, b, iso ? builderSets(b) : 2);
+    if (iso && finDe) groups.push(builderGroup("straight", [finDe], b));
+    else finisher = finDe;
+  }
   const rest = builderAIClamp(raw.restSec, 20, 300, builderRestSec(b));
   const name = builderAIWords(raw.name, 80) || builderSessionName(b, builderFocusLabel(b), builderRng(builderSeedStr(b)));
   const rationale = builderAIWords(raw.rationale, 180) || builderShapeSentence(b);
@@ -11042,10 +11094,10 @@ function normalizeAIDraft(raw, b){
     source:"ai"
   });
 }
-/* An explicit finisher request is a promise, not a suggestion. When an AI
-   session does not end with one, the closest isolation movement from the
-   library is added so the request is still honored. */
-function builderEnsureFinishers(b, draft){
+/* Requested isolation work is a promise, not a suggestion. When an AI session
+   does not carry it, the closest isolation movement from the library is added
+   to the end of the session as a real straight group — never as a finisher. */
+function builderEnsureIsolation(b, draft){
   if (!b || !draft) return draft;
   const wanted = builderFinisherParts(b);
   if (!wanted.length) return draft;
@@ -11060,25 +11112,18 @@ function builderEnsureFinishers(b, draft){
     return ex && libMatchParts(ex, [part]);
   }));
   if (!missing.length) return draft;
-  const rnd = builderRng(builderSeedStr(b) + "|finishers");
+  const rnd = builderRng(builderSeedStr(b) + "|iso");
   const added = [];
   missing.forEach(part=>{
     const pick = builderIsoCandidate(b, part, used);
     if (!pick) return;
     used[pick.id] = 1;
-    added.push(builderDe(pick, b, rnd, {sets:2, failure:true}));
+    added.push(builderDe(pick, b, rnd, {}));
   });
   if (!added.length) return draft;
-  const placed = [];
-  if (!draft.finisher){
-    draft.finisher = added.shift();
-    placed.push(draft.finisher);
-  }
-  if (added.length){
-    draft.extraFinishers = (draft.extraFinishers || []).concat(added);
-    added.forEach(de=>placed.push(de));
-  }
-  draft.exercises = draft.exercises.concat(placed);
+  draft.groups = Array.isArray(draft.groups) ? draft.groups : [];
+  added.forEach(de=>draft.groups.push(builderGroup("straight", [de], b)));
+  draft.exercises = (draft.exercises || []).concat(added);
   draft.stats = {
     sets: draft.exercises.reduce((a,x)=>a+(x.targetSets||0),0),
     movements: draft.exercises.length
@@ -11087,7 +11132,7 @@ function builderEnsureFinishers(b, draft){
 }
 function builderAdoptDraft(draft, note){
   const b = builderState;
-  b.draft = builderEnsureFinishers(b, draft);
+  b.draft = builderEnsureIsolation(b, draft);
   b.aiNote = note || "";
   b.building = false;
   renderWorkoutBuilder();
