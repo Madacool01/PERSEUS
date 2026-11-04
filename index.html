@@ -1666,7 +1666,7 @@
     font-size: .72rem; font-weight: 700; color: var(--on-green);
     background: var(--green); border-radius: 50%; pointer-events: none;
   }
-  .set-top { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .6rem; padding-right: 1.4rem; }
+  .set-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .6rem; padding-right: 1.4rem; }
   .set-cell.done .set-top { padding-right: 1.4rem; }
   /* Half-filled set: work logged without effort, or effort without work. */
   .set-cell.partial { border-color: var(--amber-line); background: linear-gradient(180deg, #fbf4e2, var(--amber-soft)); box-shadow: 0 14px 30px -20px rgba(143,106,28,.5); overflow: visible; }
@@ -1705,7 +1705,8 @@
     font-family: var(--font-mono); font-size: .68rem; letter-spacing: .06em;
     color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px;
   }
-  .set-top .last-log { margin: 0; padding: .16rem .5rem; font-size: .62rem; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Never clip or ellipsize this pill: long values wrap onto their own line instead. */
+  .set-top .last-log { margin: 0 0 0 auto; padding: .16rem .5rem; font-size: .62rem; max-width: 100%; white-space: normal; text-align: right; overflow-wrap: anywhere; }
   .round-cell .last-log { margin: .15rem 0 .2rem; padding: .22rem .6rem; font-size: .64rem; }
   .set-cell label.field { margin: .55rem 0; }
   /* Per-set done checkbox: ticking it marks the set finished and auto-starts
