@@ -1699,6 +1699,13 @@
   .set-num small { font-family: var(--font-mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; color: var(--ink-3); margin-left: .45rem; vertical-align: middle; }
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
+  /* "Previous: 12×5kg" — the last time this movement was logged anywhere. */
+  .last-log {
+    display: inline-block; margin-top: .6rem; padding: .3rem .75rem;
+    font-family: var(--font-mono); font-size: .68rem; letter-spacing: .06em;
+    color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px;
+  }
+  .round-cell .last-log { margin: .15rem 0 .2rem; padding: .22rem .6rem; font-size: .64rem; }
   .set-cell label.field { margin: .55rem 0; }
   /* Per-set done checkbox: ticking it marks the set finished and auto-starts
      the rest timer (logging mode only). */
@@ -4109,6 +4116,42 @@ function prevSetActual(dayId, exId, setIndex, field){
     const v = field==="time" ? hits[0].time : hits[0].reps;
     return (v==null || v==="" || Number.isNaN(+v)) ? null : +v;
   }catch(e){ return null; }
+}
+/* Last logged performance for an exercise anywhere in the app: the most recent
+   session that recorded it, whichever routine that session belonged to. Within
+   that session the highest set index wins, i.e. the last set actually logged. */
+function lastLoggedForExercise(exId){
+  let best = null;
+  (state.sessions||[]).forEach(s=>{
+    if (!s) return;
+    const t = Date.parse(s.dateISO || s.startedAt || "") || 0;
+    (s.completedSets||[]).forEach(c=>{
+      if (!c || c.exId!==exId) return;
+      const reps = (c.reps==null || c.reps==="") ? null : +c.reps;
+      const time = (c.time==null || c.time==="") ? null : +c.time;
+      if (reps==null && time==null) return;
+      const si = c.setIndex==null ? 0 : +c.setIndex;
+      if (!best || t>best.t || (t===best.t && si>=best.setIndex)){
+        best = { t, setIndex:si, reps, time,
+          weight:(c.weight==null || c.weight==="") ? null : +c.weight,
+          dateISO:s.dateISO || "" };
+      }
+    });
+  });
+  return best;
+}
+/* "Previous: 12×5kg" / "Previous: 12×" for bodyweight / "Previous: 45s" timed. */
+function lastLoggedTxt(ex, last){
+  if (!ex || !last) return "";
+  if (ex.mode==="time") return "Previous: "+(last.time!=null ? last.time+"s" : (last.reps!=null ? last.reps+"×" : "—"));
+  const w = last.weight;
+  return "Previous: "+last.reps+"×"+(w ? fmtWeight(w)+weightUnit() : "");
+}
+function lastLogHtml(ex){
+  const last = ex ? lastLoggedForExercise(ex.id) : null;
+  if (!last) return "";
+  const date = last.dateISO ? fmtDate(last.dateISO) : "";
+  return '<div class="last-log"'+(date?' title="'+esc("Last logged "+date)+'"':"")+'>'+esc(lastLoggedTxt(ex, last))+'</div>';
 }
 /* plan text for a set in the logger, aware of set type */
 function setPlanTxt(de, ex, i, dayId){
@@ -7337,6 +7380,7 @@ function renderLogExerciseStep(s, day, step, total){
   const logMode = !!state.profile.loggingMode;
   const isPerSide = !!(ex && ex.perSide && ex.mode!=="time");
   const repsLabel = isPerSide ? 'Reps per side' : 'Actual reps';
+  const lastHtml = lastLogHtml(ex);
   const weightLabel = "Weight "+weightUnit()+(isPerSide ? " (per hand/side)" : "");
   const perSideHint = isPerSide ? ' <b>Per-side exercise:</b> 6 means 6 left + 6 right (12 total) — volume counts both sides.' : '';
   const setCells = entry.sets.map((set,i)=>{
@@ -7371,7 +7415,7 @@ function renderLogExerciseStep(s, day, step, total){
         '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
         '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
         '<div class="big-title">'+esc(ex.name)+(isPerSide?' <span class="pill" title="Reps are per side — 6 means 6 left + 6 right, volume counts both sides">per side</span>':"")+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
-        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
+        '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' + lastHtml +
         logTickerHtml(day) +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
@@ -7484,9 +7528,10 @@ function renderLogRoundStep(s, day, step, total){
     const beat = st==="failure" ? prevSetActual(day.id, de.exId, r, showTime?"time":"reps") : null;
     const cellState = logCellState(set);
     const isPS = !!(ex.perSide && ex.mode!=="time");
+    const lastHtml = lastLogHtml(ex);
     return '<div class="set-cell round-cell fx-rise'+(cellState?' '+cellState:'')+'" data-exid="'+de.exId+'" data-set="'+r+'">'+
       '<span class="set-warn" role="img" tabindex="0" data-tip="'+esc(setPartialTip(set))+'" aria-label="'+esc(setPartialTip(set) || 'Incomplete set')+'">!</span>'+
-      '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+(isPS?' <span class="pill">per side</span>':"")+'</span>'+
+      '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+(isPS?' <span class="pill">per side</span>':"")+'</span>'+lastHtml+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
       (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':(isPS?'Reps per side':'Actual reps')), r) : "") +
