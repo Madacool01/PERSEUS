@@ -1705,6 +1705,7 @@
     font-family: var(--font-mono); font-size: .68rem; letter-spacing: .06em;
     color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px;
   }
+  .set-top .last-log { margin: 0; padding: .16rem .5rem; font-size: .62rem; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .round-cell .last-log { margin: .15rem 0 .2rem; padding: .22rem .6rem; font-size: .64rem; }
   .set-cell label.field { margin: .55rem 0; }
   /* Per-set done checkbox: ticking it marks the set finished and auto-starts
@@ -7393,8 +7394,8 @@ function renderLogExerciseStep(s, day, step, total){
       '<span class="set-warn" role="img" tabindex="0" data-tip="'+esc(setPartialTip(set))+'" aria-label="'+esc(setPartialTip(set) || 'Incomplete set')+'">!</span>'+
       '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
-        '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      lastLogHtml(ex, i) + (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':repsLabel), i) : "") +
+        lastLogHtml(ex, i)+'</div>'+
+      (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':repsLabel), i) : "") +
       (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s) — beat '+beat+'s' : "Hold (s)"), i) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, weightLabel, i) : "") +
       effortSliderHtml(set, i)+
