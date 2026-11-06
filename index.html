@@ -2623,9 +2623,8 @@
     flex: none; width: 40px; height: 40px; border-radius: 50%;
     display: grid; place-items: center;
     background: var(--accent); color: var(--on-accent);
-    font-family: var(--font-display); font-weight: 800; font-size: 1rem;
-    letter-spacing: -.05em;
   }
+  .bld-mark svg { display: block; width: 22px; height: 22px; }
   .bld-head-t { min-width: 0; }
   .bld-kicker {
     font-family: var(--font-mono); font-size: .56rem; font-weight: 700;
@@ -9051,6 +9050,9 @@ const BUILDER_FOCUS_META = {
 };
 const BUILDER_MUSCLE_PARTS = ["Chest","Back","Shoulders","Biceps","Triceps","Forearms","Core","Glutes","Thighs","Calves"];
 const BUILDER_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Glutes:"glutes", Thighs:"quads", Calves:"calves" };
+/* The maker's header mark: a wand with sparkles, so it reads as AI-assisted
+   instead of a bare lettered circle. Inline so it inherits currentColor. */
+const BLD_WAND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>';
 const BUILDER_REST = { strength:[120,180], hypertrophy:[60,90], endurance:[30,45] };
 /* Evidence-based set approaches. The approach is a hard programming contract:
    it fixes sets per movement, proximity to failure, and the rest window, while
@@ -9356,7 +9358,7 @@ function builderShellHtml(step){
   builderState._footHtml = builderFootHtml(step);
   return '<div class="bld-shell" role="dialog" aria-modal="true" aria-labelledby="bld-title">'+
       '<div class="bld-top">'+
-        '<span class="bld-mark" aria-hidden="true">P</span>'+
+        '<span class="bld-mark" aria-hidden="true">'+BLD_WAND_SVG+'</span>'+
         '<div class="bld-head-t">'+
           '<div class="bld-kicker">The workout maker</div>'+
           '<h2 class="bld-title" id="bld-title">Build a session around your day</h2>'+
