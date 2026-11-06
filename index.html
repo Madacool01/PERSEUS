@@ -4396,6 +4396,9 @@ function libSegRow(group, options, current){
    anatomy illustrations (icon_muscles/, same assets as the radar below) with
    the inline glyph as fallback whenever an image is missing. */
 const LIB_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Hips:"glutes", Glutes:"glutes", Thighs:"quads", Calves:"calves", Neck:"upper-mid-back" };
+/* Tile wording only: Thighs is stored on exercises, but the quads illustration
+   reads clearer under its own name. data-fv keeps the stored tag. */
+const LIB_PART_LABEL = { Thighs:"Quads" };
 const FS_CHECK = '<span class="fs-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 6.5"/></svg></span>';
 /* An <img> contributes no text, so a tile's textContent stays exactly its
    label — the filter contract the delegated click handler relies on. */
@@ -4411,7 +4414,7 @@ function libPartTiles(selected){
     const key = LIB_PART_ICON[p] || "";
     const on = selected.includes(p);
     return '<button type="button" class="fs-tile' + (on ? " on" : "") + '" data-fg="parts" data-fv="' + esc(p) + '" aria-pressed="' + on + '">' +
-      FS_CHECK + libTileIcon(key ? ("icon_muscles/" + (RADAR_ICON_FILE[key] || key) + ".png") : "", key) + esc(p) + "</button>";
+      FS_CHECK + libTileIcon(key ? ("icon_muscles/" + (RADAR_ICON_FILE[key] || key) + ".png") : "", key) + esc(LIB_PART_LABEL[p] || p) + "</button>";
   }).join("");
 }
 function libEquipTiles(selected){
