@@ -1705,6 +1705,12 @@
     font-family: var(--font-mono); font-size: .68rem; letter-spacing: .06em;
     color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px;
   }
+  /* Nothing logged yet for this set: a dashed, muted pill so the gap reads as
+     "no data" instead of a missing element. */
+  .last-log.is-empty {
+    color: var(--ink-3); background: transparent; border-style: dashed;
+    font-style: italic; letter-spacing: .04em;
+  }
   /* Never clip or ellipsize this pill: long values wrap onto their own line instead. */
   .set-top .last-log { margin: 0 0 0 auto; padding: .16rem .5rem; font-size: .62rem; max-width: 100%; white-space: normal; text-align: right; overflow-wrap: anywhere; }
   .round-cell .last-log { margin: .15rem 0 .2rem; padding: .22rem .6rem; font-size: .64rem; }
@@ -4150,7 +4156,9 @@ function lastLoggedTxt(ex, last){
 }
 function lastLogHtml(ex, setIndex){
   const last = ex ? lastLoggedForExerciseSet(ex.id, setIndex) : null;
-  if (!last) return "";
+  // A set index that has never been logged still says so, rather than leaving a
+  // silent gap where the "Previous:" pill would be.
+  if (!last) return '<div class="last-log is-empty">No previous data</div>';
   const date = last.dateISO ? fmtDate(last.dateISO) : "";
   return '<div class="last-log"'+(date?' title="'+esc("Last logged "+date)+'"':"")+'>'+esc(lastLoggedTxt(ex, last))+'</div>';
 }
