@@ -11989,6 +11989,18 @@ function renderHistory(){
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     if(lbl) lbl.textContent = open ? "Collapse" : "Click to expand";
   }
+  /* A session opened near the bottom of a folded list used to grow past the
+     fixed window and get clipped — and when the list had been short enough not
+     to fold, that clip arrived with no toggle to reveal it. Opening a detail
+     that overruns the window now peels the fold open, so the detail is always
+     fully readable and the Collapse control is there to fold it back. */
+  function foldReveal(fold){
+    if(!fold || fold.classList.contains("is-open")) return;
+    histFolds.forEach(other=>{ if(other !== fold && other.classList.contains("is-open")) foldSet(other, false); });
+    fold.classList.add("is-foldable");
+    foldSet(fold, true, true);
+    window._histFold = fold.dataset.histFold;
+  }
   histFolds.forEach(fold=>{
     const btn = $("[data-hist-fold-toggle]", fold);
     if(!btn) return;
@@ -12023,6 +12035,14 @@ function renderHistory(){
         if(e.target.closest("[data-del-sess]")){ deleteSession(e.target.closest("[data-del-sess]").dataset.delSess); return; }
         if(e.target.closest("[data-close]")){ collapseDetail(bin, updateCloseAll); }
       });
+      const fold = el.closest("[data-hist-fold]");
+      const inner = fold && $(".hist-fold-inner", fold);
+      if(inner){
+        let cap = 380;
+        try{ const mh = parseFloat(getComputedStyle(inner).maxHeight); if(isFinite(mh)) cap = mh; }catch(e){}
+        const detailH = bin.scrollHeight || bin.offsetHeight || 0;
+        if(inner.scrollHeight + detailH + 24 > cap) foldReveal(fold);
+      }
       expandDetail(bin);
     }
     updateCloseAll();
