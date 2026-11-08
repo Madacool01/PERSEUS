@@ -2991,16 +2991,125 @@
   }
   .bld-foot .spacer { margin-left: auto; }
   .bld-count { font-family: var(--font-mono); font-size: .55rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
-  /* Persistent entry band on Workouts. */
-  .bld-band {
-    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-    margin-bottom: 1.2rem; padding: .95rem 1.1rem;
-    border: 1px dashed var(--accent-line); border-radius: var(--r-lg);
-    background: linear-gradient(112deg, var(--accent-soft), transparent 70%), var(--surface);
+  /* ---------- AI workout maker: the forge entry on Workouts ----------
+     A dark instrument panel built around one real button. Orbital rings, the
+     scan sweep and the pointer bloom are decoration; keyboard and screen
+     readers get a plain "Open the AI workout maker" control. */
+  .ai-forge {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: grid; grid-template-columns: minmax(0,1fr) auto;
+    align-items: center; gap: clamp(1.6rem, 4vw, 3.4rem);
+    margin: 1.6rem 0 2.2rem;
+    padding: clamp(1.5rem, 3.4vw, 2.9rem);
+    border: 1px solid var(--dark-line); border-radius: var(--r-lg);
+    background:
+      radial-gradient(90% 140% at 84% 44%, var(--accent-glow), transparent 58%),
+      linear-gradient(148deg, var(--dark), var(--dark-2) 62%, var(--dark));
+    box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.06);
+    color: var(--on-dark);
   }
-  .bld-band .t { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: -.02em; color: var(--ink); }
-  .bld-band .micro { margin: .2rem 0 0; max-width: 62ch; }
-  .bld-band .btn { margin-left: auto; flex: none; }
+  /* ember bloom that follows the pointer (defaults to the core side) */
+  .ai-forge::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(300px 300px at var(--fx, 78%) var(--fy, 46%), var(--accent-glow), transparent 68%);
+    opacity: .55; transition: opacity .4s ease;
+  }
+  .ai-forge:hover::after { opacity: .9; }
+  /* drafting grid, masked so it fades away from the core */
+  .ai-forge::before {
+    content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none; opacity: .5;
+    background-image:
+      linear-gradient(rgba(247,241,227,.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(247,241,227,.055) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(125% 125% at 80% 50%, #000 10%, transparent 76%);
+    mask-image: radial-gradient(125% 125% at 80% 50%, #000 10%, transparent 76%);
+  }
+  .ai-forge-scan { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .ai-forge-scan i {
+    position: absolute; left: 0; right: 0; top: 0; height: 32%;
+    background: linear-gradient(180deg, transparent, var(--accent-glow), transparent);
+    opacity: .18; animation: forgeScan 7.5s cubic-bezier(.45,0,.55,1) infinite;
+  }
+  @keyframes forgeScan { 0% { transform: translateY(-110%); } 100% { transform: translateY(340%); } }
+  .ai-forge-body { position: relative; min-width: 0; max-width: 46ch; }
+  .ai-forge-state {
+    display: inline-flex; align-items: center; gap: .5rem; margin: 0 0 .9rem;
+    font-family: var(--font-mono); font-size: .58rem; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--on-dark-muted);
+  }
+  .ai-forge-state b { color: var(--hero-accent); font-weight: 700; }
+  .ai-forge-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--hero-accent);
+    box-shadow: 0 0 0 0 var(--accent-glow); animation: forgePing 2.4s ease-out infinite;
+  }
+  @keyframes forgePing { 0% { box-shadow: 0 0 0 0 var(--accent-glow); } 70%,100% { box-shadow: 0 0 0 9px transparent; } }
+  .ai-forge-title {
+    margin: 0; font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.75rem, 3.2vw, 2.7rem); line-height: 1.02;
+    letter-spacing: -.035em; color: var(--on-dark); text-wrap: balance;
+  }
+  .ai-forge-title em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--hero-accent); }
+  .ai-forge-lede { margin: .95rem 0 0; max-width: 44ch; font-size: .93rem; line-height: 1.65; color: var(--on-dark-muted); }
+  .ai-forge-facts { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1.4rem 0 0; padding: 0; list-style: none; }
+  .ai-forge-facts li { display: flex; align-items: baseline; gap: .4rem; }
+  .ai-forge-facts b {
+    font-family: var(--font-display); font-size: 1.3rem; font-weight: 700;
+    letter-spacing: -.03em; color: var(--on-dark); font-variant-numeric: tabular-nums;
+  }
+  .ai-forge-facts span {
+    font-family: var(--font-mono); font-size: .55rem; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--on-dark-muted);
+  }
+  .ai-forge-core {
+    position: relative; flex: none; display: grid; place-items: center;
+    width: clamp(184px, 20vw, 232px); aspect-ratio: 1; padding: 0;
+    border: 0; border-radius: 50%; background: transparent; color: var(--on-dark);
+    cursor: pointer; font: inherit; isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ai-forge-core:focus-visible { outline: 2px solid var(--hero-accent); outline-offset: 10px; }
+  .ai-forge-halo {
+    position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg, transparent 0 60%, var(--accent-glow) 74%, var(--hero-accent) 84%, transparent 92%);
+    -webkit-mask: radial-gradient(circle, transparent 57%, #000 59%);
+    mask: radial-gradient(circle, transparent 57%, #000 59%);
+    animation: forgeSpin 9s linear infinite;
+  }
+  .ai-forge-halo.two { inset: 13%; animation-duration: 15s; animation-direction: reverse; opacity: .55; }
+  @keyframes forgeSpin { to { transform: rotate(360deg); } }
+  .ai-forge-rings {
+    position: absolute; inset: 4%; border-radius: 50%; pointer-events: none;
+    border: 1px dashed rgba(247,241,227,.22);
+    animation: forgeSpin 44s linear infinite reverse;
+  }
+  .ai-forge-rings::after { content: ""; position: absolute; inset: 9%; border-radius: 50%; border: 1px solid rgba(247,241,227,.1); }
+  .ai-forge-disc {
+    position: relative; z-index: 1; width: 74%; height: 74%; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem;
+    background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.16), transparent 56%), linear-gradient(160deg, var(--accent), var(--accent-deep));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 22px 48px -20px var(--accent-glow);
+    color: var(--on-accent);
+    transition: transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s;
+  }
+  .ai-forge-glyph svg { width: 30px; height: 30px; display: block; }
+  .ai-forge-label { font-family: var(--font-mono); font-size: .56rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .ai-forge-core:hover .ai-forge-disc,
+  .ai-forge-core:focus-visible .ai-forge-disc {
+    transform: scale(1.06);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), 0 30px 64px -18px var(--accent-glow);
+  }
+  .ai-forge-core:active .ai-forge-disc { transform: scale(.97); }
+  .ai-forge-core:hover .ai-forge-halo { animation-duration: 3.4s; }
+  .ai-forge-core:hover .ai-forge-halo.two { animation-duration: 6s; }
+  @media (max-width: 780px) {
+    .ai-forge { grid-template-columns: 1fr; gap: 1.6rem; }
+    .ai-forge-core { justify-self: center; width: min(210px, 62vw); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ai-forge-halo, .ai-forge-rings, .ai-forge-scan i, .ai-forge-dot { animation: none; }
+    .ai-forge-scan { display: none; }
+  }
   @media (max-width: 900px) {
     .bld-shell { height: 100dvh; max-height: 100dvh; border-radius: 14px 14px 0 0; }
     #builder-host { padding: 0; align-items: end; }
@@ -3029,7 +3138,6 @@
     .bld-muscles { grid-template-columns: repeat(3, minmax(0,1fr)); }
     .bld-foot .btn { flex: 1 1 auto; justify-content: center; }
     .bld-foot .spacer { display: none; }
-    .bld-band .btn { margin-left: 0; width: 100%; justify-content: center; }
   }
   /* Press physics come last so they win over the base hover lifts. */
   .bld-eq-tile:active, .bld-muscle:active, .bld-preset:active, .bld-dur:active, .bld-level:active, .bld-style:active, .bld-rank-btn:active, .bld-rank-fin:active { transform: scale(.95); transition-duration: .08s; }
@@ -5901,6 +6009,59 @@ function coachStripHtml(){
     '<div class="strip-track" data-strip-track>'+cards+'</div>' +
     '</section>';
 }
+/* The maker's front door. The markup is chosen so the loud version and the
+   accessible version are the same node: a single <button> with the wand, rings
+   and label nested inside it. */
+function aiForgeHtml(){
+  return '<section class="ai-forge fx-in" aria-labelledby="ai-forge-title">' +
+    '<div class="ai-forge-scan" aria-hidden="true"><i></i></div>' +
+    '<div class="ai-forge-body">' +
+      '<p class="ai-forge-state"><span class="ai-forge-dot" aria-hidden="true"></span>Perseus intelligence <b>ready</b></p>' +
+      '<h3 class="ai-forge-title" id="ai-forge-title">Give it the brief. <em>It returns a session.</em></h3>' +
+      '<p class="ai-forge-lede">Goal, approach, format, gear and minutes. The maker settles the structure, shapes the volume into a plan, and hands back a routine you can start on the spot.</p>' +
+      '<ul class="ai-forge-facts">' +
+        '<li><b>9</b><span>beats</span></li>' +
+        '<li><b>3</b><span>approaches</span></li>' +
+        '<li><b>0</b><span>guesswork</span></li>' +
+      '</ul>' +
+    '</div>' +
+    '<button type="button" class="ai-forge-core" data-builder-open aria-label="Open the AI workout maker">' +
+      '<span class="ai-forge-rings" aria-hidden="true"></span>' +
+      '<span class="ai-forge-halo" aria-hidden="true"></span>' +
+      '<span class="ai-forge-halo two" aria-hidden="true"></span>' +
+      '<span class="ai-forge-disc">' +
+        '<span class="ai-forge-glyph" aria-hidden="true">'+BLD_WAND_SVG+'</span>' +
+        '<span class="ai-forge-label">Open the maker</span>' +
+      '</span>' +
+    '</button>' +
+  '</section>';
+}
+/* The ember bloom follows the pointer. Decoration only; the panel keeps its
+   default bloom when the pointer never arrives or motion is reduced. */
+function initAiForge(root){
+  const panel = $(".ai-forge", root);
+  if (!panel || typeof panel.addEventListener !== "function") return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (typeof window.requestAnimationFrame !== "function") return;
+  let raf = 0, px = 0, py = 0;
+  const paint = ()=>{
+    raf = 0;
+    try{
+      panel.style.setProperty("--fx", px + "%");
+      panel.style.setProperty("--fy", py + "%");
+    }catch(e){}
+  };
+  panel.addEventListener("pointermove", ev=>{
+    const r = panel.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    px = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
+    py = Math.max(0, Math.min(100, ((ev.clientY - r.top) / r.height) * 100));
+    if (!raf) raf = window.requestAnimationFrame(paint);
+  });
+  panel.addEventListener("pointerleave", ()=>{
+    try{ panel.style.removeProperty("--fx"); panel.style.removeProperty("--fy"); }catch(e){}
+  });
+}
 function renderRoutineList(){
   const s = $("#view-workouts");
   const cards = state.days.map((d,i) => {
@@ -5937,18 +6098,14 @@ function renderRoutineList(){
         '<h2 class="view-title">Shape the week<span class="serif-i">,</span> then <em class="serif-i">let the coach</em> push it forward.</h2>' +
         '<p class="view-sub fx-scrub">Your routines live here. Open one to plan it. Sets never change; the coach only tunes reps, hold time, or weight.</p>' +
         '<div class="hero-cta">' +
-          '<button class="btn btn-xl primary" data-builder-open>Build a workout <span class="btn-arrow">→</span></button>' +
+          '<button class="btn btn-xl primary" data-goto="log">Log a session <span class="btn-arrow">→</span></button>' +
           '<button class="btn btn-xl ghost-dark" id="add-day"><span>+ New routine</span></button>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div class="wrap">' +
+      aiForgeHtml() +
       coachStripHtml() +
-      '<div class="bld-band fx-in">' +
-        '<div><div class="t">Let the maker sequence the session</div>' +
-        '<p class="micro">Give it a goal, a format, your gear, and the time you have. It builds straight sets, a circuit, a specific style, or a surprise — then saves a routine you can start immediately.</p></div>' +
-        '<button type="button" class="btn primary" data-builder-open>Open the maker <span class="btn-arrow">→</span></button>' +
-      '</div>' +
       '<div class="section-block">' +
         '<div class="btn-row" style="margin-bottom:1.1rem">'+
           '<button class="btn" id="import-share">Open a shared workout</button>'+
@@ -5962,6 +6119,7 @@ function renderRoutineList(){
   }));
   $$("[data-goto]", s).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.goto)));
   $$("[data-builder-open]", s).forEach(b=>b.addEventListener("click", ()=>openWorkoutBuilder()));
+  initAiForge(s);
   const stripTrack = $("[data-strip-track]", s);
   if (stripTrack){
     const step = ()=>{ const c = stripTrack.querySelector(".strip-card"); return c ? c.offsetWidth + 18 : 340; };
