@@ -3081,46 +3081,61 @@
      join the orbit while the core is hovered or keyboard-focused. The contrast
      token is a different hue in every theme, so the surge reads two-tone
      instead of one hot colour. All of it is decoration. */
+  /* The plasma ring gets no clock of its own. Its angle is a multiple of the
+     wheel's charge angle, so when the wheel coasts down the plasma visibly
+     unwinds with it instead of spinning on and blinking out. */
   .ai-forge-halo.hyper {
-    inset: -2%; opacity: 0;
+    inset: -2%; opacity: calc(var(--forge-charge, 0) * .95);
+    background: none; -webkit-mask: none; mask: none; animation: none;
+  }
+  .ai-forge-plasma {
+    position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
     background: conic-gradient(from 0deg,
-      transparent 0deg 40deg,
-      var(--accent-contrast) 62deg,
-      var(--hero-accent) 78deg,
-      #fff 88deg,
+      transparent 0deg 34deg,
+      var(--accent-contrast) 58deg,
+      var(--hero-accent) 74deg,
+      #fff 86deg,
       var(--hero-accent) 96deg,
-      var(--accent-contrast) 116deg,
+      var(--accent-contrast) 118deg,
       var(--accent) 150deg,
-      transparent 186deg);
+      transparent 184deg);
     -webkit-mask: radial-gradient(circle, transparent 54%, #000 56%);
     mask: radial-gradient(circle, transparent 54%, #000 56%);
-    filter: drop-shadow(0 0 10px var(--accent-glow));
-    animation: forgeSpin .8s linear infinite;
-    transition: opacity .2s ease;
+    filter: drop-shadow(0 0 calc(4px + 12px * var(--forge-charge, 0)) var(--accent-glow));
+    transform: rotate(calc(var(--forge-boost, 0deg) * 2.4));
     will-change: transform;
+  }
+  /* a second sheath turning the other way, so deceleration reads as two arcs
+     closing on each other rather than one arc slowing down */
+  .ai-forge-plasma.two {
+    transform: rotate(calc(var(--forge-boost, 0deg) * -1.7));
+    opacity: .5;
+    filter: drop-shadow(0 0 7px var(--accent-glow));
   }
   .ai-forge-crown {
     position: absolute; inset: 6%; border-radius: 50%; pointer-events: none;
     background: repeating-conic-gradient(from 0deg, var(--hero-accent) 0deg 1.4deg, transparent 1.4deg 9deg);
     -webkit-mask: radial-gradient(circle, transparent 60%, #000 63%, #000 71%, transparent 74%);
     mask: radial-gradient(circle, transparent 60%, #000 63%, #000 71%, transparent 74%);
-    opacity: 0; animation: forgeSpin 8s linear infinite;
-    filter: drop-shadow(0 0 6px var(--accent-glow));
-    transition: opacity .18s ease; will-change: transform;
+    opacity: calc(var(--forge-charge, 0) * .85); animation: forgeSpin 8s linear infinite;
+    filter: drop-shadow(0 0 6px var(--accent-glow)); will-change: transform;
   }
-  .ai-forge-surge { position: absolute; inset: -5%; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .2s ease; }
+  .ai-forge-surge { position: absolute; inset: -5%; border-radius: 50%; pointer-events: none; opacity: calc(var(--forge-charge, 0) * .9); }
   .ai-forge-surge i {
     position: absolute; inset: 0; border-radius: 50%;
     border: 1.5px solid var(--accent-contrast);
     box-shadow: 0 0 12px var(--accent-glow), inset 0 0 12px var(--accent-glow);
     opacity: 0;
+    animation: forgeShock 1.5s cubic-bezier(.2,.7,.3,1) infinite;
   }
+  .ai-forge-surge i:nth-child(2) { animation-delay: .75s; }
+  .ai-forge-surge i:nth-child(3) { animation-delay: .38s; }
   /* the disc gets its own bloom so the charge reads as heat, not just spin */
   .ai-forge-core::after {
     content: ""; position: absolute; inset: 12%; border-radius: 50%; z-index: 0;
     background: radial-gradient(circle, var(--accent-contrast), var(--accent-glow) 42%, transparent 70%);
-    filter: blur(10px); opacity: 0; pointer-events: none;
-    transition: opacity .3s ease;
+    filter: blur(10px); opacity: calc(var(--forge-charge, 0) * .9); pointer-events: none;
+    animation: forgeBreathe 1.1s ease-in-out infinite alternate;
   }
   @keyframes forgeShock {
     0% { opacity: .7; transform: scale(.78); }
@@ -3133,7 +3148,8 @@
      speed instead of restarting. Its angle persists after discharge. */
   .ai-forge-orbit {
     position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-    transform: rotate(var(--forge-boost, 0deg)); will-change: transform;
+    transform: scale(calc(1 + .035 * var(--forge-charge, 0))) rotate(var(--forge-boost, 0deg));
+    will-change: transform;
   }
   .ai-forge-rings {
     position: absolute; inset: 4%; border-radius: 50%; pointer-events: none;
@@ -3160,14 +3176,7 @@
   .ai-forge-core:active .ai-forge-disc { transform: scale(.97); }
   /* Speed is added by the damped boost ramp in initAiForge, never by swapping
      animation-duration, which would teleport the wheel to another phase. */
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-halo.hyper { opacity: 1; }
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-crown { opacity: .8; }
   .ai-forge-core:is(:hover, :focus-visible) .ai-forge-rings { border-color: var(--hero-accent); }
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-surge { opacity: 1; }
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-surge i { animation: forgeShock 1.4s cubic-bezier(.2,.7,.3,1) infinite; }
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-surge i:nth-child(2) { animation-delay: .7s; }
-  .ai-forge-core:is(:hover, :focus-visible) .ai-forge-surge i:nth-child(3) { animation-delay: .35s; }
-  .ai-forge-core:is(:hover, :focus-visible)::after { opacity: .9; animation: forgeBreathe 1.1s ease-in-out infinite alternate; }
   .ai-forge-core:is(:hover, :focus-visible) .ai-forge-glyph { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(255,255,255,.9)); }
 
   @media (max-width: 780px) {
@@ -6101,7 +6110,10 @@ function aiForgeHtml(){
       '<span class="ai-forge-crown" aria-hidden="true"></span>' +
       '<span class="ai-forge-halo" aria-hidden="true"></span>' +
       '<span class="ai-forge-halo two" aria-hidden="true"></span>' +
-      '<span class="ai-forge-halo hyper" aria-hidden="true"></span>' +
+      '<span class="ai-forge-halo hyper" aria-hidden="true">' +
+        '<span class="ai-forge-plasma"></span>' +
+        '<span class="ai-forge-plasma two"></span>' +
+      '</span>' +
         '<span class="ai-forge-surge" aria-hidden="true"><i></i><i></i><i></i></span>' +
       '</span>' +
       '<span class="ai-forge-disc">' +
@@ -6136,26 +6148,36 @@ function initAiForge(root){
   panel.addEventListener("pointerleave", ()=>{
     try{ panel.style.removeProperty("--fx"); panel.style.removeProperty("--fy"); }catch(e){}
   });
-  /* Charge and discharge. Angular velocity is added on top of the CSS spin by a
-     damped ramp, so the wheel leaves from wherever it is and coasts to a stop
-     instead of snapping back to the animation's phase. */
+  /* Charge and discharge. Angular velocity is added on top of the CSS spin. The
+     ramp is deliberately asymmetric: a backwards windup, a long cinematic pull
+     to speed, then a heavy coast down while a second envelope bleeds the plasma
+     sheath, corona and shockwaves away. Position is never rewritten. */
   const core = $(".ai-forge-core", panel);
-  const orbit = $(".ai-forge-orbit", panel);
-  if (core && orbit) {
-    const PEAK = 260, RAMP_IN = 3.4, RAMP_OUT = 1.6;
-    let vel = 0, spin = 0, last = 0, tick = 0, charge = 0;
+  if (core) {
+    const PEAK = 200, PULL_IN = 1.7, COAST = .9, WINDUP = 62;
+    const GLOW_IN = 2.6, GLOW_OUT = .95;
+    let boost = 0, vel = 0, glow = 0, last = 0, tick = 0, armed = 0;
     const step = (now)=>{
       tick = 0;
       const dt = last ? Math.min(64, now - last) / 1000 : 0;
       last = now;
-      vel += (charge * PEAK - vel) * (1 - Math.exp(-(charge ? RAMP_IN : RAMP_OUT) * dt));
-      spin += vel * dt;
-      try{ orbit.style.setProperty("--forge-boost", spin.toFixed(2) + "deg"); }catch(e){}
-      if (!charge && vel < 1.2) { vel = 0; last = 0; return; }
+      vel += ((armed ? PEAK : 0) - vel) * (1 - Math.exp(-(armed ? PULL_IN : COAST) * dt));
+      boost += vel * dt;
+      glow += ((armed ? 1 : 0) - glow) * (1 - Math.exp(-(armed ? GLOW_IN : GLOW_OUT) * dt));
+      try{
+        core.style.setProperty("--forge-boost", boost.toFixed(2) + "deg");
+        core.style.setProperty("--forge-charge", glow.toFixed(4));
+      }catch(e){}
+      if (!armed && vel < .5 && glow < .003) {
+        vel = 0; glow = 0; last = 0;
+        try{ core.style.setProperty("--forge-charge", "0"); }catch(e){}
+        return;
+      }
       tick = window.requestAnimationFrame(step);
     };
     const setCharge = (on)=>{
-      charge = on ? 1 : 0;
+      if (on && !armed) vel -= WINDUP;
+      armed = on ? 1 : 0;
       if (!tick) { last = 0; tick = window.requestAnimationFrame(step); }
     };
     core.addEventListener("pointerenter", ()=>setCharge(1));
