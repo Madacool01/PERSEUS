@@ -3258,6 +3258,154 @@
     .bld-foot .btn { flex: 1 1 auto; justify-content: center; }
     .bld-foot .spacer { display: none; }
   }
+  /* ---------- Workout maker: phone layout ----------
+     Everything below is scoped to small screens, so the desktop sheet keeps its
+     two-column rail and three-up plates byte for byte. On phones the maker is a
+     bottom sheet: the nine steps become a swipeable filmstrip instead of 9px
+     labels squeezed into equal slivers, the rail shrinks to a two-line scene
+     header, each choice becomes one wide row with its icon on the left, and the
+     transport dock stacks its actions instead of crushing four labels onto one
+     line. */
+  @media (max-width: 900px) {
+    .bld-top { padding: .85rem 1rem .7rem; gap: .7rem; }
+    .bld-mark { width: 34px; height: 34px; }
+    .bld-mark svg { width: 18px; height: 18px; }
+    .bld-kicker { font-size: .5rem; letter-spacing: .16em; }
+    .bld-title { font-size: 1.02rem; line-height: 1.15; }
+    /* nine beats on one swipeable rail, each with a readable label */
+    .bld-steps {
+      padding: .55rem 1rem .65rem; gap: .35rem;
+      overflow-x: auto; overscroll-behavior-x: contain;
+      scrollbar-width: none; border-bottom: 1px solid var(--line-2);
+      background: var(--surface);
+    }
+    .bld-steps::-webkit-scrollbar { display: none; }
+    .bld-step {
+      flex: 0 0 auto; display: inline-flex; align-items: center; gap: .42rem;
+      padding: .42rem .68rem; border: 1px solid var(--line);
+      border-radius: 999px; background: var(--surface-2);
+      font-size: .53rem; letter-spacing: .08em; white-space: nowrap;
+    }
+    .bld-step b { width: 13px; height: 4px; margin: 0; background: var(--line); }
+    .bld-step.done {
+      color: var(--accent-deep); border-color: var(--accent-line); background: var(--accent-soft);
+    }
+    .bld-step.done b { background: var(--accent); }
+    .bld-step.on {
+      color: var(--on-accent); border-color: var(--accent); background: var(--accent);
+      box-shadow: 0 8px 18px -12px var(--accent-glow);
+    }
+    .bld-step.on b { background: var(--on-accent); transform: none; }
+    .bld-step:not(.on):hover b { background: var(--accent-line); }
+    .bld-rail {
+      padding: .9rem 1rem .8rem; gap: .3rem;
+      background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    }
+    .bld-rail-title { font-size: 1.32rem; line-height: 1.1; letter-spacing: -.03em; }
+    .bld-rail-sub {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; font-size: .76rem; line-height: 1.5;
+    }
+    .bld-stage { padding: 1.05rem 1rem 1.2rem; }
+    .bld-q { font-size: 1.08rem; line-height: 1.22; }
+    .bld-qsub { font-size: .79rem; line-height: 1.55; }
+    .bld-opts { gap: .5rem; margin-top: .8rem; }
+    .bld-hint { font-size: .72rem; }
+  }
+  @media (max-width: 600px) {
+    .bld-top { padding: .75rem .9rem .65rem; }
+    .bld-title { font-size: .96rem; }
+    .bld-steps { padding: .5rem .9rem .6rem; }
+    .bld-rail { padding: .85rem .95rem .75rem; }
+    .bld-rail-title { font-size: 1.2rem; }
+    .bld-rail-sub { font-size: .73rem; }
+    .bld-stage { padding: .95rem .95rem 1.1rem; }
+    .bld-qsub { margin-top: .4rem; }
+
+    /* one wide row per choice: icon rail left, label / note / tag right */
+    .bld-opts.three, .bld-opts.four { grid-template-columns: 1fr; }
+    .bld-opts.three .bld-opt, .bld-opts.four .bld-opt {
+      display: grid;
+      grid-template-columns: 46px minmax(0,1fr);
+      grid-template-areas: "ico label" "ico desc" "ico zone";
+      align-items: center; column-gap: .85rem; row-gap: .12rem;
+      padding: .8rem .95rem .8rem .8rem; min-height: 66px;
+    }
+    .bld-opts.three .bld-opt-ico, .bld-opts.four .bld-opt-ico {
+      grid-area: ico; width: 46px; height: 46px; margin: 0; align-self: center;
+    }
+    .bld-opts.three .bld-opt-ico img, .bld-opts.four .bld-opt-ico img { width: 40px; height: 40px; }
+    .bld-opts.three .bld-opt b, .bld-opts.four .bld-opt b { grid-area: label; padding-right: 1.2rem; }
+    .bld-opts.three .bld-opt small, .bld-opts.four .bld-opt small { grid-area: desc; margin-top: 0; }
+    .bld-opts.three .bld-opt-zone, .bld-opts.four .bld-opt-zone {
+      grid-area: zone; justify-self: start; margin-top: .35rem;
+    }
+    /* the focus maps are 3:2 illustrations, so their slot stays wider; the
+       base rule lays these cards out as a flex column, so state grid here */
+    .bld-opts.focus .bld-opt {
+      display: grid; align-items: center; justify-content: normal;
+      grid-template-columns: 62px minmax(0,1fr);
+    }
+    .bld-opts.focus .bld-opt-ico, .bld-opts.focus .bld-opt-ico.full { width: 62px; height: 46px; }
+    .bld-opts.focus .bld-opt-ico img { width: 58px; height: 42px; object-fit: contain; object-position: left center; }
+    .bld-tick { top: .5rem; right: .5rem; }
+
+    /* all four durations stay on one line; the labels are short enough */
+    .bld-durations { grid-template-columns: repeat(4, minmax(0,1fr)); gap: .4rem; }
+    .bld-dur { padding: .75rem .6rem .65rem; }
+    .bld-dur b { font-size: 1.45rem; }
+
+    /* difficulty as a horizontal row with a stacked meter */
+    .bld-levels { grid-template-columns: 1fr; gap: .45rem; }
+    .bld-level {
+      display: grid; grid-template-columns: 44px minmax(0,1fr);
+      align-items: center; column-gap: .7rem; padding: .7rem .85rem;
+    }
+    .bld-level .bld-meter { grid-row: 1 / span 2; width: 44px; flex-direction: column; gap: 4px; margin: 0; }
+    .bld-level .bld-meter i { width: 100%; height: 4px; }
+
+    /* gear names wrap instead of disappearing behind an ellipsis */
+    .bld-eq { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .4rem; }
+    .bld-eq-tile { padding: .55rem; gap: .4rem; }
+    .bld-eq-tile img { width: 22px; height: 22px; }
+    .bld-eq-tile span { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }
+
+    .bld-muscles { grid-template-columns: repeat(3, minmax(0,1fr)); gap: .4rem; }
+    .bld-muscle { padding: .55rem .2rem .5rem; gap: .28rem; }
+    .bld-muscle img { width: 36px; height: 36px; }
+    .bld-muscle span { font-size: .6rem; line-height: 1.2; text-align: center; }
+
+    .bld-rank { padding: .5rem .45rem; gap: .4rem; }
+    .bld-rank-btn { width: 1.9rem; height: 1.9rem; }
+    .bld-ladder-key { font-size: .66rem; }
+    .bld-fields { grid-template-columns: 1fr; gap: .55rem; }
+
+    /* the preview sheet: dose drops under the movement instead of squeezing it */
+    .bld-sheet { margin-top: .8rem; }
+    .bld-sheet-top { padding: .9rem .9rem .85rem; }
+    .bld-sheet-name { font-size: 1.3rem; }
+    .bld-block { padding: .8rem .9rem; }
+    .bld-ex { flex-wrap: wrap; padding: .55rem .6rem; }
+    .bld-ex-dose {
+      flex: 1 1 100%; margin-top: .35rem; padding-left: 1.55rem;
+      text-align: left; white-space: normal;
+    }
+    .bld-ex-dose b { display: inline; margin-right: .35rem; }
+    .bld-rest { margin-left: 0; }
+    .bld-save-note { font-size: .68rem; }
+
+    /* transport dock: two calm rows instead of four crushed buttons */
+    .bld-foot {
+      flex-wrap: wrap; gap: .5rem;
+      padding: .75rem .9rem calc(.7rem + env(safe-area-inset-bottom, 0px));
+    }
+    .bld-foot .btn { flex: 0 0 auto; font-size: .82rem; padding: .72rem .75rem; }
+    .bld-count { margin-left: auto; }
+    .bld-foot [data-bld-next] { flex: 1 1 auto; }
+    .bld-foot [data-bld-shuffle] { margin-left: auto; }
+    .bld-foot [data-bld-save], .bld-foot [data-bld-start] { flex: 1 1 calc(50% - .25rem); }
+  }
+
   /* Press physics come last so they win over the base hover lifts. */
   .bld-eq-tile:active, .bld-muscle:active, .bld-preset:active, .bld-dur:active, .bld-level:active, .bld-style:active, .bld-rank-btn:active, .bld-rank-fin:active { transform: scale(.95); transition-duration: .08s; }
   .bld-opt:active { transform: translateY(0) scale(.985); transition-duration: .08s; }
@@ -9718,6 +9866,17 @@ function builderUpdateChrome(host, step){
     if (el.classList.contains("done") !== done) el.classList.toggle("done", done);
     el.setAttribute("aria-current", on ? "step" : "false");
   });
+  /* On phones the step rail scrolls sideways: keep the current beat centred so
+     the maker never opens mid-strip with the active step off screen. Desktop
+     has no overflow, so this is a no-op there. */
+  const stepBar = $(".bld-steps", host);
+  const stepOn = stepBar && $(".bld-step.on", stepBar);
+  if (stepBar && stepOn && stepBar.scrollWidth > stepBar.clientWidth + 4 && typeof stepBar.scrollTo === "function"){
+    try{
+      const left = stepOn.offsetLeft - (stepBar.clientWidth - stepOn.offsetWidth) / 2;
+      stepBar.scrollTo({ left: Math.max(0, left), behavior: builderReducedMotion() ? "auto" : "smooth" });
+    }catch(e){}
+  }
   const copy = builderStepCopy(step);
   const title = $(".bld-rail-title", host);
   const sub = $(".bld-rail-sub", host);
