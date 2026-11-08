@@ -11977,6 +11977,8 @@ function renderHistory(){
           if(fold._foldSeq === seq && fold.classList.contains("is-open")) inner.style.maxHeight = "none";
         };
         inner.addEventListener("transitionend", settle);
+        /* a missed transitionend must not leave a pinned pixel cap behind */
+        setTimeout(settle, 560);
       }
     }else if(inner.style.maxHeight === "none"){
       // pin the open height first so closing animates instead of snapping
@@ -11995,7 +11997,15 @@ function renderHistory(){
      that overruns the window now peels the fold open, so the detail is always
      fully readable and the Collapse control is there to fold it back. */
   function foldReveal(fold){
-    if(!fold || fold.classList.contains("is-open")) return;
+    if(!fold) return;
+    const inner = $(".hist-fold-inner", fold);
+    if(!inner) return;
+    if(fold.classList.contains("is-open")){
+      /* already open: it can still be mid-transition on a pinned pixel height,
+         so drop the cap — otherwise the detail is cut at the old height */
+      inner.style.maxHeight = "none";
+      return;
+    }
     histFolds.forEach(other=>{ if(other !== fold && other.classList.contains("is-open")) foldSet(other, false); });
     fold.classList.add("is-foldable");
     foldSet(fold, true, true);
@@ -12038,10 +12048,16 @@ function renderHistory(){
       const fold = el.closest("[data-hist-fold]");
       const inner = fold && $(".hist-fold-inner", fold);
       if(inner){
-        let cap = 380;
-        try{ const mh = parseFloat(getComputedStyle(inner).maxHeight); if(isFinite(mh)) cap = mh; }catch(e){}
-        const detailH = bin.scrollHeight || bin.offsetHeight || 0;
-        if(inner.scrollHeight + detailH + 24 > cap) foldReveal(fold);
+        if(fold.classList.contains("is-open")){
+          /* open folds can still carry a pinned height from their animation;
+             clear it so the new detail is never clipped */
+          inner.style.maxHeight = "none";
+        }else{
+          let cap = 380;
+          try{ const mh = parseFloat(getComputedStyle(inner).maxHeight); if(isFinite(mh)) cap = mh; }catch(e){}
+          const detailH = bin.scrollHeight || bin.offsetHeight || 0;
+          if(inner.scrollHeight + detailH + 24 > cap) foldReveal(fold);
+        }
       }
       expandDetail(bin);
     }
