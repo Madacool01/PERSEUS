@@ -2397,6 +2397,10 @@
      folds to a fixed window with a fading edge and its own peel-open control;
      only one may stand open at a time. --surface matches the card behind it,
      so the fade works in every theme. */
+  /* Each pane keeps its own height: stretching both to one grid row was what
+     painted the empty column under the shorter card once a long list opened. */
+  #view-history .bento { align-items: start; }
+  #view-history .hist-pane, #view-history .hist-pane .card.h100 { height: auto; }
   .hist-fold-window { position: relative; }
   .hist-fold-inner {
     max-height: 380px; overflow: hidden;
