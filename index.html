@@ -14587,9 +14587,7 @@ function openProgStart(id){
     });
   };
   $$("[data-pstart-day]", host).forEach(b=>{
-    const pick = ()=>{ chosen = +b.dataset.pstartDay; paint(); };
-    b.addEventListener("click", pick);
-    b.addEventListener("mouseenter", pick);
+    b.addEventListener("click", ()=>{ chosen = +b.dataset.pstartDay; paint(); });
   });
   $$("[data-pstart-close], [data-pstart-cancel]", host).forEach(b=>b.addEventListener("click", closeProgStart));
   const goB = $("[data-pstart-go]", host);
