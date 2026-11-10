@@ -84,7 +84,7 @@ E("document.querySelector('[data-prog-save]').click()");
 check(!!$("#prog-save-host .psave-card"), "Save Program opens the glass sheet");
 check(!!$("#prog-save-host [data-prog-name]") && !!$("#prog-save-host [data-prog-desc]"), "the sheet sets a name and a description");
 check(/3 sessions \u00b7 Tue \/ Thu \/ Sun/.test($("#prog-save-host .psave-preview").textContent), "the sheet previews the week it will save");
-check(!!$("#prog-save-host .psave-inline"), "the sheet title carries an inline image");
+check($("#prog-save-host .psave-title").textContent.trim() === "Save your week", "the sheet title reads plainly as Save your week");
 check($$("#prog-save-host [data-psave-idea]").length > 0, "the sheet suggests names drawn from the week (" + $$("#prog-save-host [data-psave-idea]").length + ")");
 
 E("document.querySelector('[data-progsave-go]').click()");

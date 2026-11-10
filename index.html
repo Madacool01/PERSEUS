@@ -2088,11 +2088,6 @@
   .psave-head { display: flex; align-items: flex-start; gap: 1rem; margin: .35rem 0 1rem; }
   .psave-eyebrow { font-family: var(--font-mono); font-size: .58rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
   .psave-title { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; line-height: 1.04; font-size: clamp(1.5rem, 3.4vw, 2rem); color: var(--ink); margin: .4rem 0 0; }
-  .psave-inline {
-    display: inline-block; width: 60px; height: 28px; border-radius: 999px; vertical-align: middle;
-    margin: 0 .4rem; background-size: cover; background-position: center;
-    filter: grayscale(.55) contrast(1.15); box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
-  }
   .psave-sub { margin: .55rem 0 0; font-size: .82rem; color: var(--ink-2); max-width: 52ch; }
   .psave-preview { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--glass-faint); padding: .75rem .85rem; margin: 0 0 1.05rem; }
   .psave-preview .prog-week { margin-top: .5rem; }
@@ -14642,7 +14637,7 @@ function openProgSave(){
     '<span class="psave-rule" aria-hidden="true"></span>' +
     '<div class="psave-head"><div>' +
       '<div class="psave-eyebrow">The shelf</div>' +
-      '<h3 class="psave-title" id="psave-title">Save your <span class="psave-inline" aria-hidden="true" style="background-image:url(https://picsum.photos/seed/perseus-save-week/240/120)"></span> week</h3>' +
+      '<h3 class="psave-title" id="psave-title">Save your week</h3>' +
       '<p class="psave-sub">Give it a name you will still recognise in a month. A saved program remembers its training days and the distance between them.</p>' +
     '</div><button type="button" class="btn ghost sh-x" data-psave-close aria-label="Close">\u2715</button></div>' +
     '<div class="psave-preview">' +
