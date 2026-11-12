@@ -651,7 +651,7 @@
   .fs-tile::after { content: ""; position: absolute; inset: auto 0 0 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity .25s; }
   .fs-tile .fs-ico { width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink-3); transition: transform .55s cubic-bezier(.22,1,.36,1), color .25s; }
   .fs-tile .fs-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  /* The inline glyph is a fallback only — the illustration carries the tile. */
+  /* The inline glyph is a fallback only; the illustration carries the tile. */
   .fs-tile .fs-ico svg { display: none; width: 24px; height: 24px; }
   .fs-tile .fs-ico.fallback svg { display: block; }
   .fs-tile:hover { transform: translateY(-3px); border-color: var(--accent-line); box-shadow: var(--shadow-1); color: var(--ink); }
@@ -1699,7 +1699,7 @@
   .set-num small { font-family: var(--font-mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; color: var(--ink-3); margin-left: .45rem; vertical-align: middle; }
   .set-label { font-family: var(--font-mono); font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
   .set-plan { font-family: var(--font-mono); font-size: .64rem; color: var(--ink-3); }
-  /* "Previous: 12×5kg" — the last time this movement was logged anywhere. */
+  /* "Previous: 12×5kg": the last time this movement was logged anywhere. */
   .last-log {
     display: inline-block; margin: .45rem 0 .1rem; padding: .28rem .7rem;
     font-family: var(--font-mono); font-size: .68rem; letter-spacing: .06em;
@@ -2225,7 +2225,7 @@
 
   /* ---------- API key guide: the key ritual (GroqCloud walkthrough) ----------
      Passport-stamp stepper: left rail is the journey, right stage is the proof.
-     Sequence numbering is intentional here — order carries information. */
+     Sequence numbering is intentional here; order carries information. */
   #api-guide-host { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: clamp(.5rem, 2vw, 1.4rem); background: rgba(23,19,12,.58); -webkit-backdrop-filter: blur(16px) saturate(1.35); backdrop-filter: blur(16px) saturate(1.35); animation: modalBack .25s ease; }
   #api-guide-host:empty { display: none; }
   .api-card { position: relative; width: min(980px, 100%); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--shadow-2); animation: modalIn .32s cubic-bezier(.22,1,.36,1); overscroll-behavior: contain; }
@@ -3522,12 +3522,12 @@
                     plan: canonical shared prescription (set count, per-set
                           reps/time, set types, weight) across all routines } ],
      days: [ { id, name, exercises: [ { exId, targetSets, reps, time, weight,
-                    setReps|setTimes, setTypes, focus, modifiedAt } ] — each
+                    setReps|setTimes, setTypes, focus, modifiedAt } ], and each
                     exercise's prescription is SHARED across routines (see
                     ex.plan) and kept in sync by syncExercisePlan(); the copy
                     modified last (falling back to the routine trained most
                     recently) is canonical on load; focus stays per-day },
-                    supersets: [ { id, exIds: [exId,...] } ] — optional linked
+                    supersets: [ { id, exIds: [exId,...] } ], optional linked
                     groups of 2+ exercises in a routine that are logged as
                     paired rounds (one set of every member per screen) } ],
      sessions: [ { id, dayId, dateISO, completedSets: [ { exId, setIndex, reps, time,
@@ -3625,8 +3625,8 @@ const SESSION_TYPES = {
 };
 /* User-customizable rep zones (Settings → Rep zones). Defaults above are the
    evidence-based starting point; a user who caps hypertrophy at 8 reps instead
-   of 12 stores { hypertrophy:[6,8] } on the profile and every judge — rules
-   engine, UI text, and AI prompt — follows it. null/legacy = defaults.
+   of 12 stores { hypertrophy:[6,8] } on the profile and every judge. Rules
+   engine, UI text, and AI prompt all follow it. null/legacy = defaults.
    Hybrid has no own range: every hybrid exercise carries a hypertrophy or
    strength focus and is judged against that focus's zone. */
 const DEFAULT_REP_ZONES = { hypertrophy:[6,12], strength:[3,6], endurance:[15,25] };
@@ -3660,7 +3660,7 @@ function sessionTypeDesc(t){
   const z = sessionZone(t);
   if (t==="hypertrophy") return z[0]+"-"+z[1]+" reps at moderate load (60-80% 1RM), 1-3 reps in reserve. Your growth zone. When reps drift past "+z[1]+", add load or a harder variation instead of chasing reps.";
   if (t==="strength") return z[0]+"-"+z[1]+" reps per set at heavy load (≥80% 1RM), long rests. Maximal strength through neural drive. Progress with weight or harder progressions, not endless reps.";
-  if (t==="hybrid") return "Hybrid has no own range — each exercise follows its hypertrophy ("+sessionZone("hypertrophy")[0]+"-"+sessionZone("hypertrophy")[1]+") or strength ("+sessionZone("strength")[0]+"-"+sessionZone("strength")[1]+") focus zone.";
+  if (t==="hybrid") return "Hybrid has no range of its own. Each exercise follows its hypertrophy ("+sessionZone("hypertrophy")[0]+"-"+sessionZone("hypertrophy")[1]+") or strength ("+sessionZone("strength")[0]+"-"+sessionZone("strength")[1]+") focus zone.";
   return z[0]+"+ reps at light load with short rests. Muscular endurance. Progress by adding reps or shortening rest; load matters less.";
 }
 /* Effective training zone for one exercise in a day. In hybrid sessions each
@@ -3907,9 +3907,9 @@ function restDone(){
   if (!restTimer.cued) restCueTick();
   try{ if (navigator.vibrate) navigator.vibrate(kind === "exercise" ? [200, 90, 200] : 200); }catch(e){}
   if (typeof toast === "function"){
-    toast(kind === "exercise" ? "Rest over — on to " + next
-        : kind === "finish" ? "Rest over — time to wrap up"
-        : "Rest over — next set");
+    toast(kind === "exercise" ? "Rest over, on to " + next
+        : kind === "finish" ? "Rest over. Time to wrap up"
+        : "Rest over, next set");
   }
 }
 
@@ -3942,8 +3942,8 @@ function setLadderTxt(de){
 /* =========================================================================
    SHARED EXERCISE PLANS (cross-routine sync)
    -------------------------------------------------------------------------
-   An exercise's prescription — set count, per-set reps/time, set types, and
-   working weight — is shared across every routine that includes it. The
+   An exercise's prescription (set count, per-set reps/time, set types, and
+   working weight) is shared across every routine that includes it. The
    library exercise carries the canonical copy on `ex.plan`; each day entry
    mirrors it. Any change (a manual edit, or a coach change accepted in one
    routine) propagates to every other routine so the same movement always
@@ -4037,10 +4037,10 @@ function unifyExercisePlans(s){
 }
 /* Which copy of an exercise's plan is the "current" one to sync everywhere:
    1) the copy modified last (an explicit modifiedAt stamp written on every
-      plan edit — manual or an accepted coach change),
+      plan edit, whether manual or an accepted coach change),
    2) legacy copies with no stamp: the routine trained most recently (latest
-      logged session) — the session where the user most recently progressed,
-      e.g. hit a new PR — wins,
+      logged session), meaning the session where the user most recently progressed,
+      e.g. hit a new PR, wins,
    3) otherwise the first routine containing the exercise (stable tiebreak). */
 function pickPlanWinner(s, copies){
   const stamped = copies.filter(c => typeof c.de.modifiedAt === "number");
@@ -4066,7 +4066,7 @@ let state;      // assigned during bootstrap at the bottom, after persistence he
 /* Body-weight load defaults for the pre-built movements: the percent of the
    user's body weight each movement loads onto the working muscles. These are
    editable estimates (common bodyweight-load references) and are overwritten
-   the moment the user edits the value — custom exercises start unset (null)
+   the moment the user edits the value; custom exercises start unset (null)
    and get a factor by hand or via the AI estimator in the library. */
 const BUILTIN_LOAD_PCT = {
   "Push-Up": 67, "Diamond Push-Up": 67, "Archer Push-Up": 67,
@@ -4079,7 +4079,7 @@ const BUILTIN_LOAD_PCT = {
   "Renegade Push-Up": 70, "Dumbbell Curl": 0,
 };
 /* Backfill built-in defaults onto previously-saved seed exercises (numeric
-   "ex-N" ids — custom exercises get "ex-id-…" ids) that predate the field. */
+   "ex-N" ids, while custom exercises get "ex-id-…" ids) that predate the field. */
 function ensureBuiltinLoads(list){
   if (!Array.isArray(list)) return;
   list.forEach(e=>{
@@ -4188,7 +4188,7 @@ function loadState() {
     ensureBuiltinLoads(s.exercises); // body-weight loads for pre-built movements saved before the field existed
     resolveProgressions(s.exercises);
     // cross-routine sync: converge per-routine copies saved before the feature
-    // existed onto one shared prescription — the copy modified last wins
+    // existed onto one shared prescription; the copy modified last wins
     // (falling back to the routine trained most recently), so Friday's 8/7
     // and Tuesday's 7/6 become one plan based on the latest training.
     unifyExercisePlans(s);
@@ -4196,7 +4196,7 @@ function loadState() {
   } catch(e){ return null; }
 }
 var memStore = {};
-/* Which tab the user was on — remembered across refreshes via its own tiny key
+/* Which tab the user was on, remembered across refreshes via its own tiny key
    so restoring it doesn't rewrite the (possibly photo-heavy) whole state. */
 var VIEW_KEY = "perseus-view-v1";
 var VIEW_IDS = ["home","you","workouts","log","coach","history","library","programs","settings"];
@@ -4384,7 +4384,7 @@ function queueFolderBackup(){
 async function pickBackupFolder(){
   try{
     if (!window.showDirectoryPicker){
-      if (typeof toast==="function") toast("Folder backup needs Chrome/Edge — use Export JSON on this browser");
+      if (typeof toast==="function") toast("Folder backup needs Chrome or Edge. Use Export JSON on this browser instead");
       return;
     }
     const dir = await window.showDirectoryPicker({ mode:"readwrite" });
@@ -4426,7 +4426,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 function fmtWeight(w){ return state.profile.weightUnit==="lb" ? Math.round(w*2.2046) : w; }
 function weightUnit(){ return state.profile.weightUnit; }
 /* Settings body measurements are stored canonically in kg / cm and shown in
-   the profile's chosen unit (lb / in) — keep every conversion in one place. */
+   the profile's chosen unit (lb / in); keep every conversion in one place. */
 function round1(x){ return Math.round(x*10)/10; }
 function toKg(v){ return state.profile.weightUnit==="lb" ? round1(v/2.2046) : round1(v); }
 function toCm(v){ return state.profile.weightUnit==="lb" ? round1(v*2.54) : round1(v); }
@@ -4520,7 +4520,7 @@ function lastLoggedForExerciseSet(exId, setIndex){
 /* "Previous: 12×5kg" / "Previous: 12×" for bodyweight / "Previous: 45s" timed. */
 function lastLoggedTxt(ex, last){
   if (!ex || !last) return "";
-  if (ex.mode==="time") return "Previous: "+(last.time!=null ? last.time+"s" : (last.reps!=null ? last.reps+"×" : "—"));
+  if (ex.mode==="time") return "Previous: "+(last.time!=null ? last.time+"s" : (last.reps!=null ? last.reps+"×" : "n/a"));
   const w = last.weight;
   return "Previous: "+last.reps+"×"+(w ? fmtWeight(w)+weightUnit() : "");
 }
@@ -4551,7 +4551,7 @@ function setPlanTxt(de, ex, i, dayId){
   const baseTxt = st==="drop" ? base+" · drop" : base;
   // Any set type: when the last session on this routine beat the stored target,
   // show the PR to beat (same in the logger and the Workouts editor).
-  // Only upward — a bad day never lowers the target; the coach handles misses.
+  // Only upward: a bad day never lowers the target; the coach handles misses.
   if (dayId){
     const field = ex.mode==="time" ? "time" : "reps";
     const prev = prevSetActual(dayId, de.exId, i, field);
@@ -4632,7 +4632,7 @@ function equipmentTags(ex){
   return (ex.equipment||[]).map(e=>'<span class="pill">'+esc(map[e]||e)+'</span>').join(" ");
 }
 function perSidePill(ex){
-  return (ex && ex.perSide && ex.mode!=="time") ? ' <span class="pill" title="Reps are per side — 6 means 6 left + 6 right, volume counts both sides">per side</span>' : '';
+  return (ex && ex.perSide && ex.mode!=="time") ? ' <span class="pill" title="Reps are per side: 6 means 6 left + 6 right, and volume counts both sides">per side</span>' : '';
 }
 function perSideSuffix(ex){ return (ex && ex.perSide && ex.mode!=="time") ? " /side" : ""; }
 
@@ -4658,7 +4658,7 @@ const EQUIP_CREDITS = "Equipment icons: " +
   '<a href="https://www.flaticon.com/free-icons/gym" title="gym icons">Gym icons by photo3idea_studio</a> · ' +
   '<a href="https://www.flaticon.com/free-icons/resistance-band" title="resistance band icons">Resistance band icons by bsd</a> · ' +
   '<a href="https://www.flaticon.com/free-icons/train" title="train icons">Train icons by photo3idea_studio</a> · ' +
-  '<a href="https://www.flaticon.com/free-icons/vest" title="vest icons">Vest icons created by Paul J. - Flaticon</a> — via Flaticon';
+  '<a href="https://www.flaticon.com/free-icons/vest" title="vest icons">Vest icons created by Paul J. - Flaticon</a>, via Flaticon';
 const EX_TYPE_ORDER = ["duration","bodyweight","weight"];
 const EX_TYPES = {
   duration:   { label:"Duration",      desc:"Held and timed. Plank, wall sit, hollow hold, L-sit." },
@@ -4678,7 +4678,7 @@ const MUSCLES = [
   ["Forearms","Brachioradialis"],["Forearms","Wrist flexors"],["Forearms","Wrist extensors"],
   ["Calves","Gastrocnemius (calf)"],["Calves","Soleus (calf)"]
 ];
-/* Flat list of the muscle names a movement may claim — used to validate
+/* Flat list of the muscle names a movement may claim, used to validate
    movements written by the AI instead of picked by hand. */
 const MUSCLE_NAMES = MUSCLES.map(pair=>pair[1]);
 /* Multi-select of specific muscles, grouped by region. */
@@ -4778,7 +4778,7 @@ const LIB_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Bicep
 const LIB_PART_LABEL = { Thighs:"Quads" };
 const FS_CHECK = '<span class="fs-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 6.5"/></svg></span>';
 /* An <img> contributes no text, so a tile's textContent stays exactly its
-   label — the filter contract the delegated click handler relies on. */
+   label, the filter contract the delegated click handler relies on. */
 function libTileIcon(file, glyphKey){
   const glyph = glyphKey ? (RADAR_GLYPHS[glyphKey] || "") : "";
   const img = file
@@ -4801,7 +4801,7 @@ function libEquipTiles(selected){
       FS_CHECK + libTileIcon(EQUIP_ICONS[k] || "", "") + esc(EQUIP_FILTER_LABELS[k] || k) + "</button>";
   }).join("");
 }
-/* MUSCLES is grouped by region in source order — reshape it into panels. */
+/* MUSCLES is grouped by region in source order; reshape it into panels. */
 function libMuscleRegions(){
   const out = [];
   MUSCLES.forEach(pair=>{
@@ -5127,14 +5127,14 @@ function openExEditor(id){
       '</label>'+
       '<p class="micro" id="ex-perside-note" style="display:'+(curType==="duration"?"none":"block")+';margin:-.1rem 0 1rem">Off = bilateral (pull-up, barbell): reps are the total. On = unilateral / one dumbbell per hand (lateral raise, one-arm row, split squat): volume counts both sides, so 10 × 5 kg = 100 kg.</p>'+
 
-      '<div class="field-head" style="margin-top:.6rem"><span>Body-weight load</span><span class="hint">% of your body weight the movement works against — feeds Total volume</span></div>'+
+      '<div class="field-head" style="margin-top:.6rem"><span>Body-weight load</span><span class="hint">How much of your body weight this movement works against. Counts toward Total volume.</span></div>'+
       '<div class="lf-chips" role="group" aria-label="Body-weight load percent">'+lfChipsHtml+'</div>'+
       '<div class="lf-tools">'+
         '<label>% <input type="number" id="ex-load-num" min="0" max="100" step="1" value="'+(curLoad==null?"":curLoad)+'" placeholder="e.g. 67"/></label>'+
         '<span class="lf-val" id="ex-load-val">'+(curLoad==null?"not set":curLoad+"% of body weight")+'</span>'+
         '<button type="button" class="btn ghost small" id="ex-load-clear" title="Remove the load factor">Unset</button>'+
       '</div>'+
-      '<p class="micro" style="margin:.45rem 0 1.1rem">Anchors: 100% ≈ pull-ups &amp; hangs · ~67% ≈ push-ups · ~75% ≈ squats · 0% ≈ pure dumbbell lifts. Leave unset if unsure — the exercise stays out of Total volume until you set it here or estimate it with AI from the Exercise Library.</p>'+
+      '<p class="micro" style="margin:.45rem 0 1.1rem">Anchors: 100% ≈ pull-ups &amp; hangs · ~67% ≈ push-ups · ~75% ≈ squats · 0% ≈ pure dumbbell lifts. Leave it unset if you are unsure. The exercise stays out of Total volume until you set it here or estimate it with AI from the Exercise Library.</p>'+
 
       '<div class="field-head"><span>Equipment</span></div>'+
       '<div class="eq-cards">'+eqTags+'</div>'+
@@ -5317,14 +5317,14 @@ function openExEditor(id){
       navigator.clipboard.read().then(items=>{
         const item = items && items[0];
         const imgType = item && (item.types || []).find(t=>/^image\//.test(t));
-        if (!imgType){ toast("No image copied — the latest clipboard item isn't an image"); return; }
+        if (!imgType){ toast("No image copied. The latest clipboard item isn't an image"); return; }
         return item.getType(imgType).then(blob=>readImageFile(blob, apply));
       }).catch(()=>{
-        toast("Clipboard blocked — press Ctrl+V to paste the image");
+        toast("Clipboard blocked. Press Ctrl+V to paste the image");
         capturePasteOnce(apply);
       });
     }catch(e){
-      toast("Clipboard blocked — press Ctrl+V to paste the image");
+      toast("Clipboard blocked. Press Ctrl+V to paste the image");
       capturePasteOnce(apply);
     }
   });
@@ -5389,15 +5389,15 @@ function loadSourceLabel(src){
   return src==="ai" ? "AI estimate" : src==="manual" ? "set by you" : src==="builtin" ? "built-in default" : "";
 }
 function loadRowHtml(e){
-  if (e.loadFactor==null) return '<span class="muted">unset — not counted in Total volume yet</span>';
+  if (e.loadFactor==null) return '<span class="muted">unset, not counted in Total volume yet</span>';
   const src = loadSourceLabel(e.loadSource);
   return '~'+Math.round(e.loadFactor)+'% of body weight'+(src?' <span class="muted small">· '+esc(src)+'</span>':"");
 }
-/* Reminder under the Total-volume charts (kept text-only — the library is one tab away). */
+/* Reminder under the Total-volume charts (text only, since the library is one tab away). */
 function youUnknownLoadsHtml(){
   const n = unknownLoadExercises().length;
   if (!n) return "";
-  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">'+n+" exercise"+(n===1?"":"s")+" still lack a body-weight load factor, so their body-weight share can't count toward Total volume yet — set it when editing the exercise, or estimate load factors with AI in the Exercise Library.</p>";
+  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">'+n+" exercise"+(n===1?"":"s")+" still lack a body-weight load factor, so their body-weight share can't count toward Total volume yet. Set it when you edit the exercise, or estimate load factors with AI in the Exercise Library.</p>";
 }
 /* Banner atop the library: which exercises are missing a load factor + the
    one-tap AI estimation flow (requires the optional GroqCloud key). */
@@ -5423,7 +5423,7 @@ function refreshLoadBanner(s){
   $$("[data-goto]", el).forEach(b=>b.addEventListener("click", ()=>switchView(b.dataset.goto)));
 }
 let loadEstOpen = false;
-/* Batched AI estimation with a review step — nothing is written without a look. */
+/* Batched AI estimation with a review step: nothing is written without a look. */
 async function openLoadEstimator(){
   if (loadEstOpen || $("#load-est-host")) return;
   if (!((state.profile && state.profile.apiKey || "").trim())){
@@ -5455,7 +5455,7 @@ async function openLoadEstimator(){
         '</div>'+
         '<div class="ex-vis-scroll"><div class="load-est-inner" id="load-est-inner"></div></div>'+
         '<div class="load-est-foot">'+
-          '<span class="micro" style="flex:1">AI suggestions — read, adjust or clear any row, then save. Unset exercises stay out of Total volume.</span>'+
+          '<span class="micro" style="flex:1">AI suggestions. Read, adjust or clear any row, then save. Unset exercises stay out of Total volume.</span>'+
           '<button type="button" class="btn ghost" id="load-est-cancel">Cancel</button>'+
           '<button type="button" class="btn primary" id="load-est-save" disabled>Save estimates</button>'+
         '</div>'+
@@ -5493,7 +5493,7 @@ async function openLoadEstimator(){
   if (saveBtn) saveBtn.disabled = false;
   const skipped = unknown.length - kept.length;
   if (inner) inner.innerHTML =
-    '<p class="micro">Percent of body weight the movement loads onto the working muscles, suggested from its name, type, notes and muscle tags. Adjust any row — clearing a value skips that exercise.</p>'+
+    '<p class="micro">Percent of body weight the movement loads onto the working muscles, suggested from its name, type, notes and muscle tags. Adjust any row; clearing a value skips that exercise.</p>'+
     kept.map(r=>loadEstRowHtml(r)).join("")+
     (skipped>0?'<p class="micro" style="color:var(--amber)">'+skipped+" exercise"+(skipped===1?"":"s")+" got no suggestion and will stay unset.</p>":"");
   $$(".load-est-row input", inner).forEach(inp=>inp.addEventListener("change", ()=>{
@@ -5556,7 +5556,7 @@ const VIS_ICO_BULB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 
 function seedOf(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "perseus"; }
 /* Curated, high-quality nature photos (Unsplash CDN) used as thumbnails for
-   exercises with no uploaded photo — keeps similar-movement cards on theme. */
+   exercises with no uploaded photo, which keeps similar-movement cards on theme. */
 const NATURE_IMAGES = [
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=640&q=80", // sunlit forest
   "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=640&q=80", // forest path
@@ -5586,8 +5586,8 @@ function natureImageFor(name, used){
   return NATURE_IMAGES[idx];
 }
 /* Human label for the About "Movement type" row. A rep-based movement that can
-   optionally take load (the Weighted toggle) still reads as Bodyweight — just
-   with weights available — instead of collapsing into the "Weight & reps" type,
+   optionally take load (the Weighted toggle) still reads as Bodyweight, just
+   with weights available, instead of collapsing into the "Weight & reps" type,
    which is reserved for genuinely loaded lifts (mode "weight"). */
 function movementTypeLabel(e){
   if (e.mode==="time") return "Duration";
@@ -5618,9 +5618,9 @@ function exSessionBest(ex, cs){
            label: w>0 ? (c.reps||0)+"×"+fmtWeight(w)+weightUnit() : (c.reps||0)+" reps", c:c };
 }
 function setValTxt(ex, c){
-  if (ex.mode==="time") return (c.time!=null ? c.time+"s" : "—");
+  if (ex.mode==="time") return (c.time!=null ? c.time+"s" : "n/a");
   if (ex.mode==="weight") return (c.reps||0)+"×"+fmtWeight(c.weight||0)+weightUnit()+perSideSuffix(ex);
-  return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()+perSideSuffix(ex)) : (c.reps!=null ? c.reps+" reps"+perSideSuffix(ex) : "—");
+  return c.weight ? (c.reps+"×"+fmtWeight(c.weight)+weightUnit()+perSideSuffix(ex)) : (c.reps!=null ? c.reps+" reps"+perSideSuffix(ex) : "n/a");
 }
 /* Epley 1RM estimator: 1RM = weight × (1 + reps / 30). Reps of 1 return
    the weight itself; anything above ~10 reps is an extrapolation, so the
@@ -5643,10 +5643,10 @@ function rmConfidence(reps){
    near-maximal sets, so the band is set by the source set's rep count. */
 function rmConfLegendHtml(activeReps){
   const rows = [
-    { label:"Solid", cls:"", range:"1–5 reps", txt:"Near-maximal — most accurate." },
-    { label:"Good", cls:"", range:"6–10 reps", txt:"Heavy enough to trust." },
-    { label:"Rough", cls:"mid", range:"11–15 reps", txt:"Extrapolating — endurance flatters it." },
-    { label:"Stretch", cls:"low", range:"16+ reps", txt:"A rough guess — often reads high." },
+    { label:"Solid", cls:"", range:"1-5 reps", txt:"Near-maximal, and the most accurate." },
+    { label:"Good", cls:"", range:"6-10 reps", txt:"Heavy enough to trust." },
+    { label:"Rough", cls:"mid", range:"11-15 reps", txt:"Extrapolating, and endurance flatters it." },
+    { label:"Stretch", cls:"low", range:"16+ reps", txt:"A rough guess that often reads high." },
   ];
   const isOn = r => activeReps <= r.max && activeReps >= r.min;
   const bounds = [{min:1,max:5},{min:6,max:10},{min:11,max:15},{min:16,max:99}];
@@ -5726,7 +5726,7 @@ function rmSetLabel(ex, cand){
 }
 /* Interactive derivation of a bodyweight-style effective load: added plates
    plus the lifted share of body weight. Returns the toggle + panel HTML for
-   the 1RM card (weight-mode lifts need none — the bar load is the load). */
+   the 1RM card (weight-mode lifts need none; the bar load is the load). */
 function rmDerivHtml(ex, cand){
   if (!ex || ex.mode === "weight" || !cand) return "";
   const bwD = fromKg(cand.bwKg), extD = fromKg(cand.extKg), shareD = fromKg(cand.shareKg), effD = fromKg(cand.effKg);
@@ -5753,7 +5753,7 @@ function openExVisualizer(id, opts){
   const ex = getEx(id);
   if (!ex) return;
   // Locked mode (e.g. opened mid-session from the logger): the exercise can
-  // be neither edited nor deleted here — changing it under an active logCtx
+  // be neither edited nor deleted here; changing it under an active logCtx
   // would corrupt the in-progress session. The lock propagates when hopping
   // between similar movements inside the same visualizer.
   const lockDelete = !!(opts && opts.lockDelete);
@@ -5794,7 +5794,7 @@ function openExVisualizer(id, opts){
     return '<div class="ex-vis-media" id="ex-vis-media">'+
       (has
         ? '<img id="ex-vis-img" class="vis-img'+(vis.playing?" play":"")+'" src="'+img+'" alt="'+esc(e.name)+'"/>'
-        : '<div class="ex-vis-media-empty"><span class="vis-media-hint">No photo yet — add one when editing</span></div>')+
+        : '<div class="ex-vis-media-empty"><span class="vis-media-hint">No photo yet. Add one while editing.</span></div>')+
       (has
         ? '<div class="ex-vis-oc br"><button type="button" class="ex-vis-oc-btn" data-vis-oc="fs" aria-label="Fullscreen">'+VIS_ICO_FS+'</button></div>'
         : "")+
@@ -5817,7 +5817,7 @@ function openExVisualizer(id, opts){
     const typeLbl = movementTypeLabel(e);
     const prog = (Array.isArray(e.progressions) && e.progressions.length)
       ? e.progressions.map(pid=>{ const p=getEx(pid); return p ? '<span class="prog-step">'+esc(p.name)+'</span>' : ""; }).filter(Boolean).join('<i class="prog-arrow">→</i>')
-      : '<span class="muted small">None yet — the coach auto-links harder variations from the movement chain.</span>';
+      : '<span class="muted small">None yet. The coach auto-links harder variations from the movement chain.</span>';
     const prim = (e.primaryMuscles||[]).map(m=>'<span class="vis-mtag prim">'+esc(m)+'</span>').join("");
     const sec = (e.secondaryMuscles||[]).map(m=>'<span class="vis-mtag sec">'+esc(m)+'</span>').join("");
     return '<div class="vis-block">'+
@@ -5852,7 +5852,7 @@ function openExVisualizer(id, opts){
         .sort((a,b)=>b.score-a.score)
         .map(x=>x.o);
     } else {
-      // Nothing tagged on this movement yet — fall back to body part / equipment / progression links.
+      // Nothing tagged on this movement yet, so fall back to body part / equipment / progression links.
       rel = state.exercises.filter(o=>o.id!==e.id && (
         (o.bodyParts||[]).some(b=>(e.bodyParts||[]).includes(b)) ||
         (o.equipment||[]).some(k=>(e.equipment||[]).includes(k)) ||
@@ -5864,7 +5864,7 @@ function openExVisualizer(id, opts){
     const used = new Set();
     const cards = rel.map(o=>{
       const img = o.image ? o.image : natureImageFor(o.name, used);
-      const parts = (o.bodyParts||[]).slice(0,3).join(", ") || (o.primaryMuscles||[]).slice(0,2).join(", ") || "—";
+      const parts = (o.bodyParts||[]).slice(0,3).join(", ") || (o.primaryMuscles||[]).slice(0,2).join(", ") || "n/a";
       return '<button type="button" class="alt-card" data-alt="'+o.id+'">'+
         '<span class="alt-thumb" style="background-image:url(\''+img+'\')"></span>'+
         '<span class="alt-name">'+esc(o.name)+'</span>'+
@@ -5875,7 +5875,7 @@ function openExVisualizer(id, opts){
   }
   function visHistoryHtml(e){
     const rows = exSessions(e.id).slice(-12).reverse();
-    if (!rows.length) return '<div class="vis-empty">No sessions logged for '+esc(e.name)+' yet — log one from a workout.</div>';
+    if (!rows.length) return '<div class="vis-empty">No sessions logged for '+esc(e.name)+' yet. Log one from a workout.</div>';
     return rows.map(ses=>{
       const cs = ses.completedSets.filter(c=>c.exId===e.id);
       const b = exSessionBest(e, cs);
@@ -5884,7 +5884,7 @@ function openExVisualizer(id, opts){
       return '<div class="vis-sess-row">'+
         '<div class="vis-sess-date">'+fmtDate(ses.dateISO)+'</div>'+
         '<div class="vis-sess-name">'+esc(day?day.name:"Session")+'</div>'+
-        '<div class="vis-sess-best">'+(b?b.label:"—")+'</div>'+
+        '<div class="vis-sess-best">'+(b?b.label:"n/a")+'</div>'+
         '<div class="vis-sess-chips">'+chips+'</div>'+
       '</div>';
     }).join("");
@@ -5903,20 +5903,20 @@ function openExVisualizer(id, opts){
     const delta = pts[pts.length-1] - pts[0];
     const trend = delta>0 ? '<span class="vis-trend up">▲ '+delta+' '+unitWord+'</span>'
       : delta<0 ? '<span class="vis-trend down">▼ '+Math.abs(delta)+' '+unitWord+'</span>'
-      : '<span class="vis-trend flat">— steady</span>';
+      : '<span class="vis-trend flat">holding steady</span>';
     return '<div class="vis-chart-head">Best value per session · '+pts.length+' session'+(pts.length>1?"s":"")+' '+trend+'</div>'+
       '<svg class="vis-chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+bars+'</svg>'+
       '<div class="vis-chart-x">'+rows.map(s=>'<span>'+fmtDate(s.dateISO)+'</span>').join("")+'</div>';
   }
   function visRmCardHtml(e){
-    if (e.mode === "time") return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">—</div><p class="vis-rm-src">Timed holds don\'t produce a rep-max estimate.</p></div></div></div>';
+    if (e.mode === "time") return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">n/a</div><p class="vis-rm-src">Timed holds don\'t produce a rep-max estimate.</p></div></div></div>';
     const cands = exRmCandidates(e).slice(0, 3);
     if (!cands.length){
       const lfMissing = (e.mode !== "weight" && typeof e.loadFactor !== "number");
       const hint = lfMissing
-        ? "Add a body-weight load factor (Edit exercise) and your body weight (Settings) so body-weight sets can count — or log a weighted set."
+        ? "Add a body-weight load factor (Edit exercise) and your body weight (Settings) so body-weight sets can count, or log a weighted set."
         : "Log a working set with reps and load to seed the estimate.";
-      return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">—</div><p class="vis-rm-src">'+esc(hint)+'</p></div></div></div>';
+      return '<div class="vis-rm vis-rm-empty"><div class="vis-rm-top"><div class="vis-rm-badge">1R</div><div class="vis-rm-main"><div class="vis-rm-lbl">Predicted 1RM · Epley</div><div class="vis-rm-val">n/a</div><p class="vis-rm-src">'+esc(hint)+'</p></div></div></div>';
     }
     const top = cands[0];
     const conf = rmConfidence(top.reps);
@@ -5936,7 +5936,7 @@ function openExVisualizer(id, opts){
       '<div class="vis-rm-calc"><label'+(e.mode==="weight"?"":' title="Your loaded body-weight share plus any added weight"')+'>'+(e.mode==="weight"?"Weight":"Lifted load")+' ('+esc(weightUnit())+') <input type="number" min="0" step="any" value="'+esc(String(fromKg(top.effKg)))+'" data-rm-w></label>'+
       '<label>Reps <input type="number" min="1" max="30" step="1" value="'+top.reps+'" data-rm-r></label>'+
       '<span class="vis-rm-out'+(rmSplit(e, top)?" split":"")+'" data-rm-live>'+rmDisplayHtml(e, top)+'</span></div>'+
-      '<div class="vis-rm-note"><p class="vis-rm-formula"><b>Epley:</b> weight × (1 + reps ÷ 30). Best inside 1–10 reps; higher reps extrapolate.</p>'+
+      '<div class="vis-rm-note"><p class="vis-rm-formula"><b>Epley:</b> weight × (1 + reps ÷ 30). Best inside 1-10 reps; higher reps extrapolate.</p>'+
         '<details class="vis-rm-why"><summary>Why <span class="q">this</span> set?</summary><p class="vis-rm-why-body">The board scores every working set (warm-ups excluded) and keeps the highest Epley value. Tap another candidate to preview it, or tweak the calculator to explore targets.</p></details></div>'+
     '</div>';
   }
@@ -5957,7 +5957,7 @@ function openExVisualizer(id, opts){
       if (!wIn || !rIn || !liveEl) return;
       const eff = toKgInput(wIn.value);
       const est = epley1RM(eff, +rIn.value);
-      if (!est){ liveEl.textContent = "—"; liveEl.classList.remove("split"); return; }
+      if (!est){ liveEl.textContent = "n/a"; liveEl.classList.remove("split"); return; }
       const cand = { kg:est, effKg:eff, reps:+rIn.value, shareKg:curShare, lf:ex.loadFactor };
       liveEl.innerHTML = rmDisplayHtml(ex, cand);
       liveEl.classList.toggle("split", !!rmSplit(ex, cand));
@@ -6023,7 +6023,7 @@ function openExVisualizer(id, opts){
   }
   function visRecordsHtml(e){
     const rows = exSessions(e.id);
-    if (!rows.length) return '<div class="vis-empty">No records yet — log a session with '+esc(e.name)+' to start the board.</div>';
+    if (!rows.length) return '<div class="vis-empty">No records yet. Log a session with '+esc(e.name)+' to start the board.</div>';
     const all = rows.flatMap(s=> s.completedSets.filter(c=>c.exId===e.id).map(c=>({ c:c, date:s.dateISO })));
     const bests = all.map(x=>{ const b=exSessionBest(e,[x.c]); return (b && b.value>0)?{ b:b, date:x.date }:null; }).filter(Boolean);
     bests.sort((a,b)=>b.b.value-a.b.value);
@@ -6037,14 +6037,14 @@ function openExVisualizer(id, opts){
       const sum = cs.reduce((a,c)=>{ const v = completedSetVolume(e,c); return a + (v||0); }, 0);
       return { sum:sum, date:s.dateISO };
     }).sort((a,b)=>b.sum-a.sum)[0];
-    const volShown = vol && vol.sum>0 ? fmtVol(vol.sum)+" "+weightUnit() : "—";
+    const volShown = vol && vol.sum>0 ? fmtVol(vol.sum)+" "+weightUnit() : "n/a";
     const volSub = vol && vol.sum>0
       ? fmtDate(vol.date)
       : (e.mode==="time" ? "timed holds aren't counted yet" : "");
     const rec = (lbl,val,sub)=>'<div class="vis-rec"><span>'+lbl+'</span><b>'+val+'</b><small>'+(sub||"")+'</small></div>';
     return '<div class="vis-rec-grid">'+
       rec("Sessions", rows.length, rows.length===1 ? "one session" : "all time")+
-      rec("Best set", bestSet?bestSet.b.label:"—", bestSet?fmtDate(bestSet.date):"")+
+      rec("Best set", bestSet?bestSet.b.label:"n/a", bestSet?fmtDate(bestSet.date):"")+
       rec("Volume peak", volShown, volSub)+
       rec("On target", hitPct+"%", "sets hit")+
     '</div>'+visRmCardHtml(e);
@@ -6054,14 +6054,14 @@ function openExVisualizer(id, opts){
       .map(s=>({ s:s, b: exSessionBest(e, s.completedSets.filter(c=>c.exId===e.id)) }))
       .filter(r=>r.b && r.b.value>0)
       .sort((a,b)=>b.b.value-a.b.value);
-    if (!rows.length) return '<div class="vis-empty">Nothing ranked yet — log a set of '+esc(e.name)+' to enter the board.</div>';
+    if (!rows.length) return '<div class="vis-empty">Nothing ranked yet. Log a set of '+esc(e.name)+' to enter the board.</div>';
     const rankTxt = i=> i===0?"1st" : i===1?"2nd" : i===2?"3rd" : (i+1)+"th";
     const top = rows[0];
     const effortWord = e.mode==="time" ? "hold" : (e.mode==="weight" ? "lift" : "effort");
     const banner =
       '<div class="vis-rank-card">'+
         '<div class="vis-rank-avs">'+rows.slice(0,3).map(r=>'<span class="vis-avatar" style="background-image:url(https://picsum.photos/seed/'+seedOf(r.s.id)+'/96/96)"></span>').join("")+'</div>'+
-        '<div class="vis-rank-main"><b>Ranking — '+rankTxt(0)+'</b><span>Best '+effortWord+': '+top.b.label+'</span></div>'+
+        '<div class="vis-rank-main"><b>Ranking: '+rankTxt(0)+'</b><span>Best '+effortWord+': '+top.b.label+'</span></div>'+
         '<button type="button" class="vis-rank-link" data-goto="history">view history</button>'+
       '</div>';
     const list = rows.map((r,i)=>{
@@ -6180,7 +6180,7 @@ function openExVisualizer(id, opts){
       const url = ex.videoUrl || ("https://www.youtube.com/results?search_query="+encodeURIComponent(ex.name));
       if (window.open) window.open(url, "_blank", "noopener");
     } else if (k==="share"){
-      const txt = ex.name+" — tracked in Perseus. Your data never leaves this browser.";
+      const txt = ex.name+". Tracked in Perseus. Your data never leaves this browser.";
       if (navigator.share){ navigator.share({ title:ex.name, text:txt }).catch(()=>{}); }
       else if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>toast("Copied to clipboard"), ()=>toast("Could not copy")); }
       else toast("Share not available here");
@@ -6618,7 +6618,7 @@ function openGapEditor(dayId, prevExId){
     }
     markRoutineEdited(day.id);
     saveState(); render();
-    toast(de.restAfterSec == null ? "Specific rest cleared — inherits the previous exercise" : "Rest between exercises: " + fmtRest(de.restAfterSec));
+    toast(de.restAfterSec == null ? "Specific rest cleared. This exercise inherits the previous one." : "Rest between exercises: " + fmtRest(de.restAfterSec));
   };
   $("#gap-ok", slot).addEventListener("click", commit);
   $("#gap-cancel", slot).addEventListener("click", ()=>render());
@@ -6635,7 +6635,7 @@ function openGapEditor(dayId, prevExId){
 function refreshRestGaps(scope, dayId){
   const day = getDay(dayId);
   if (!day || !scope || !state.profile.loggingMode) return;
-  if (scope.querySelector("#gap-in")) return; // inline gap editor open — leave it alone
+  if (scope.querySelector("#gap-in")) return; // inline gap editor open, leave it alone
   const rows = Array.from(scope.querySelectorAll(".ex-row"));
   if (!rows.length) return;
   $$(".rest-gap", scope).forEach(g=>g.remove());
@@ -6665,7 +6665,7 @@ function bindRestGaps(scope, day){
   $$("[data-gap-clear]", scope).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
     const de = day.exercises.find(x=>x.exId===b.dataset.gapClear);
-    if (de){ de.restAfterSec = null; markRoutineEdited(day.id); saveState(); render(); toast("Specific rest cleared — inherits the previous exercise"); }
+    if (de){ de.restAfterSec = null; markRoutineEdited(day.id); saveState(); render(); toast("Specific rest cleared. This exercise inherits the previous one."); }
   }));
 }
 /* Equalize a superset's round count across every member: lengthen or trim the
@@ -6704,7 +6704,7 @@ function setSupersetRounds(dayId, bandId, n){
     syncExercisePlan(de.exId, de);
   });
   saveState(); render();
-  toast("Superset is now "+n+" round"+(n!==1?"s":"")+" — every member logs "+n+" sets.");
+  toast("Superset is now "+n+" round"+(n!==1?"s":"")+". Every member logs "+n+" sets.");
 }
 
 /* ---------- Routine editor (single routine, full controls) ---------- */
@@ -6795,7 +6795,7 @@ function renderWorkoutEditor(){
   $$("[data-add-ss]", s).forEach(b=>b.addEventListener("click", ev=>
     openAddSuperset(b.dataset.addSs)));
   /* Drag-to-reorder: grab a row, or a superset band (its grip/body), to move a
-     unit — a band always moves as a whole group. */
+     unit; a band always moves as a whole group. */
   $$(".ex-row", s).forEach(row => bindRowDrag(row, d.id, s));
   $$("[data-edit-ex]", s).forEach(b=>b.addEventListener("click", ev=>{
     ev.stopPropagation();
@@ -6820,7 +6820,7 @@ function renderWorkoutEditor(){
     d.supersets = (d.supersets||[]).filter(g=>g.id!==b.dataset.unlink);
     markRoutineEdited(d.id);
     saveState(); render();
-    toast("Superset unlinked — those exercises now log separately");
+    toast("Superset unlinked. Those exercises now log separately.");
   }));
   $$(".super-sets-in", s).forEach(inp=>inp.addEventListener("change", ev=>{
     if(!d) return;
@@ -6934,7 +6934,7 @@ function commitRowMove(d){
   else d.row.parentNode.insertBefore(d.row, rows[to]);
   d.moved = true;
   // rest gap slots are not .ex-row elements, so the move above leaves them
-  // behind — rebuild them under their owner rows or they detach visually
+  // behind, so rebuild them under their owner rows or they detach visually
   refreshRestGaps(d.scope, d.dayId);
   d.comp += (d.row.offsetTop - beforeTop);
   const lo = Math.min(from, to), hi = Math.max(from, to);
@@ -7039,7 +7039,7 @@ function rowDragEnd(){
   if (!motionOK()){ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }
   else setTimeout(()=>{ editor.classList.remove("sorting"); row.style.removeProperty("transition"); }, 340);
   if (d.moved){
-    // commits rebuilt the gap slots live (fresh elements, no listeners) —
+    // commits rebuilt the gap slots live (fresh elements, no listeners),
     // rebuild once more against the final order and rebind their buttons
     refreshRestGaps(scope, d.dayId);
     bindRestGaps(scope, getDay(d.dayId));
@@ -7054,7 +7054,7 @@ function bindRowDrag(row, dayId, scope){
     if (rowDrag) return;                                // one drag at a time
     if (ev.button !== undefined && ev.button !== 0) return; // left button / touch only
     if (ev.target && ev.target.closest && ev.target.closest("button,input,select,textarea,a,label")) return;
-    if (!row.getBoundingClientRect().height) return;    // no layout (jsdom) — nothing to drag
+    if (!row.getBoundingClientRect().height) return;    // no layout (jsdom), nothing to drag
     const rows = Array.from(scope.querySelectorAll(".ex-row"));
     rowDrag = {
       row: row, dayId: dayId, scope: scope, editor: null, active: false,
@@ -7083,7 +7083,7 @@ function openAddEx(dayId, exId){
       '<div class="grid two">'+
         '<label class="field"><span>Exercise</span><select id="add-ex-select">'+opts+'</select></label>'+
         (ssGroup
-          ? '<div class="field"><span>Rounds in the superset</span><div class="micro">'+ssRounds+' shared with every member — change it from the superset’s Rounds field.</div></div>'
+          ? '<div class="field"><span>Rounds in the superset</span><div class="micro">'+ssRounds+' shared with every member. Change it in the superset’s Rounds field.</div></div>'
           : '<label class="field"><span>Target sets</span><input id="add-ex-sets" type="number" min="1" value="3"/></label>')+
       '</div>'+
       (day.type==="hybrid"
@@ -7143,7 +7143,7 @@ function openAddEx(dayId, exId){
     }
     html += '</div></label>';
     if (showW){
-      html += '<label class="field" style="margin-top:.4rem"><span>Weight per set ('+weightUnit()+') — e.g. warm-up light, work heavy, drop lighter</span><div class="set-targets">';
+      html += '<label class="field" style="margin-top:.4rem"><span>Weight per set ('+weightUnit()+'): warm-up light, work heavy, drop lighter</span><div class="set-targets">';
       for (let i=0;i<n;i++){
         const w = (prevWeights && prevWeights[i]!=null && prevWeights[i]!=="") ? prevWeights[i] : wFallback;
         html += '<label class="set-target"><span>Set '+(i+1)+'</span>'+
@@ -7174,15 +7174,15 @@ function openAddEx(dayId, exId){
     const note = $("#add-sync-note", host);
     if (!note) return;
     if (editing){
-      note.textContent = "Plan is shared across routines — saving updates this exercise everywhere it appears.";
+      note.textContent = "This plan is shared across routines. Saving updates the exercise everywhere it appears.";
       return;
     }
     const shared = exercisePlan(ex.id);
     if (shared){
       const names = state.days.filter(d => d.exercises.some(x => x.exId === ex.id)).map(d => d.name).join(", ") || "another routine";
-      note.textContent = "Already in "+names+" — prefilled from its current plan. Changes sync to every routine that uses this exercise.";
+      note.textContent = "Already in "+names+", prefilled from its current plan. Changes sync to every routine that uses this exercise.";
     } else {
-      note.textContent = "This plan is shared — once saved, edits here update the exercise in every routine that uses it.";
+      note.textContent = "This plan is shared. Once saved, edits here update the exercise in every routine that uses it.";
     }
   }
   function updateRestHint(ex){
@@ -7202,7 +7202,7 @@ function openAddEx(dayId, exId){
     if (!ex) return;
     $("#add-field-weight").style.display = (ex.weightAvailable||ex.mode==="weight") ? "block" : "none";
     const wLabel = $("#add-field-weight span", host);
-    if (wLabel) wLabel.textContent = "Working weight (applies to all sets — or fine-tune per set below)";
+    if (wLabel) wLabel.textContent = "Working weight (applies to all sets, or fine-tune each set below)";
     if (resetWeight){
       if (!editing && prefillShared(ex)){ /* shared plan already set the fields */ }
       else { $("#add-ex-weight").value = ex.defaultWeight||0; prevWeights = null; }
@@ -7226,7 +7226,7 @@ function openAddEx(dayId, exId){
     // Every non-warmup set shows the same effective target as the logger: when
     // the last session on this routine beat the stored target, the input shows
     // that PR ("beat N"), so the edit form matches the routine list + Log tab.
-    // Only upward — a bad day never lowers the inputs.
+    // Only upward: a bad day never lowers the inputs.
     const shared = exercisePlan(editing.exId);
     const base = shared ? shared : editing;
     const baseSetsEl = $("#add-ex-sets", host);
@@ -7245,7 +7245,7 @@ function openAddEx(dayId, exId){
     if (editing.focus && $("#add-ex-focus", host)) $("#add-ex-focus").value = editing.focus;
     const erEl = $("#add-ex-rest", host);
     if (erEl) erEl.value = (editing.restSec == null ? "" : editing.restSec);
-    // transition rests live in the gap slots between rows now — never touched here
+    // transition rests live in the gap slots between rows now, never touched here
   }
   updateFields(!editing);
   host.addEventListener("input", (ev)=>{
@@ -7297,7 +7297,7 @@ function openAddEx(dayId, exId){
       entry.restSec = restRaw === "" ? null : normRestSec(+restRaw);
       if (restRaw !== "" && entry.restSec == null){ toast("Enter rest in seconds, 0-3600"); return; }
     }
-    // transition rests are edited from the gap slots between rows — always preserve here
+    // transition rests are edited from the gap slots between rows, always preserve here
     entry.restAfterSec = editing ? (editing.restAfterSec != null ? editing.restAfterSec : null) : null;
     const focusEl = $("#add-ex-focus", host);
     if (focusEl){ if (focusEl.value) entry.focus = focusEl.value; else delete entry.focus; }
@@ -7336,7 +7336,7 @@ function openAddSuperset(dayId){
     return a.length ? a[0].id : "";
   }
   /* Dropdown options for slot k: every library exercise not already in the day
-     and not chosen in another slot — plus the slot's own current pick. */
+     and not chosen in another slot, plus the slot's own current pick. */
   function exOptions(k){
     return state.exercises
       .filter(e => !inDay[e.id] && !picks.some((p,j) => j !== k && p.exId === e.id))
@@ -7407,13 +7407,13 @@ function openAddSuperset(dayId){
       ? '<label class="field ss-weight"><span>Weight per set '+weightUnit()+'</span><div class="set-targets">'+wCells.join("")+'</div></label>'
       : "";
     /* Hybrid days let each member declare its own training type (hypertrophy /
-       strength) — same per-entry `focus` the add-exercise flow uses, so the
+       strength), the same per-entry `focus` the add-exercise flow uses, so the
        coach judges this member against that focus's rep zone. */
     const foc = (day.type==="hybrid")
       ? '<label class="field ss-focus"><span>Type: hypertrophy or strength</span><select class="ss-focus-in" data-k="'+k+'">'+
           '<option value="hypertrophy"'+(pick.focus==="hypertrophy"?" selected":"")+'>Hypertrophy: '+sessionZone("hypertrophy")[0]+'-'+sessionZone("hypertrophy")[1]+' reps</option>'+
           '<option value="strength"'+(pick.focus==="strength"?" selected":"")+'>Strength: '+sessionZone("strength")[0]+'-'+sessionZone("strength")[1]+' reps</option>'+
-        '</select><div class="micro">Hybrid day — pick which rep zone this member is judged against.</div></label>'
+        '</select><div class="micro">Hybrid day. Pick which rep zone this member is judged against.</div></label>'
       : "";
     return '<div class="ss-member" data-k="'+k+'">'+
       '<div class="ss-member-head"><b>'+esc(ex.name)+'</b>'+modePill(ex)+(ex.weightAvailable ? ' <span class="pill weight">wgt</span>' : '')+'</div>'+
@@ -7438,7 +7438,7 @@ function openAddSuperset(dayId){
     host.innerHTML =
       '<div class="card" style="margin-top:12px">'+
         '<h3>Add a superset</h3>'+
-        '<p class="micro" style="margin-bottom:.9rem">Two or more exercises done back to back — one set each — before a single rest. They are logged round by round and share one set count.</p>'+
+        '<p class="micro" style="margin-bottom:.9rem">Two or more exercises done back to back, one set each, before a single rest. They are logged round by round and share one set count.</p>'+
         '<div class="ss-picks">'+rowsHtml+'</div>'+
         '<div class="btn-row" style="margin-top:.6rem">'+
           (canMore ? '<button class="btn ghost small" id="ss-more">+ Another exercise</button>' : '')+
@@ -7538,7 +7538,7 @@ function openAddSuperset(dayId){
     day.supersets.push(grp);
     markRoutineEdited(day.id);
     saveState(); render();
-    toast("Superset added — log it as paired rounds");
+    toast("Superset added. Log it as paired rounds.");
   }
   const first = nextFree();
   picks.push({ exId: first });
@@ -7552,7 +7552,7 @@ function openAddSuperset(dayId){
    LOGGER
    -------------------------------------------------------------------------
    Flow: pick a workout day -> pre-session readiness check-in (sleep, energy,
-   soreness, stress, pain — the things you know BEFORE you train) -> step through
+   soreness, stress, pain, the things you know BEFORE you train) -> step through
    each exercise -> per set, record actual reps/time/weight next to the plan,
    rate it 1-5 and/or type free-text feedback -> post-session reflection (how hard
    it felt, how it landed against the plan, what hurt, what to change) -> generate
@@ -7630,7 +7630,7 @@ function startLog(dayId){
   saveState(); render();
 }
 
-/* The effort slider block shown with every set — a cell of a standalone
+/* The effort slider block shown with every set, a cell of a standalone
    exercise screen or one panel of a superset round. */
 function effortSliderHtml(set, i){
   const rated = set.rating>0;
@@ -7710,7 +7710,7 @@ function bindSteppers(s){
     inp.dispatchEvent(new Event("input", { bubbles:true }));
   }));
 }
-/* A set counts as performed once it carries a real performance number — reps for
+/* A set counts as performed once it carries a real performance number: reps for
    rep/weight work, seconds for timed holds. An effort rating alone is not work. */
 function setPerformed(set){
   if (!set) return false;
@@ -7731,8 +7731,8 @@ function setPartialTip(set){
   if (!set) return "";
   const perf = setPerformed(set);
   const rated = (set.rating||0) > 0;
-  if (perf && !rated) return "Work logged, but no effort rating yet — rate the set to mark it done.";
-  if (!perf && rated) return "Effort rated, but no reps or time — add the work or this set will not count.";
+  if (perf && !rated) return "Work logged, but no effort rating yet. Rate the set to mark it done.";
+  if (!perf && rated) return "Effort rated, but no reps or time. Add the work or this set will not count.";
   return "";
 }
 /* Repaint one set cell for the live state above without a full re-render. */
@@ -7794,7 +7794,7 @@ function bindRestBar(s, fallbackSec){
   if (base != null){ restTimer.total = base; restTimer.left = base; restPaint(); }
   const startBtn = $("[data-rest-start]", bar);
   if (startBtn) startBtn.addEventListener("click", ()=>{
-    // paused: reset the clock to the full rest but stay paused until play —
+    // paused: reset the clock to the full rest but stay paused until play,
     // resetting is not an instruction to start again
     if (restTimer.started && !restTimer.running && restTimer.left > 0){
       restTimer.left = restTimer.total > 0 ? restTimer.total : (base || 0);
@@ -7841,9 +7841,9 @@ function maybeAutoStartRest(sec, isLast){
   restStart(s, "Rest", { kind: kind, next: next || "" });
   const sb = document.querySelector("[data-rest-start]");
   if (sb) sb.textContent = "Restart";
-  toast(kind === "exercise" ? "Last set — resting " + fmtRest(s) + " before " + next
-      : kind === "finish" ? "Last set — resting " + fmtRest(s) + " before you wrap up"
-      : "Set done — resting " + fmtRest(s));
+  toast(kind === "exercise" ? "Last set, resting " + fmtRest(s) + " before " + next
+      : kind === "finish" ? "Last set. Resting " + fmtRest(s) + " before you wrap up"
+      : "Set done. Resting " + fmtRest(s));
 }
 /* One screen per standalone exercise: every one of its sets as a cell. */
 function renderLogExerciseStep(s, day, step, total){
@@ -7858,21 +7858,21 @@ function renderLogExerciseStep(s, day, step, total){
   const isPerSide = !!(ex && ex.perSide && ex.mode!=="time");
   const repsLabel = isPerSide ? 'Reps per side' : 'Actual reps';
   const weightLabel = "Weight "+weightUnit()+(isPerSide ? " (per hand/side)" : "");
-  const perSideHint = isPerSide ? ' <b>Per-side exercise:</b> 6 means 6 left + 6 right (12 total) — volume counts both sides.' : '';
+  const perSideHint = isPerSide ? ' <b>Per-side exercise:</b> 6 means 6 left + 6 right (12 total). Volume counts both sides.' : '';
   const setCells = entry.sets.map((set,i)=>{
     const cellState = logCellState(set);
     const plan = de;
     const st = setTypeOf(plan, i);
     const planTxt = setPlanTxt(plan, ex, i, day.id);
     const beat = st==="failure" ? prevSetActual(day.id, de.exId, i, showTime?"time":"reps") : null;
-    const failLabel = st==="failure" ? (beat!=null ? (showTime ? 'Hold — beat '+beat+'s' : 'AMRAP reps — beat '+beat) : 'AMRAP reps (to failure)') : "";
+    const failLabel = st==="failure" ? (beat!=null ? (showTime ? 'Hold, beat '+beat+'s' : 'AMRAP reps, beat '+beat) : 'AMRAP reps (to failure)') : "";
     return '<div class="set-cell fx-rise'+(cellState?' '+cellState:'')+'" data-set="'+i+'">'+
       '<span class="set-warn" role="img" tabindex="0" data-tip="'+esc(setPartialTip(set))+'" aria-label="'+esc(setPartialTip(set) || 'Incomplete set')+'">!</span>'+
       '<div class="set-top"><span class="set-num">'+(i+1)+'<small>SET</small></span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         lastLogHtml(ex, i)+'</div>'+
       (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?failLabel:st==="warmup"?'Warm-up reps':repsLabel), i) : "") +
-      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s) — beat '+beat+'s' : "Hold (s)"), i) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null ? 'Hold (s), beat '+beat+'s' : "Hold (s)"), i) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, weightLabel, i) : "") +
       effortSliderHtml(set, i)+
       (logMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-i="'+i+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
@@ -7890,14 +7890,14 @@ function renderLogExerciseStep(s, day, step, total){
       '<div class="log-head fx-in">' +
         '<div class="log-kicker"><span class="log-thumb" style="background-image:url(\''+logThumbFor(ex)+'\')"></span>'+
         '<span class="log-kicker-text"><b>Exercise '+(logCtx.idx+1)+' of '+total+'</b> · '+esc(day.name)+' · '+esc(sessionTypeLabel(logCtx.type))+'</span></div>' +
-        '<div class="big-title">'+esc(ex.name)+(isPerSide?' <span class="pill" title="Reps are per side — 6 means 6 left + 6 right, volume counts both sides">per side</span>':"")+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
+        '<div class="big-title">'+esc(ex.name)+(isPerSide?' <span class="pill" title="Reps are per side: 6 means 6 left + 6 right, and volume counts both sides">per side</span>':"")+'<button type="button" class="title-how" data-vis-how="'+de.exId+'" aria-label="How to perform '+esc(ex.name)+'">?</button></div>' +
         '<div class="log-context mono">'+esc(day.name)+' · exercise '+(logCtx.idx+1)+' of '+total+' · '+sessionTypeLabel(logCtx.type)+' '+(exerciseZone(de, logCtx.type).zone[0])+'-'+(exerciseZone(de, logCtx.type).zone[1])+' reps'+(logCtx.type==="hybrid"&&de.focus?' · '+de.focus+' focus':"")+'</div>' +
         logTickerHtml(day) +
       '</div>' +
       '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
       '<div class="log-count"><span>Exercise '+(logCtx.idx+1)+' of '+total+'</span><span><b>'+doneCount+'/'+entry.sets.length+'</b> sets logged</span></div>' +
       '<div class="log-step fx-in">' +
-        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+perSideHint+(logMode && (restBetween!=null||restAfter!=null)?' Tick Done on a set — or just enter reps — to start the rest timer automatically.':'')+'</p>' +
+        '<p class="small muted log-hint">Enter what you actually did for each set, then drag the effort slider to rate how hard each set felt (1 = very easy, 5 = near-failure, in 0.5 steps).'+(ex.weightAvailable?' You may adjust weight; 0 means bodyweight.':'')+perSideHint+(logMode && (restBetween!=null||restAfter!=null)?' Tick Done on a set, or just enter reps, to start the rest timer automatically.':'')+'</p>' +
         restBarHtml(restBetween, restAfter, restSourceLabel(de, ex, day), isLastEx) +
         '<div class="set-grid">'+setCells+'</div>' +
         '<div class="btn-row log-actions">' +
@@ -8010,8 +8010,8 @@ function renderLogRoundStep(s, day, step, total){
       '<div class="set-top"><span class="round-ex-name">'+esc(ex.name)+(isPS?' <span class="pill">per side</span>':"")+'</span>'+
         (st!=="regular"?'<span class="set-type-badge '+st+'">'+SET_TYPES[st].tag+'</span>':"")+
         '<span class="set-plan mono">'+planTxt+'</span></div>'+
-      lastLogHtml(ex, r) + (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps — beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':(isPS?'Reps per side':'Actual reps')), r) : "") +
-      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s) — beat '+beat+'s':"Hold (s)"), r) : "") +
+      lastLogHtml(ex, r) + (showReps ? numFieldHtml("s-reps", set.reps, 1, (st==="failure"?(beat!=null?'AMRAP reps, beat '+beat:'AMRAP reps (to failure)'):st==="warmup"?'Warm-up reps':(isPS?'Reps per side':'Actual reps')), r) : "") +
+      (showTime ? numFieldHtml("s-time", set.time, 0.5, (st==="failure"&&beat!=null?'Hold (s), beat '+beat+'s':"Hold (s)"), r) : "") +
       (showWeight ? numFieldHtml("s-weight", set.weight, 2.5, "Weight "+weightUnit()+(isPS?" (per hand/side)":""), r) : "") +
       effortSliderHtml(set, r)+
       (roundLogMode ? '<label class="set-done"><input type="checkbox" class="s-done" data-exid="'+de.exId+'" data-set="'+r+'"'+(set.done?" checked":"")+'/> Done <small>starts rest</small></label>' : "")+
@@ -8167,7 +8167,7 @@ function cleanCheckin(obj){
 }
 function choiceLabel(choices, v){
   const c = (choices||[]).filter(x=>x.v===v)[0];
-  return c ? c.label : "—";
+  return c ? c.label : "n/a";
 }
 /* One shared readout of a session's two check-ins, so the coach feed and the
    history detail can never describe the same session differently. Sessions
@@ -8238,28 +8238,28 @@ function readinessVerdict(rd){
   const level = penalty <= 4 ? "green" : (penalty <= 9 ? "amber" : "red");
   const driver = s.soreness >= 2 ? "soreness" : s.sleep <= 2 ? "sleep" : s.energy <= 2 ? "energy" : s.stress <= 2 ? "stress" : "";
   const why = {
-    soreness: "Notable soreness going in — keep the loads where they are and let the first work set decide whether to push.",
-    sleep: "Short sleep — expect to fade in the last sets. Stop a rep or two shy instead of chasing a PR.",
-    energy: "Low energy — treat today as maintenance: same movements, same loads, no increases.",
-    stress: "Heavy life stress — recovery is taxed outside the gym, so keep the volume as planned and skip the last-rep grind.",
+    soreness: "You're carrying some soreness today. Keep the loads where they are and let the first work set decide whether to push.",
+    sleep: "Short sleep. Expect to fade in the last sets, so stop a rep or two shy instead of chasing a PR.",
+    energy: "Low energy. Treat today as maintenance: same movements, same loads, no increases.",
+    stress: "Heavy life stress taxes recovery outside the gym. Keep the volume as planned and skip the last-rep grind.",
     "": "Sleep, energy, soreness and stress all read normal."
   }[driver];
-  const title = level==="green" ? "Green light — train as planned"
-    : level==="amber" ? "Amber — train, hold the progression"
-    : "Red — reduce today's load";
+  const title = level==="green" ? "Green light: train as planned"
+    : level==="amber" ? "Amber: train, hold the progression"
+    : "Red: reduce today's load";
   return { level, title, body: why + " The coach keeps this check-in with the session, so a set that lands below plan today is read as fatigue, not lost strength." };
 }
 /* What the coach does with the reflection, said back as the user answers it. */
 function feedbackHint(fb){
   fb = fb || {};
   const out = [];
-  if (fb.performance===3 && (fb.difficulty==null || fb.difficulty<=2)) out.push("Above plan at low effort — the coach looks at adding a rep or a small load step.");
-  if (fb.performance===1) out.push("Below plan — the coach holds the targets and checks the readiness check-in before cutting anything.");
+  if (fb.performance===3 && (fb.difficulty==null || fb.difficulty<=2)) out.push("Above plan at low effort. The coach looks at adding a rep or a small load step.");
+  if (fb.performance===1) out.push("Below plan. The coach holds the targets and checks the readiness check-in before cutting anything.");
   if (fb.difficulty>=4) out.push("A session taken to the limit is logged as context, not a brake: hit your targets and recover well and the coach still progresses you.");
-  if (fb.fatigue>=4) out.push("Very spent today — kept as recovery context so the coach understands you, never as a reason to hold your progression back.");
+  if (fb.fatigue>=4) out.push("Very spent today. Kept as recovery context so the coach understands you, never as a reason to hold your progression back.");
   if (fb.pump===0 && fb.difficulty!=null && fb.difficulty<=2) out.push("No pump on a session that felt easy usually means the load or reps can move.");
-  if (fb.pain && String(fb.pain).trim()) out.push("Pain noted — the coach holds or reduces the movements involved, never increases them.");
-  if (!out.length) return "Rate how it landed against the plan — that, plus your readiness, decides the next step. How hard it felt is context the coach reads, not a brake.";
+  if (fb.pain && String(fb.pain).trim()) out.push("Pain noted. The coach holds or reduces the movements involved, never increases them.");
+  if (!out.length) return "Rate how it landed against the plan. That, plus your readiness, decides the next step. How hard it felt is context the coach reads, not a brake.";
   return out.join(" ");
 }
 function verdictHtml(v){ return '<b>'+esc(v.title)+'</b><p>'+esc(v.body)+'</p>'; }
@@ -8321,7 +8321,7 @@ function renderReadiness(s){
             '<span class="ready-pct">'+r.pct+'%</span></span>'+
           '<span class="ready-eta">'+esc(sub)+'</span></div>';
       }).join("") + '</div>'
-    : '<div class="micro">Nothing to chart yet — today\'s exercises carry no muscle tags. Add primary muscles in the exercise editor and this strip fills in.</div>';
+    : '<div class="micro">Nothing to chart yet. Today\'s exercises carry no muscle tags. Add primary muscles in the exercise editor and this strip fills in.</div>';
   const v = readinessVerdict(rd);
   s.innerHTML =
     '<div class="wrap">' +
@@ -8329,7 +8329,7 @@ function renderReadiness(s){
       '<div class="log-kicker"><span class="log-kicker-text"><b>Before the first set</b> · '+esc(day.name)+'</span></div>' +
       '<h2 class="big-title">Readiness <em class="serif-i">check-in</em></h2>' +
     '</div>' +
-    '<p class="subtitle log-hint">How you arrived today. These belong before the work, not after it — a set that lands below plan is far easier to read once the coach knows you slept four hours.</p>' +
+    '<p class="subtitle log-hint">How you arrived today. These belong before the work, not after it. A set that lands below plan is far easier to read once the coach knows you slept four hours.</p>' +
     '<div class="log-step fx-in" style="margin-top:8px">' +
       '<div class="grid two">' +
         checkinRailHtml("rd","sleep","Sleep last night",READINESS_CHOICES.sleep,rd.sleep) +
@@ -8639,11 +8639,11 @@ function buildSession(day, entries, feedback, readiness){
 
 /* Session plan-undo: every plan change caused by a logged session (PR
    carry-forward at save time, accepted coach suggestions) records a snapshot
-   first, so deleting the session from history fully unwinds it — counts,
+   first, so deleting the session from history fully unwinds it: counts,
    analytics, volume AND the stored targets it moved. Snapshots live on the
    session (ses.planUndo, oldest first). Restore runs newest-first and only
    touches entries that still carry this session's stamp (or still equal the
-   post-change values, i.e. auto-derived and never hand-edited) — anything the
+   post-change values, i.e. auto-derived and never hand-edited). Anything the
    user explicitly changed afterwards is left alone. Sessions saved before
    this existed simply have no planUndo and delete as before. */
 function planSnapshot(de){
@@ -8710,7 +8710,7 @@ function restoreSessionPlans(ses){
 }
 
 /* PR carry-forward: when a logged set beats its stored target, that PR becomes
-   the new stored target (all non-warmup set types — regular, drop, failure).
+   the new stored target for all non-warmup set types: regular, drop, failure.
    Only upward: a bad day never lowers targets; misses are the coach's job.
    Runs at session-save time (before the coach is produced) so the routine
    editor, the edit form, and the next Log screen all agree. Shared-plan sync
@@ -8922,7 +8922,7 @@ function sessionNotesFor(session, exId){
       });
     });
   }catch(e){}
-  const recAvg = recRates.length ? (recRates.reduce((a,b)=>a+b,0)/recRates.length).toFixed(1) : "—";
+  const recAvg = recRates.length ? (recRates.reduce((a,b)=>a+b,0)/recRates.length).toFixed(1) : "n/a";
   const fbDone = (logCtx && logCtx.feedback) || {};
   s.innerHTML =
     '<div class="view-hero slim">' +
@@ -8933,7 +8933,7 @@ function sessionNotesFor(session, exId){
         '<div class="done-recap fx-in">' +
           '<div class="done-rec"><span>Sets logged</span><b><span class="stat-num">'+recSets+'</span><small style="font-size:1rem;color:var(--ink-3)">/'+recTotal+'</small></b></div>' +
           '<div class="done-rec"><span>Avg effort</span><b>'+recAvg+'</b></div>' +
-          '<div class="done-rec"><span>Session felt</span><b style="font-size:1.35rem">'+(fbDone.difficulty!=null?esc(choiceLabel(FEEDBACK_CHOICES.difficulty, fbDone.difficulty)):"—")+'</b></div>' +
+          '<div class="done-rec"><span>Session felt</span><b style="font-size:1.35rem">'+(fbDone.difficulty!=null?esc(choiceLabel(FEEDBACK_CHOICES.difficulty, fbDone.difficulty)):"n/a")+'</b></div>' +
           '<div class="done-rec"><span>Movements</span><b><span class="stat-num">'+recMoves+'</span></b></div>' +
         '</div>' +
         '<div class="hero-cta">' +            '<button class="btn btn-xl primary" id="log-finish">Finish workout</button>' +
@@ -8983,7 +8983,7 @@ const CHECKIN_PROMPT = [
   "  fatigue 1-5 (fresh..wrecked), pain and note free text. 'performance' (against",
   "  plan) plus readiness are the progression signals: 'below plan' argues for",
   "  holding, 'above plan' at 1-2 earns a step. difficulty and fatigue are CONTEXT",
-  "  only — how one session felt says nothing about capacity once the athlete has",
+  "  only. How one session felt says nothing about capacity once the athlete has",
   "  rested and recovered, so NEVER hold or reduce next session's targets just",
   "  because it was hard or the athlete felt spent. Cite them only to explain a",
   "  below-plan session, never to cap progression. feedback.pain means hold or",
@@ -9040,7 +9040,7 @@ const SYSTEM_PROMPT = [
 ].join("\n");
 /* Dynamic prompt: same contract, but the rep zones come from the user's
    Settings (defaults = evidence-based 6-12 etc.). The payload's `repZones`
-   is authoritative — never quote generic 6-12 ranges when the user set 6-8. */
+   is authoritative, so never quote generic 6-12 ranges when the user set 6-8. */
 function systemPrompt(){
   try{
     const z = getRepZones();
@@ -9064,7 +9064,7 @@ function systemPrompt(){
       "  Maximal strength: progress with weight or harder progressions, small rep bumps.",
       "- hypertrophy: "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+" reps at moderate load (60-80% 1RM), 1-3 reps in reserve,",
       "  30-90s rest. The user's growth zone.",
-      "- hybrid: no own range — each exercise is judged against its focus zone (hypertrophy "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+" or strength "+z.strength[0]+"-"+z.strength[1]+").",
+      "- hybrid: no own range. Each exercise is judged against its focus zone (hypertrophy "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+" or strength "+z.strength[0]+"-"+z.strength[1]+").",
       "- endurance: "+z.endurance[0]+"+"+" reps at light load, short rest. Muscular endurance.",
       "Zone rule: if the athlete cruises past the top of THEIR zone (e.g. hypertrophy work",
       "hitting "+(z.hypertrophy[1]+2)+"+ reps when their zone tops at "+z.hypertrophy[1]+"), prefer adding weight",
@@ -9072,7 +9072,7 @@ function systemPrompt(){
       "the user to chase a generic textbook range when their repZones say otherwise.",
       "In 'hybrid' sessions each exercise may carry a 'focus' of 'hypertrophy' or 'strength':",
       "judge that exercise against that focus's rep zone (hypertrophy "+z.hypertrophy[0]+"-"+z.hypertrophy[1]+", strength "+z.strength[0]+"-"+z.strength[1]+")",
-      "— hybrid itself has no range. Every plan entry also carries its effective",
+      "Hybrid itself has no range. Every plan entry also carries its effective",
       "'type' (the zone it is judged against: strength|hypertrophy|hybrid|endurance).",
       "Exercises in a superset carry a 'superset' field with the group id, and the payload",
       "lists every group under 'supersets'. Superset members are logged as paired rounds",
@@ -9114,7 +9114,7 @@ function buildAIPayload({ session, day, entries, base }){
   }));
   const candidates = base.map(s=>({ exId:s.exId, field:s.field, before:s.from, after:s.to, reason:s.reason }));
   return {
-    instruction:"Given the plan, the performed sets (each may carry a user note — treat pain/form/equipment notes as hold/reduce signals and quote them in reasons), the two session check-ins ('readiness' taken BEFORE the session, 'feedback' right AFTER it — the system rules say what each one is for), custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative — never override them with generic ranges.",
+    instruction:"Given the plan, the performed sets (each may carry a user note. Treat pain/form/equipment notes as hold/reduce signals and quote them in reasons), the two session check-ins ('readiness' taken BEFORE the session, 'feedback' right AFTER it, and the system rules say what each one is for), custom repZones, and candidate suggestions below, return updated suggestions + a summary. The repZones are authoritative, so never override them with generic ranges.",
     sessionType: session.type || "hypertrophy",
     repZones: getRepZones(),
     supersets: (day.supersets||[]).map(g=>({ id:g.id, exIds:(g.exIds||[]).slice() })),
@@ -9182,7 +9182,7 @@ async function groqJson(system, user, temperature){
 
 /* Load-factor estimation: the model sees each unset exercise's mechanics and
    suggests what % of body weight the muscles carry. Output is a suggestion
-   only — the library flow shows it for review before anything is saved. */
+   only; the library flow shows it for review before anything is saved. */
 const LOAD_SYSTEM_PROMPT = [
   "You estimate exercise mechanics inside a bodyweight strength-coach app.",
   "The user trains calisthenics / bodyweight moves, plus some dumbbell work.",
@@ -9196,14 +9196,14 @@ const LOAD_SYSTEM_PROMPT = [
   "- push-ups (hands on the floor): ~65-70%; harder push-up variants stay near there",
   "- bodyweight squats and lunges: ~70-85%",
   "- horizontal rows: ~60-80% depending on body angle",
-  "- core holds (plank, hollow, L-sit): mostly isometric — estimate the share of",
+  "- core holds (plank, hollow, L-sit): mostly isometric. Estimate the share of",
   "  body weight the muscles must control, often 30-60%",
   "- pure external-load lifts (dumbbell curl, …): the body-weight share is ~0%",
   "Rules:",
   "- Return ONLY JSON: {\"items\":[{\"exId\":\"...\",\"loadPercent\":<0-100 integer or null>,",
   "   \"confidence\":\"high|medium|low\",\"reasoning\":\"<short why, max ~14 words>\"}]}",
   "- loadPercent must be an integer 0-100. Use null when the movement is too",
-  "  unusual or ambiguous to estimate — never invent a plausible number.",
+  "  unusual or ambiguous to estimate. Never invent a plausible number.",
   "- Include one item per exercise id you received; reuse ids verbatim.",
   "- Be honest: these are estimates of a real physical quantity.",
 ].join("\n");
@@ -9409,7 +9409,7 @@ function recAct(ds, actVal){
         const undoPre = planSnapshot(de);
         const undoPrePlan = deepCopyPlan(getEx(de.exId) ? getEx(de.exId).plan : null);
         if (sug.field==="progression"){
-          // Swap to the harder variation and adopt its plan — the shared
+          // Swap to the harder variation and adopt its plan. The shared
           // prescription if the variation is used elsewhere, else its defaults.
           const nextEx = getEx(sug.to);
           de.exId = sug.to;
@@ -9456,7 +9456,7 @@ function recAct(ds, actVal){
             de[sug.field] = sug.to;
           }
           // Accepted coach change applies to the shared prescription, so the
-          // same movement updates in every routine that uses it — stamped as
+          // same movement updates in every routine that uses it, stamped as
           // the latest modification so it wins the next load's unification.
           de.modifiedAt = Date.now();
           syncExercisePlan(exId, de);
@@ -9664,7 +9664,7 @@ function closeWorkoutBuilder(){
 function builderStepCopy(step){
   const copy = [
     { title:'Choose the <em>engine</em>.', sub:'Strength, hypertrophy, or endurance. Rep ranges, rest, and set dose all follow from this one choice.' },
-    { title:'Pick the <em>approach</em>.', sub:'How should the work be dosed? Volume, intensity, and proximity to failure change the stimulus — pick the one that matches your goal.' },
+    { title:'Pick the <em>approach</em>.', sub:'How should the work be dosed? Volume, intensity, and proximity to failure change the stimulus. Pick the one that matches your goal.' },
     { title:'Pick the <em>shape</em>.', sub:'Straight sets, a playful mix, a specific structure, or a surprise. Supersets are never assumed.' },
     { title:'Aim the <em>work</em>.', sub:'Train the whole upper body, the lower body, or rank specific muscles. On the target ladder, order is priority: the top rank gets the most work.' },
     { title:'Use the gear <em>you have</em>.', sub:'Pick a setup and every piece you can load. The maker only chooses movements your kit supports.' },
@@ -9737,7 +9737,7 @@ function builderPrioritySentence(b){
   if (!tiers.length) return "";
   return tiers.map(t=>"rank "+t.rank+": "+t.muscles.join(" = ")+(t.isolationFinisher.length?" (isolation finisher for "+t.isolationFinisher.join(" and ")+")":"")).join("; ");
 }
-/* "Chest › Back = Biceps" — a leading rank, then ties joined with =, and a
+/* "Chest › Back = Biceps": a leading rank, then ties joined with =, and a
    count for whatever did not fit in the label. */
 function builderPriorityLabel(b){
   const tiers = builderTiers(b).filter(t=>t.length);
@@ -10077,7 +10077,7 @@ function builderApproachHtml(){
   const zone = builderApproachZone(b);
   const ap = builderApproach(b);
   return '<h4 class="bld-q">How should this '+esc(sessionTypeLabel(b.goal).toLowerCase())+' work be dosed?</h4>'+
-    '<p class="bld-qsub">Each approach is a proven programming pattern. It fixes sets per movement, proximity to failure, and rest — the AI and the local maker both follow it.</p>'+
+    '<p class="bld-qsub">Each approach is a proven programming pattern. It fixes sets per movement, proximity to failure, and rest. The AI and the local maker both follow it.</p>'+
     '<div class="bld-opts three">'+list.map(ap=>{
       const on = b.approach===ap.id;
       const ico = icons[ap.id] || icons.balanced;
@@ -10089,7 +10089,7 @@ function builderApproachHtml(){
     '<p class="bld-hint"><b>Rep target:</b> '+zone[0]+'-'+zone[1]+' reps for '+esc(sessionTypeLabel(b.goal).toLowerCase())+'. '+
       (ap.failure==="last" ? 'The final set is planned to failure.' : 'No set is planned to failure; effort stays just short of it.')+
       (ap.cue ? ' <b>Execution:</b> '+esc(ap.cue)+'.' : '')+
-      (ap.movements ? ' <b>Session size:</b> '+ap.movements[0]+'-'+ap.movements[1]+' movements at '+builderSets(b)+' sets each \u2014 fewer sets, not fewer movements.' : '')+
+      (ap.movements ? ' <b>Session size:</b> '+ap.movements[0]+'-'+ap.movements[1]+' movements at '+builderSets(b)+' sets each, which trims sets per movement rather than movements.' : '')+
       (ap.evidence ? ' <b>Evidence:</b> '+esc(ap.evidence)+'.' : '')+
       '</p>';
 }
@@ -10111,7 +10111,7 @@ function builderGoalHtml(){
         '<b>'+g.label+'</b><small>'+g.desc+'</small>'+
         '<em class="bld-opt-zone">'+z[0]+'-'+z[1]+' reps</em></button>';
     }).join("")+'</div>'+
-    '<p class="bld-hint"><b>Built around what you own.</b> Nothing comes from a fixed template; the maker sequences real movements you can log \u2014 from your library, or written for this session if you ask for that later.</p>';
+    '<p class="bld-hint"><b>Built around what you own.</b> Nothing comes from a fixed template; the maker sequences real movements you can log, from your library or written for this session if you ask for that later.</p>';
 }
 function builderFormatHtml(){
   const b = builderState;
@@ -10226,7 +10226,7 @@ function builderLadderHtml(b){
           '</div>'+
         '</li>';
       }).join("")+'</ol>'+
-      '<p class="bld-ladder-key">Moving a muscle up gives it more of the session. Tying it with the rank above makes both equally important. Tick <b>Iso</b> to end the session with an isolation movement for that muscle, up to two'+(fins.length? ' — now: <b>'+esc(fins.join(', '))+'</b>.' : '.')+'</p>'+
+      '<p class="bld-ladder-key">Moving a muscle up gives it more of the session. Tying it with the rank above makes both equally important. Tick <b>Iso</b> to end the session with an isolation movement for that muscle, up to two'+(fins.length? '. Now: <b>'+esc(fins.join(', '))+'</b>.' : '.')+'</p>'+
     '</div>';
 }
 function builderFocusHtml(){
@@ -10301,7 +10301,7 @@ function builderGearHtml(){
       '<input type="text" class="bld-other-input" data-bld-other-input maxlength="40" autocomplete="off" placeholder="e.g. Cable machine, trap bar, sled"/>'+
       '<button type="button" class="btn small" data-bld-other-add>Add</button></div>' : "")+
     '<p class="bld-hint"><b>Careful kit.</b> A movement is only used when at least one of its equipment tags is selected, so nothing asks for gear you do not have. Use <b>Other</b> to add anything the list misses and the AI will program around it.'+
-    (isGym ? ' <b>Full gym</b> picked: the AI leads with the machines you find on a commercial gym floor — leg press, cables, pulldown, chest press — and only goes free-weight when your library has no machine for the job.' : "")+'</p>';
+    (isGym ? ' <b>Full gym</b> picked: the AI leads with the machines you find on a commercial gym floor (leg press, cables, pulldown, chest press) and only goes free-weight when your library has no machine for the job.' : "")+'</p>';
 }
 function builderMovementLabel(b){
   const m = BUILDER_MOVEMENTS[b && b.movement];
@@ -10881,7 +10881,7 @@ function builderChunk(list, size){
 }
 /* Translate the requested format into structural blocks. This is the single
    place that decides whether a session gets supersets, a circuit, or plain
-   straight sets — so the local fallback and the AI validator share one rule. */
+   straight sets, so the local fallback and the AI validator share one rule. */
 function builderShapeGroups(des, b, rnd){
   const style = b.format==="specific" ? b.style : b.format;
   if (!des.length) return [];
@@ -10974,11 +10974,11 @@ function builderPairUp(items){
   return pairs;
 }
 function builderShapeSentence(b){
-  if (b.format==="regular") return "Straight sets with rest between them — no supersets.";
+  if (b.format==="regular") return "Straight sets with rest between them. No supersets.";
   if (b.format==="fun") return "A playful mix of a circuit or superset with straight work and a finisher.";
   if (b.format==="specific"){
     const s = BUILDER_STYLES[b.style] || BUILDER_STYLES.superset;
-    return s.label + " — " + s.desc;
+    return s.label + ": " + s.desc;
   }
   return "A surprise session that combines different structures instead of repeating one template.";
 }
@@ -11116,8 +11116,8 @@ const WORKOUT_SYSTEM_PROMPT = [
   "and every muscle listed in request.isolationFinishers must end the session with its own single-joint isolation movement.",
   "Respect the equipment filter, experience, age, time budget, and the user's rep zones.",
   "Classify every movement you program by joint action and plane, never by its name: horizontal press (push-up, bench press),",
-  "vertical press (overhead press, dip), vertical pull (pull-up, pulldown — the elbow travels down to the ribs),",
-  "horizontal pull (row — the elbow travels behind the torso), fly and reverse fly, squat, hinge, lunge, knee flexion,",
+  "vertical press (overhead press, dip), vertical pull (pull-up, pulldown, where the elbow travels down to the ribs),",
+  "horizontal pull (row, where the elbow travels behind the torso), fly and reverse fly, squat, hinge, lunge, knee flexion,",
   "hip extension, calf raise, elbow flexion, elbow extension, shoulder abduction, and the trunk patterns.",
   "Cover each distinct pattern once, with the most demanding version the equipment allows. The pattern is the unit of stimulus,",
   "not the movement: a pull-up and a neutral-grip pull-up, or a weighted push-up and a ring push-up, are one stimulus written twice,",
@@ -11140,7 +11140,7 @@ const WORKOUT_SYSTEM_PROMPT = [
   "Warm-up and cool-down have at most 3 short items each. The finisher field is only for an optional flourish in a fun or surprise session.",
   "The duration is a hard ceiling, not a suggestion. Cost one movement as its sets times (rest plus about 40 seconds of work),",
   "then allow about 5 minutes of warm-up and 3 minutes of cool-down. If the requested movement count does not fit that arithmetic,",
-  "program fewer movements — never fewer sets, never shorter rest, never a skipped warm-up — and say so in the rationale.",
+  "program fewer movements, never fewer sets, never shorter rest, never a skipped warm-up, and say so in the rationale.",
   "Isolation work for a muscle the athlete explicitly prioritised is a real exercise, not a finisher: give it a final straight",
   "group in groups at the approach's full set count, and leave the finisher field empty for it.",
   "JSON shape:",
@@ -11159,10 +11159,10 @@ function workoutShapeRules(b){
   rules.push("TRAINING APPROACH (" + ap.label + " · " + ap.tag + "): " + ap.rule);
   rules.push("Rep targets must sit inside the approach range of " + az[0] + "-" + az[1] + " reps" + (ap.hold ? " (timed holds: " + ap.hold[0] + "-" + ap.hold[1] + " seconds)" : "") + ". Do not drift outside it.");
   rules.push("For this athlete use exactly " + builderSets(b) + " working sets per exercise (the approach's dose, capped only for beginner/older athletes). Proximity to failure follows the approach: " + (ap.failure==="last" ? "final working set to failure, earlier sets about " + ap.rir + " RIR." : "stop every working set about " + ap.rir + " RIR; no failure sets."));
-  rules.push("SESSION SIZE: plan " + builderTargetCount(b) + " main movements" + (ap.movements ? " (this approach runs " + ap.movements[0] + "-" + ap.movements[1] + " movements because each one carries only " + ap.sets + " hard sets — low volume means fewer sets per movement, never a shorter session)" : "") + ". A finisher is additional to that count, not a substitute for a movement. Do not add extra sets beyond the approach, or extra movements beyond it and any explicitly requested isolation work.");
+  rules.push("SESSION SIZE: plan " + builderTargetCount(b) + " main movements" + (ap.movements ? " (this approach runs " + ap.movements[0] + "-" + ap.movements[1] + " movements because each one carries only " + ap.sets + " hard sets, so low volume means fewer sets per movement, never a shorter session)" : "") + ". A finisher is additional to that count, not a substitute for a movement. Do not add extra sets beyond the approach, or extra movements beyond it and any explicitly requested isolation work.");
   const budget = builderTimeBudget(b);
-  rules.push("TIME BUDGET: " + budget.durationMin + " minutes is a hard ceiling. Warm-up plus cool-down cost about " + Math.round(budget.overheadSeconds/60) + " minutes, leaving " + Math.round(budget.availableSeconds/60) + " minutes. One movement costs " + budget.setsPerMovement + " sets of about " + budget.workSeconds + " seconds plus " + budget.restSeconds + " seconds of rest — about " + budget.perMovementSeconds + " seconds — so at most " + budget.maxMovements + " main movements fit. When that is fewer than the session size above, the clock wins: program fewer movements, never fewer sets, never shorter rest, never a shorter warm-up.");
-  rules.push("PATTERN COVERAGE: classify each movement by joint action and plane (" + BUILDER_PATTERNS.join(", ") + "). Cover each pattern once with its most demanding available version, and never program two versions of the same pattern and resistance profile — a pull-up and a neutral-grip pull-up, or a weighted push-up and a ring push-up, are one stimulus written twice. A second movement for a pattern must change the angle or the resistance curve (a horizontal press plus a vertical press, a vertical pull plus a horizontal row) and must still fit the time budget. Later movements run on the fatigue of earlier ones, so a redundant variation is the first thing to cut.");
+  rules.push("TIME BUDGET: " + budget.durationMin + " minutes is a hard ceiling. Warm-up plus cool-down cost about " + Math.round(budget.overheadSeconds/60) + " minutes, leaving " + Math.round(budget.availableSeconds/60) + " minutes. One movement costs " + budget.setsPerMovement + " sets of about " + budget.workSeconds + " seconds plus " + budget.restSeconds + " seconds of rest, about " + budget.perMovementSeconds + " seconds, so at most " + budget.maxMovements + " main movements fit. When that is fewer than the session size above, the clock wins: program fewer movements, never fewer sets, never shorter rest, never a shorter warm-up.");
+  rules.push("PATTERN COVERAGE: classify each movement by joint action and plane (" + BUILDER_PATTERNS.join(", ") + "). Cover each pattern once with its most demanding available version, and never program two versions of the same pattern and resistance profile. A pull-up and a neutral-grip pull-up, or a weighted push-up and a ring push-up, are one stimulus written twice. A second movement for a pattern must change the angle or the resistance curve (a horizontal press plus a vertical press, a vertical pull plus a horizontal row) and must still fit the time budget. Later movements run on the fatigue of earlier ones, so a redundant variation is the first thing to cut.");
   if (b.format==="regular"){
     rules.push("REQUESTED FORMAT: regular. Use straight sets only. Every group must be type \"straight\"; supersets and circuits are forbidden.");
     rules.push("Give each movement 2-4 sets with a normal rest between sets. Do not invent a finisher just to add variety.");
@@ -11193,7 +11193,7 @@ function workoutShapeRules(b){
   }
   const tiers = builderPriorityPayload(b);
   if (tiers.length){
-    rules.push("PRIORITY LADDER (highest first) — " + builderPrioritySentence(b) + ". Muscles listed on the same rank are equally important to the athlete; treat them the same.");
+    rules.push("PRIORITY LADDER (highest first): " + builderPrioritySentence(b) + ". Muscles listed on the same rank are equally important to the athlete; treat them the same.");
     rules.push("Weight the work by rank. A rank-1 muscle must receive more of the session than a lower rank: more movements, or the most demanding movements, or both. Never give a lower rank more work than a higher rank. With " + builderTargetCount(b) + " movements there is room to give a rank-1 muscle two and a rank-2 muscle one.");
     const fins = builderFinisherParts(b);
     if (fins.length){
@@ -11631,7 +11631,7 @@ function normalizeAIDraft(raw, b){
 }
 /* Requested isolation work is a promise, not a suggestion. When an AI session
    does not carry it, the closest isolation movement from the library is added
-   to the end of the session as a real straight group — never as a finisher. */
+   to the end of the session as a real straight group, never as a finisher. */
 function builderEnsureIsolation(b, draft){
   if (!b || !draft) return draft;
   const wanted = builderFinisherParts(b);
@@ -11708,15 +11708,15 @@ function builderBuild(){
       if (token !== b.buildToken) return b.draft;
       const second = normalizeAIDraft(raw2, b);
       if (second && (second.newExercises||[]).length) return builderAdoptDraft(second, "");
-      return builderAdoptDraft(second || draft, "The AI stayed inside your library this time — no new movements were written.");
+      return builderAdoptDraft(second || draft, "The AI stayed inside your library this time. No new movements were written.");
     }).catch(()=>{
       if (token !== b.buildToken) return b.draft;
-      return builderAdoptDraft(draft, "The AI stayed inside your library this time — no new movements were written.");
+      return builderAdoptDraft(draft, "The AI stayed inside your library this time. No new movements were written.");
     });
   }).catch(err=>{
     if (token !== b.buildToken) return b.draft;
     const why = String((err && err.message) || err).slice(0,90);
-    return builderAdoptDraft(generateWorkout(b), "GroqCloud was unavailable ("+why+") — built locally instead.");
+    return builderAdoptDraft(generateWorkout(b), "GroqCloud was unavailable ("+why+"), so this was built locally instead.");
   });
 }
 function builderSave(startNow){
@@ -11781,7 +11781,7 @@ function builderSave(startNow){
   if (startNow){
     switchView("log");
     startLog(id);
-    toast("Session ready — check in and start" + added);
+    toast("Session ready. Check in and start" + added);
   } else {
     switchView("workouts");
     toast("Saved to your routines" + added);
@@ -11987,7 +11987,7 @@ function renderHistory(){
     if(lbl) lbl.textContent = open ? "Collapse" : "Click to expand";
   }
   /* A session opened near the bottom of a folded list used to grow past the
-     fixed window and get clipped — and when the list had been short enough not
+     fixed window and get clipped, and when the list had been short enough not
      to fold, that clip arrived with no toggle to reveal it. Opening a detail
      that overruns the window now peels the fold open, so the detail is always
      fully readable and the Collapse control is there to fold it back. */
@@ -11997,7 +11997,7 @@ function renderHistory(){
     if(!inner) return;
     if(fold.classList.contains("is-open")){
       /* already open: it can still be mid-transition on a pinned pixel height,
-         so drop the cap — otherwise the detail is cut at the old height */
+         so drop the cap; otherwise the detail is cut at the old height */
       inner.style.maxHeight = "none";
       return;
     }
@@ -12102,7 +12102,7 @@ function renderHistory(){
     try{
       (seen[exId]||[]).forEach(c=>{ const v = completedSetVolume(ex, c); if (v) exVol += v; });
     }catch(e){ exVol = 0; }
-    const exVolTxt = exVol>0 ? '<span class="pill">'+fmtVol(exVol)+' '+weightUnit()+'</span>' : '<span class="pill" title="Timed holds, warm-ups, or sets with missing load are not counted">— volume</span>';
+    const exVolTxt = exVol>0 ? '<span class="pill">'+fmtVol(exVol)+' '+weightUnit()+'</span>' : '<span class="pill" title="Timed holds, warm-ups, or sets with missing load are not counted">no volume</span>';
     return '<div class="hist-exblock"><div class="hist-exhead">' + thumbHtml + '<b>' + esc(nm) + '</b>'+perSidePill(ex)+'<div class="spacer" style="flex:1"></div>' + exVolTxt + '</div><div class="hist-sets">' + rows + '</div></div>';
   }).join("");
   /* Both check-ins, in the order they were asked. Sessions saved before the
@@ -12122,7 +12122,7 @@ function renderHistory(){
   try{ totalVol = sessionVolumeKg(ses); }catch(e){ totalVol = 0; }
   const totalVolHtml = totalVol>0
     ? '<div class="day-head" style="margin-top:10px"><b>Total session volume</b><div class="spacer"></div><span class="pill">'+fmtVol(totalVol)+' '+weightUnit()+'</span></div>'
-    : '<div class="micro muted" style="margin-top:10px">No countable volume in this session — timed holds, warm-ups, and sets with missing load are not counted.</div>';
+    : '<div class="micro muted" style="margin-top:10px">No countable volume in this session. Timed holds, warm-ups, and sets with missing load are not counted.</div>';
   return '<div class="sess-detail card" style="margin:10px 0;background:var(--paper)">'+
     '<div class="day-head"><b>'+esc(day?day.name:"Session")+'</b><span class="pill">'+sessionTypeLabel(ses.type)+'</span><span class="muted small">'+fmtDate(ses.dateISO)+'</span>'+
       '<div class="spacer"></div>'+
@@ -12172,7 +12172,7 @@ function renderSettings(){
           '<label class="field"><span>Height (optional)</span><input id="set-ht" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 175" value="'+fromCm(prof.heightCm)+'"/></label>'+
         '</div>'+
         '<label class="field"><span>Age (optional)</span><input id="set-age" type="number" min="13" max="100" step="1" inputmode="numeric" placeholder="e.g. 32" value="'+(prof.age!=null?esc(prof.age):"")+'"/></label>'+
-        '<p class="micro" style="margin:-.1rem 0 .9rem">Current weight scales bodyweight movements in Total volume (a push-up ≈ 67% of it, a pull-up ≈ 100%). Height is stored for later use — both fields may stay blank.</p>'+
+        '<p class="micro" style="margin:-.1rem 0 .9rem">Current weight scales bodyweight movements in Total volume (a push-up ≈ 67% of it, a pull-up ≈ 100%). Height is stored for later use. Both fields may stay blank.</p>'+
         '<label class="field"><span>Coaching depth</span><select id="set-exp">'+
           '<option value="beginner"'+(prof.experience==="beginner"?" selected":"")+'>Beginner, conservative and simple</option>'+
           '<option value="intermediate"'+(prof.experience==="intermediate"?" selected":"")+'>Intermediate, balanced</option>'+
@@ -12182,7 +12182,7 @@ function renderSettings(){
       '</div>'+
       '</div>'+
       '<div class="cell s5"><div class="card"><h3>Rep zones</h3>'+
-        '<p class="micro">Your optimal rep range per training style. The rules engine and the AI judge every set against these — e.g. set Hypertrophy to 6–8 if you prefer adding weight over chasing 12 reps. Hybrid has no own range: each hybrid exercise follows its hypertrophy or strength focus.</p>'+
+        '<p class="micro">Your optimal rep range per training style. The rules engine and the AI judge every set against these. For example, set Hypertrophy to 6-8 if you prefer adding weight over chasing 12 reps. Hybrid has no range of its own: each hybrid exercise follows its hypertrophy or strength focus.</p>'+
         ['hypertrophy','strength','endurance'].map(function(t){
           const z = (function(){ try{ return sessionZone(t); }catch(e){ return DEFAULT_REP_ZONES[t]; } })();
           const d = DEFAULT_REP_ZONES[t];
@@ -12191,7 +12191,7 @@ function renderSettings(){
             '<label class="field" style="margin:0"><span>'+esc((SESSION_TYPES[t]||{}).label||t)+' max</span><input id="set-zone-'+t+'-max" type="number" min="1" max="50" step="1" value="'+z[1]+'"/></label>'+
           '</div>';
         }).join("")+
-        '<p class="micro" id="set-zone-hint">Defaults: Hypertrophy 6–12 · Strength 3–6 · Endurance 15–25.</p>'+
+        '<p class="micro" id="set-zone-hint">Defaults: Hypertrophy 6-12 · Strength 3-6 · Endurance 15-25.</p>'+
         '<div class="btn-row"><button class="btn primary" id="set-zones-save">Save rep zones</button><button class="btn ghost" id="set-zones-reset">Reset to defaults</button></div>'+
       '</div>'+
       '</div>'+
@@ -12230,7 +12230,7 @@ function renderSettings(){
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
         '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
           '<div class="folder-path" id="set-folder-path" hidden><span class="micro">Save location</span><code id="set-folder-path-value"></code></div>'+
-          '<p class="micro" id="set-folder-status">Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
+          '<p class="micro" id="set-folder-status">Pick a folder once. PERSEUS writes a daily backup whenever the app is open and after each workout.</p>'+
           '<div class="btn-row"><button class="btn" id="set-folder-pick">Pick backup folder</button><button class="btn" id="set-folder-now">Backup now</button><button class="btn ghost" id="set-folder-forget">Disconnect</button></div></div>' +
         '<button class="btn danger" id="set-clear" style="margin-top:12px">Reset all data</button>' +
       '</div>' +
@@ -12252,7 +12252,7 @@ function renderSettings(){
   $("#set-ai-save", s).addEventListener("click", ()=>{
     const v = $("#set-ai-key", s).value.trim();
     if (!v){
-      toast(prof.apiKey ? "Key unchanged — existing key kept (use Clear API key to delete it)" : "Enter a key first — nothing saved");
+      toast(prof.apiKey ? "Key unchanged. The existing key is kept (use Clear API key to delete it)." : "Enter a key first. Nothing was saved.");
       return;
     }
     prof.apiKey = v;
@@ -12277,7 +12277,7 @@ function renderSettings(){
   if (guideBtn) guideBtn.addEventListener("click", ()=>openApiGuide());
   $("#set-logging-save", s).addEventListener("click", ()=>{
     prof.loggingMode = !!$("#set-logging", s).checked;
-    saveState(); toast(prof.loggingMode ? "Logging mode on — rest timers enabled" : "Logging mode off — quiet data entry"); renderSettings();
+    saveState(); toast(prof.loggingMode ? "Logging mode on. Rest timers enabled." : "Logging mode off. Quiet data entry."); renderSettings();
   });
   $("#set-zones-save", s).addEventListener("click", ()=>{
     const next = {};
@@ -12290,7 +12290,7 @@ function renderSettings(){
     });
     if (!ok){ toast("Enter a min and max (1-50) for every style"); return; }
     prof.repZones = next;
-    saveState(); toast("Rep zones saved — coach and AI now use them"); renderSettings(); render();
+    saveState(); toast("Rep zones saved. The coach and AI will use them from now on."); renderSettings(); render();
   });
   $("#set-zones-reset", s).addEventListener("click", ()=>{
     prof.repZones = null;
@@ -12324,8 +12324,8 @@ function renderSettings(){
       pathVal.textContent = label;
     }
     if (st) st.textContent = bm.folderName
-      ? ("Backing up to “"+bm.folderName+"” — daily "+backupFileName(new Date())+(bm.lastBackupISO ? " · last saved "+String(bm.lastBackupISO).slice(0,10) : " · not saved yet today")+".")
-      : "Pick a folder once — PERSEUS writes a daily backup whenever the app is open and after each workout.";
+      ? ("Backing up to “"+bm.folderName+"”. Daily "+backupFileName(new Date())+(bm.lastBackupISO ? " · last saved "+String(bm.lastBackupISO).slice(0,10) : " · not saved yet today")+".")
+      : "Pick a folder once. PERSEUS writes a daily backup whenever the app is open and after each workout.";
   }catch(e){}
   $("#set-folder-pick", s).addEventListener("click", ()=>pickBackupFolder());
   $("#set-folder-now", s).addEventListener("click", ()=>writeBackupToFolder({ manual:true, force:true }));
@@ -12360,7 +12360,7 @@ function renderSettings(){
 }
 
 /* =========================================================================
-   API KEY GUIDE — the key ritual (GroqCloud walkthrough)
+   API KEY GUIDE: the key ritual (GroqCloud walkthrough)
    One overlay host (#api-guide-host). Screenshots live in
    api-instructions-ss/s1.png … s6.png and mirror api-instructions.txt.
    Keyboard: ←/→ move, Esc closes. Last step returns focus to Settings.
@@ -12368,7 +12368,7 @@ function renderSettings(){
 const API_GUIDE_STEPS = [
   { short: "Sign in", tag: "GroqCloud · free", title: "Sign up or log in",
     img: "api-instructions-ss/s1.png", alt: "GroqCloud login screen with Continue with Google",
-    do: ["Go to the <b>GroqCloud</b> page.", "Click <b>Continue with Google</b> — or your preferred sign-in — to create or open your free account."],
+    do: ["Go to the <b>GroqCloud</b> page.", "Click <b>Continue with Google</b>, or your preferred sign-in, to create or open your free account."],
     tip: "Free tier is enough. No card needed." },
   { short: "API Keys", tag: "Top-right menu", title: "Go to API Keys",
     img: "api-instructions-ss/s2.png", alt: "Header menu highlighting API Keys",
@@ -12377,15 +12377,15 @@ const API_GUIDE_STEPS = [
   { short: "Create", tag: "Red button", title: "Create a new key",
     img: "api-instructions-ss/s3.png", alt: "Create API Key button in the top right corner",
     do: ["Click the red <b>+ Create API Key</b> button in the top-right corner."],
-    tip: "One key per app is the tidy way — call it <b>perseus</b> next." },
+    tip: "One key per app is the tidy way. Call it <b>perseus</b> next." },
   { short: "Name it", tag: "No expiration", title: "Name your key",
     img: "api-instructions-ss/s4.png", alt: "Display name and expiration fields with Submit",
     do: ["Type <b>perseus</b> in the <b>Display Name</b> box.", "Set <b>Expiration</b> to <b>No expiration</b>.", "Click <b>Submit</b>."],
-    tip: "No expiration means the coach keeps working — revoke anytime in GroqCloud." },
+    tip: "No expiration means the coach keeps working. You can revoke it anytime in GroqCloud." },
   { short: "Copy", tag: "Shown once", title: "Copy your key",
     img: "api-instructions-ss/s5.png", alt: "New key with Copy and Done buttons",
     do: ["Click <b>Copy</b> to copy the key to your clipboard.", "Click <b>Done</b>."],
-    tip: "<b>Copy it now</b> — GroqCloud never shows it again." },
+    tip: "<b>Copy it now</b>. GroqCloud never shows it again." },
   { short: "Paste", tag: "Back in Perseus", title: "Paste and save in the app",
     img: "api-instructions-ss/s6.png", alt: "Perseus Settings with GroqCloud API key field",
     do: ["In Perseus, open <b>Settings</b> (top right).", "Paste the key into the <b>GROQCLOUD API KEY</b> field.", "Click <b>Save key</b> to light up your AI coach."],
@@ -12422,16 +12422,16 @@ function renderApiGuide(){
       '<div class="api-top"><div style="min-width:0">'+
         '<div class="api-eyebrow">GroqCloud · the key ritual · step '+String(apiGuideIdx+1).padStart(2,"0")+' / '+String(API_GUIDE_STEPS.length).padStart(2,"0")+'</div>'+
         '<h3 class="api-title">Light the <em class="serif-i">oracle</em> in ~2 minutes</h3>'+
-        '<p class="api-sub">Six small stamps and your AI coach wakes up. Key stays in your browser — never sent anywhere but Groq.</p>'+
+        '<p class="api-sub">Six small stamps and your AI coach wakes up. The key stays in your browser and is never sent anywhere but Groq.</p>'+
         '<div class="api-facts"><span class="pill reps">Free</span><span class="pill time">~2 min</span><span class="pill weight">No card</span></div>'+
       '</div>'+
       '<button type="button" class="btn ghost sh-x" data-api-close aria-label="Close guide">✕</button></div>'+
       '<div class="api-progress" aria-hidden="true"><i style="width:'+pct+'%"></i></div>'+
       '<div class="api-body"><div class="api-rail" role="tablist" aria-label="Steps">'+rail+'</div>'+
       '<div class="api-stage"><div class="api-shot"><img src="'+st.img+'" alt="'+esc(st.alt)+'" loading="lazy"/></div>'+
-        '<h4><span class="mono-n">'+String(apiGuideIdx+1).padStart(2,"0")+' — '+esc(st.tag)+'</span><br/>'+esc(st.title)+'</h4>'+
+        '<h4><span class="mono-n">'+String(apiGuideIdx+1).padStart(2,"0")+' · '+esc(st.tag)+'</span><br/>'+esc(st.title)+'</h4>'+
         '<ol class="api-do">'+list+'</ol>'+
-        '<p class="api-tip">Seal’s tip — '+st.tip+'</p>'+
+        '<p class="api-tip">Seal’s tip: '+st.tip+'</p>'+
       '</div></div>'+
       '<div class="api-foot">'+
         '<span class="api-count">'+String(apiGuideIdx+1).padStart(2,"0")+' / '+String(API_GUIDE_STEPS.length).padStart(2,"0")+'</span>'+
@@ -12489,7 +12489,7 @@ const RECOVERY_GROUPS = ["chest","shoulders","triceps","back","biceps","forearms
    values put upper-body groups at ~95% by ~44h and lower-body by ~60h. */
 const RECOVERY_TAU_H = { chest:26, shoulders:26, triceps:24, back:26, biceps:24, forearms:24, quads:34, hamstrings:34, hips:30, calves:26, abs:24, neck:24 };
 const RECOVERY_SCALE = 9;
-/* Recovery counts as "ready" at this % — the point where training again is
+/* Recovery counts as "ready" at this %: the point where training again is
    sensible. The exponential tail past it is glacial (95 -> 100 takes days),
    so ETA + the "ready" label target this instead of 99.5. */
 const RECOVERY_READY_PCT = 95;
@@ -12594,7 +12594,7 @@ function totalRecoveryAt(nowMs){
 /* Hours until a muscle crosses the ready threshold. Closed form: remaining
    dose decays as rem*exp(-X/tau) (one tau per group), and ready means the
    % mapping hits RECOVERY_READY_PCT, i.e. remaining = -scale*ln(ready/100).
-   Solves X directly — no per-hour recompute loop (the old version reran the
+   Solves X directly, with no per-hour recompute loop (the old version reran the
    whole recovery scan 168x per row). */
 function recoveryEtaHours(g, nowMs){
   const m = muscleRecoveryAt(nowMs);
@@ -12648,13 +12648,13 @@ const BODYPART_TO_WMUSCLE = {
 };
 /* Token/phrase matchers from our detailed muscle names to live `body-muscles`
    CDN ids (e.g. "biceps-left"). Ids are tokenized on non-alphanumerics and
-   matched on whole tokens — never substrings — because anatomy reuses names:
+   matched on whole tokens, never substrings, because anatomy reuses names:
    biceps FEMORIS is a hamstring, triceps SURAE is calf, "lat" sits inside
    "lateral", and rectus FEMORIS is quad. `any` accepts single tokens or
    "a+b" phrases (all parts present); `none` vetoes. Each detail resolves to
-   its OWN region only — e.g. "Biceps brachii" must not light brachialis,
+   its OWN region only. For example, "Biceps brachii" must not light brachialis,
    "Anterior deltoid" must not light the side/rear deltoid, and "Wrist
-   flexors" must not light the extensors or front forearm — otherwise muscles
+   flexors" must not light the extensors or front forearm. Otherwise muscles
    that were never tagged glow primary-red instead of staying unlit. Pure +
    testable. */
 function bodyIdTokens(id){ return String(id).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); }
@@ -12820,7 +12820,7 @@ const RADAR_BODYPART_MAP = {
   "Legs":["quads","hamstrings"], "Calves":["calves"], "Neck":["upper-mid-back"]
 };
 const RADAR_ICON_FILE = { "chest":"chest", "shoulders":"shoulders", "rear-delts":"rear-delts", "lats":"lats", "upper-mid-back":"upper-mid-back", "biceps":"biceps", "forearms":"forearms", "triceps":"triceps", "core":"core", "quads":"quads", "hamstrings":"hamstrings", "glutes":"glutes", "calves":"calves" };
-/* Exact per-muscle Flaticon links from icon_muscles.txt — each radar icon
+/* Exact per-muscle Flaticon links from icon_muscles.txt; each radar icon
    links out to its source page (all by cube29). Flaticon blocks hotlinking
    (403), so the pages can't be embedded as images directly. */
 const RADAR_FLATICON_URL = {
@@ -12864,7 +12864,7 @@ function pulseRadarAnd(rerender){
   radarLoadTimer = setTimeout(()=>{ try{ rerender(); }catch(e){} }, 450);
 }
 /* Emergence animation: the radar polygon and its dots grow out of the centre
-   one vertex at a time, clockwise starting from the top point — and only once
+   one vertex at a time, clockwise starting from the top point, and only once
    the card has been scrolled into view. The markup always carries the final
    state, so no-JS / no-IntersectionObserver / reduced-motion stays correct. */
 let radarIO = null;
@@ -12880,7 +12880,7 @@ function animateRadarEmergence(){
     const nums = (poly.getAttribute("points")||"").trim().split(/[\s,]+/).map(Number);
     if (!nums.length || nums.some(v=>!isFinite(v))) return;
     /* Replay guard: the recovery section re-renders on a timer and on unrelated
-       updates — only animate when the underlying radar data actually changed. */
+       updates; only animate when the underlying radar data actually changed. */
     const key = youRadarMetric + "|" + youMuscleWeekOffset + "|" + poly.getAttribute("points");
     if (key === radarAnimKey) return;
     radarAnimKey = key;
@@ -13020,7 +13020,7 @@ function youMuscleRadarHtml(nowMs){
       '<img src="' + file + '" alt="' + RADAR_LABELS[g] + '" loading="lazy" draggable="false" ondragstart="return false" onerror="this.remove()"/>' + glyph + '</a>';
   }).join("");
   const cap = d.sessionCount === 0
-    ? "No volume yet — log a workout to shape the radar."
+    ? "No volume yet. Log a workout to shape the radar."
     : RADAR_GROUPS.filter((g, i)=>vals[i] > 0).length + " of " + n + " muscles trained";
   return '<div class="wm-radar" id="you-muscle-radar">' +
     '<div class="wm-radar-top"><span class="wm-radar-title">Muscle radar</span>' +
@@ -13031,9 +13031,9 @@ function youMuscleRadarHtml(nowMs){
     '<div class="wm-radar-stage"><svg viewBox="0 0 200 200" role="img" aria-label="Muscle radar">' + rings + spokes + poly + dots + '</svg>' + icons + '</div>' +
     '<div class="wm-radar-cap">' + cap + '</div></div>';
 }
-/* Week pager for the trained-muscles section: 0 = current Mon–Sun week,
+/* Week pager for the trained-muscles section: 0 = current Mon-Sun week,
    negative = previous weeks. Past weeks resolve to end-of-week (Sunday
-   23:59:59) so the full Monday–Sunday span counts, not just days ≤ today. */
+   23:59:59) so the full Monday-Sunday span counts, not just days ≤ today. */
 let youMuscleWeekOffset = 0; // 0 = this week, -1 = last week, …
 function youMuscleWeekRef(){
   if (youMuscleWeekOffset >= 0) return Date.now();
@@ -13043,7 +13043,7 @@ function youMuscleWeekRef(){
 function youMuscleWeekRange(refMs){
   const start = youWeekStart(+refMs || Date.now());
   const end = start + 6 * 86400000;
-  return { start, end, label: fmtDate(new Date(start).toISOString()) + " – " + fmtDate(new Date(end).toISOString()) };
+  return { start, end, label: fmtDate(new Date(start).toISOString()) + " to " + fmtDate(new Date(end).toISOString()) };
 }
 function youWeeklyMusclesHtml(nowMs){
   const ch = weeklyChartIds(nowMs);
@@ -13076,7 +13076,7 @@ function youWeeklyMusclesHtml(nowMs){
   const range = youMuscleWeekRange(nowMs);
   const cap = ch.sessionCount === 0
     ? (youMuscleWeekOffset === 0
-      ? "No sessions logged this week yet — log a workout to light up the map."
+      ? "No sessions logged this week yet. Log a workout to light up the map."
       : "No sessions logged this week.")
     : ch.sessionCount + (ch.sessionCount === 1 ? " session" : " sessions") + " · " + ch.exerciseCount + (ch.exerciseCount === 1 ? " exercise" : " exercises") + " this week";
   const title = youMuscleWeekOffset === 0 ? "Trained this week"
@@ -13142,7 +13142,7 @@ function youSplitHtml(nowMs){
   const now = +nowMs || Date.now();
   const d = weeklySplitData(now);
   /* Shares youMuscleWeekOffset with the trained-muscles map above, so the two
-     weekly cards always describe the same Mon–Sun window. */
+     weekly cards always describe the same Mon-Sun window. */
   const isCurrentWeek = youWeekStart(now) === youWeekStart(Date.now());
   const range = youMuscleWeekRange(now);
   const vols = SPLIT_GROUPS.map(g=>d.groups[g].volumeKg);
@@ -13155,7 +13155,7 @@ function youSplitHtml(nowMs){
     let sub;
     if (s.sets === 0) sub = isCurrentWeek ? "no volume this week" : "no volume that week";
     else if (maxVol > 0) sub = Math.round(100 * s.volumeKg / maxVol) + "% of top muscle volume";
-    else sub = "holds only — no tonnage";
+    else sub = "holds only, no tonnage";
     return '<div class="rec-row" data-split-muscle="' + g + '">'+
       '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + fmtVol(s.volumeKg) + ' ' + esc(weightUnit()) + '</span></div>'+
       '<div class="rec-bar"><div class="rec-fill" style="width:' + w + '%;background:var(--accent)"></div></div>'+
@@ -13165,7 +13165,7 @@ function youSplitHtml(nowMs){
   }).join("");
   const cap = d.sessionCount === 0
     ? (isCurrentWeek
-      ? "No sessions logged this week yet — log a workout to see your split."
+      ? "No sessions logged this week yet. Log a workout to see your split."
       : "No sessions logged that week.")
     : d.sessionCount + (d.sessionCount === 1 ? " session" : " sessions") + (isCurrentWeek ? " this week" : " that week");
   return '<div class="week-muscles" id="you-muscle-split">' +
@@ -13176,16 +13176,16 @@ function youSplitHtml(nowMs){
     '</span><span class="pill time">' + range.label + '</span></div>' +
     '<div class="wm-legend"><span>Volume + working sets per muscle · primary muscles only</span><span>' + cap + '</span></div>' +
     '<div class="rec-grid">' + rows + '</div>' +
-    '<p class="micro" style="margin-top:.7rem">Same tonnage math as Total volume — timed holds count sets, not volume.</p></div>';
+    '<p class="micro" style="margin-top:.7rem">Same tonnage math as Total volume. Timed holds count sets, not volume.</p></div>';
 }
 
 /* =========================================================================
-   PROGRAMS — prototype: shelf bento, 7-day builder, pinned flow, action band
+   PROGRAMS: prototype: shelf bento, 7-day builder, pinned flow, action band
    ========================================================================= */
 /* =========================================================================
-   SHARED WORKOUTS — send a routine as a link, a code, or a file
+   SHARED WORKOUTS: send a routine as a link, a code, or a file
    -------------------------------------------------------------------------
-   What travels: one routine — its exercises plus the prescription (set count,
+   What travels: one routine, its exercises plus the prescription (set count,
    per-set reps/time, set types, weights, supersets, hybrid focus). What never
    travels: history, sessions, the profile, settings, the AI key. Three
    carriers, one payload:
@@ -13197,8 +13197,8 @@ function youSplitHtml(nowMs){
    every field is validated, clamped and size-capped before it can reach state,
    the commit is all-or-nothing, and a storage read-back rolls the entire
    import back if the browser refuses to persist it.
-   An exercise whose name already exists — compared ignoring case, accents,
-   punctuation and spacing — is linked instead of duplicated, and keeps its
+   An exercise whose name already exists (compared ignoring case, accents,
+   punctuation and spacing) is linked instead of duplicated, and keeps its
    owner's own targets: in this app a movement's sets are shared across every
    routine that contains it, so the recipient's prescription wins.
    ========================================================================= */
@@ -13382,7 +13382,7 @@ async function shareUnpackCode(code){
   const s = String(code==null ? "" : code).trim();
   const compressed = s.indexOf(SHARE_PREFIX_DEFLATE) === 0;
   if (!compressed && s.indexOf(SHARE_PREFIX_RAW) !== 0) throw new Error("That is not a PERSEUS share code");
-  if (compressed && !shareCanCompress()) throw new Error("That code needs a browser with compression support — open the link in a current browser instead");
+  if (compressed && !shareCanCompress()) throw new Error("That code needs a browser with compression support. Open the link in a current browser instead");
   let bytes = shareB64Decode(s.slice(3));
   if (!bytes.length) throw new Error("That share code is damaged");
   if (compressed) bytes = await shareInflateBytes(bytes);
@@ -13551,7 +13551,7 @@ function shareValidatePayload(obj){
   if (obj.app !== SHARE_APP || obj.kind !== SHARE_KIND) throw new Error("That is not a PERSEUS workout share");
   const version = shareInt(obj.v, 0, 99, 0);
   if (!version) throw new Error("That share code is damaged (no version)");
-  if (version > SHARE_VERSION) throw new Error("This workout was shared by a newer version of PERSEUS — update the app to open it");
+  if (version > SHARE_VERSION) throw new Error("This workout was shared by a newer version of PERSEUS. Update the app to open it");
   const rawEx = (Array.isArray(obj.ex) ? obj.ex : []).slice(0, SHARE_MAX_EXERCISES);
   const imageBudget = { left: SHARE_MAX_IMAGE_TOTAL, dropped: 0 };
   const parsedEx = rawEx.map(raw=>shareParseExercise(raw, imageBudget));
@@ -13614,13 +13614,13 @@ async function shareDecodeInput(text, opts){
   const s = String(text==null ? "" : text).trim();
   if (!s) throw new Error("Paste a share link or code first");
   const cap = (opts && opts.fromFile) ? SHARE_MAX_FILE : SHARE_MAX_INPUT;
-  if (s.length > cap) throw new Error("That text is far too long to be a share code — use the file instead");
+  if (s.length > cap) throw new Error("That text is far too long to be a share code. Use the file instead");
   if (s.charAt(0) === "{"){
     let obj;
     try{ obj = JSON.parse(s); }
     catch(e){ throw new Error("That file is not valid JSON"); }
     if (obj && obj.profile && Array.isArray(obj.days) && Array.isArray(obj.exercises)){
-      throw new Error("That looks like a full PERSEUS backup, not a shared workout — restore it from Settings → Backup & data");
+      throw new Error("That looks like a full PERSEUS backup, not a shared workout. Restore it from Settings → Backup & data");
     }
     return shareValidatePayload(obj);
   }
@@ -13643,14 +13643,14 @@ function shareMatchKey(name){
 }
 /* A shared routine never lands on a name this install already uses: rather than
    quietly renaming it, the receiver is told and picks a name of their own. The
-   comparison is exact — a clash means the very same name, not a lookalike. */
+   comparison is exact: a clash means the very same name, not a lookalike. */
 function shareDayNameTaken(st, name){
   const want = shareCleanText(name, 80);
   if (!want) return false;
   return (st.days || []).some(d=>d && shareCleanText(d.name, 80) === want);
 }
 /* Ids are minted from this install's own counter, and any id already in use is
-   skipped — a reset or hand-edited counter must never collide with live data. */
+   skipped, since a reset or hand-edited counter must never collide with live data. */
 function shareTakenIds(st){
   // every kind shares one counter ("ex-id-3", "day-id-3", "ss-id-3"), so the
   // guard works on the core id-<n> and not on the prefixed form
@@ -13797,7 +13797,7 @@ async function importSharePayload(payload, opts){
     return { ok:false, error:"You already have a routine named \u201c" + plan.report.name + "\u201d. Rename that one, or give this import a different name.", report: plan.report };
   }
   if (!commitState(plan.next)){
-    return { ok:false, error:"Could not save — this browser is out of storage space. Free some space (or delete old session photos) and try again.", report: plan.report };
+    return { ok:false, error:"Could not save. This browser is out of storage space. Free some space (or delete old session photos) and try again.", report: plan.report };
   }
   return { ok:true, dayId: plan.day.id, report: plan.report };
 }
@@ -13841,7 +13841,7 @@ function shareCopyFallback(text, label){
   if (out){
     out.value = text;
     try{ out.focus(); out.select(); }catch(e){}
-    toast("Copy is blocked here — press Ctrl/Cmd+C to copy the " + String(label||"text").toLowerCase());
+    toast("Copy is blocked here. Press Ctrl/Cmd+C to copy the " + String(label||"text").toLowerCase());
     return;
   }
   try{
@@ -13886,7 +13886,7 @@ function openShareSheet(dayId){
   const card = shareMount(
     '<div class="sh-head">'+
       '<div><h3 class="sh-title">Share “'+esc(day.name)+'”</h3>'+
-      '<p class="micro sh-sub">'+day.exercises.length+' exercises · '+sets+' sets'+(groups?' · '+groups+' superset'+(groups===1?'':'s'):'')+' · only the workout travels — never your history, profile or key.</p></div>'+
+      '<p class="micro sh-sub">'+day.exercises.length+' exercises · '+sets+' sets'+(groups?' · '+groups+' superset'+(groups===1?'':'s'):'')+' · only the workout travels. Never your history, profile or key.</p></div>'+
       '<button type="button" class="btn ghost sh-x" data-sh-close aria-label="Close">✕</button>'+
     '</div>'+
     '<div class="sh-list">'+rows+'</div>'+
@@ -13915,7 +13915,7 @@ function openShareSheet(dayId){
     const link = sharePayloadLink(code);
     if (out) out.value = link;
     if (note){
-      note.textContent = link.length + " characters — send the link, or just the code. " + code.length + " characters"+
+      note.textContent = link.length + " characters. Send the link, or just the code. " + code.length + " characters"+
         (link.length > SHARE_LINK_SOFT_LIMIT ? " · Long enough that some chat apps trim it; the file is safer." : "");
     }
   };
@@ -13976,7 +13976,7 @@ function openImportDialog(prefill, opts){
     if (f) shareReadFileInto(f, ta, ()=>preview(true));
   });
   $("[data-imp-go]", card).addEventListener("click", ()=>preview(false));
-  // a pasted link previews itself — the shortest path from chat message to routine
+  // a pasted link previews itself, the shortest path from chat message to routine
   ta.addEventListener("paste", ()=>setTimeout(()=>preview(false), 0));
   if (opts && opts.auto) preview(false);
 }
@@ -14020,7 +14020,7 @@ function sharePreviewHtml(payload, report){
   if (report.droppedImages) notes.push(report.droppedImages + " exercise photo" + (report.droppedImages === 1 ? " was" : "s were") + " too large to carry.");
   if (report.groupsDropped) notes.push(report.groupsDropped + (report.groupsDropped === 1 ? " superset" : " supersets") + " skipped (fewer than two of its exercises arrived).");
   if (report.duplicates) notes.push(report.duplicates + (report.duplicates === 1 ? " repeated exercise row" : " repeated exercise rows") + " collapsed (a routine keeps one row per movement).");
-  if (report.alreadyImported) notes.push("You already imported this exact workout — importing again adds a second copy.");
+  if (report.alreadyImported) notes.push("You already imported this exact workout. Importing again adds a second copy.");
   return '<div class="sh-ok">'+
       '<h3 class="sh-title">'+esc(payload.name)+'</h3>'+
       '<p class="micro sh-sub">'+esc(sessionTypeLabel(payload.type))+' · '+report.added.length+' new exercise'+(report.added.length===1?'':'s')+' · '+
@@ -14163,7 +14163,7 @@ function progSaveList(arr){
    program never reports a day that is not really there. */
 function progSlotLive(id){ return !!(id && getDay(id)); }
 /* Deleting a routine drops its id everywhere it was remembered. Only the
-   reference is forgotten — the routines themselves are never touched from a
+   reference is forgotten; the routines themselves are never touched from a
    shelf card, which is why Remove stays non-destructive. */
 function progForgetRoutine(id){
   if (!id) return;
@@ -14196,7 +14196,7 @@ function progDeletePrompt(name, id){
   const day = getDay(id);
   const aiMoves = routineAiMoves(day).length;
   const plainAi = (aiMoves && day && !day.userEdited)
-    ? " It also removes the " + aiMoves + " AI-written movement" + (aiMoves===1?"":"s") + " it added to your library \u2014 edit the routine once and those stay."
+    ? " It also removes the " + aiMoves + " AI-written movement" + (aiMoves===1?"":"s") + " it added to your library. Edit the routine once and those stay."
     : "";
   const plain = 'Delete "' + name + '" and its plan?' + plainAi;
   if (!u.current && !u.saved.length) return plain;
@@ -14209,7 +14209,7 @@ function progDeletePrompt(name, id){
     refs.push(u.saved.length === 1 ? "the saved program " + list : u.saved.length + " saved programs: " + list);
   }
   return plain + "\n\n" + "This routine is a training day in " + refs.join(" and ") +
-    ". Those days will go back to rest \u2014 only the routine itself is deleted.";
+    ". Those days will go back to rest. Only the routine itself is deleted.";
 }
 /* Movements the AI wrote for a routine, as library exercises. */
 function routineAiMoves(day){
@@ -14346,7 +14346,7 @@ function renderPrograms(){
     '<article class="prog-card ghost span-12 fx-in">' +
       '<div class="prog-body">' +
         '<div class="prog-name">Nothing saved yet</div>' +
-        '<p class="prog-blurb">Build a week below, give it a name, and it waits for you here — training days and distances intact.</p>' +
+        '<p class="prog-blurb">Build a week below, give it a name, and it waits for you here with its training days and distances intact.</p>' +
         '<div class="prog-actions"><button type="button" class="btn small" data-prog-scroll="prog-builder">Build a week <span class="btn-arrow">→</span></button></div>' +
       '</div></article>';
   const savedCards = saved.map((p, i)=>{
@@ -14420,7 +14420,7 @@ function renderPrograms(){
       '<div class="pm-picker" data-pm-picker>' + pmSummary + pmRows + '</div>' +
       '<div class="prog-save-cta">' +
         '<div><div class="t">Keep this week</div>' +
-        '<p class="micro">Name it and it joins the shelf — its training days and the distance between them travel with it.</p></div>' +
+        '<p class="micro">Name it and it joins the shelf. Its training days and the distance between them travel with it.</p></div>' +
         '<button type="button" class="btn primary" data-prog-save>Save Program <span class="btn-arrow">→</span></button>' +
       '</div>' +
       '<div class="btn-row" data-prog-suggest style="margin-top:.9rem"></div>' +
@@ -14515,7 +14515,7 @@ function renderPrograms(){
   if (startB) startB.addEventListener("click", ()=>{
     progSaveDraft(progDraft());
     switchView("home");
-    toast("Week saved \u2014 starting on Home");
+    toast("Week saved. Starting on Home");
   });
   const saveB = $("[data-prog-save]", s);
   if (saveB) saveB.addEventListener("click", openProgSave);
@@ -14554,7 +14554,7 @@ function openProgStart(id){
   host.innerHTML = '<div class="sh-card">' +
     '<div class="sh-head"><div>' +
       '<h3 class="sh-title">When do you want your first session to be?</h3>' +
-      '<p class="micro sh-sub">' + esc(p.name) + ' keeps its distances — the whole week rotates around the day you pick.</p>' +
+      '<p class="micro sh-sub">' + esc(p.name) + ' keeps its distances. The whole week rotates around the day you pick.</p>' +
     '</div><button type="button" class="btn ghost sh-x" data-pstart-close aria-label="Close">\u2715</button></div>' +
     '<div class="pstart-days" role="group" aria-label="First session day">' + dayBtns + '</div>' +
     '<div class="pstart-preview" data-pstart-preview></div>' +
@@ -14572,7 +14572,7 @@ function openProgStart(id){
     const gapLine = progGapLabel(shifted);
     const prev = $("[data-pstart-preview]", host);
     if (prev) prev.innerHTML =
-      '<div class="micro" style="margin:0">First session <b>' + PROG_DAYS[chosen] + '</b> — ' + esc(progSessionLabel(shifted)) + '</div>' +
+      '<div class="micro" style="margin:0">First session <b>' + PROG_DAYS[chosen] + '</b>: ' + esc(progSessionLabel(shifted)) + '</div>' +
       '<div class="pstart-week" aria-hidden="true">' + progWeekDots(shifted) + '</div>' +
       (gapLine ? '<div class="prog-gaps" style="margin-top:.5rem">' + esc(gapLine) + '</div>' : '');
     $$("[data-pstart-day]", host).forEach(b=>{
@@ -14590,7 +14590,7 @@ function openProgStart(id){
     progSaveDraft({ slots: progShiftSlots(p.slots, progOffsetFor(p.slots, chosen)) });
     closeProgStart();
     switchView("home");
-    toast("Started \u201c" + p.name + "\u201d — first session " + PROG_DAYS[chosen]);
+    toast("Started \u201c" + p.name + "\u201d. First session " + PROG_DAYS[chosen]);
   });
   paint();
 }
@@ -14721,7 +14721,7 @@ function openProgSave(){
 }
 
 /* =========================================================================
-   HOME — today-first dashboard: the session to log, the week, the numbers
+   HOME: today-first dashboard: the session to log, the week, the numbers
    Pure derivations from state.sessions + the Programs draft; every render
    recomputes so logging a session updates Home immediately.
    ========================================================================= */
@@ -14788,7 +14788,7 @@ function homeTodayCardHtml(){
     return '<article class="home-card home-today span-7 fx-in">' + head +
       '<div class="ht-done"><span class="ht-ring">' + STREAK_ICO_CHECK + '</span>' +
         '<div><h3 class="ht-name" style="font-size:clamp(1.4rem,2.6vw,1.9rem)">Logged for today</h3>' +
-        '<p class="ht-blurb">' + esc(recDay ? recDay.name : day.name) + ' is in the books — ' + sets + ' sets' + (vol ? ' · ' + vol + ' ' + weightUnit() : '') + '.</p></div></div>' +
+        '<p class="ht-blurb">' + esc(recDay ? recDay.name : day.name) + ' is in the books: ' + sets + ' sets' + (vol ? ' · ' + vol + ' ' + weightUnit() : '') + '.</p></div></div>' +
       '<div class="ht-actions btn-row">' +
         '<button type="button" class="btn btn-xl" data-home-start="' + day.id + '">Log another session</button>' +
         '<button type="button" class="btn ghost btn-xl" data-home-goto="history">See history</button>' +
@@ -14994,7 +14994,7 @@ function homeStartSession(dayId){
 }
 
 /* =========================================================================
-   YOU — TRAINING ANALYTICS
+   YOU: TRAINING ANALYTICS
    ========================================================================= */
 
 function renderYou(){
@@ -15063,7 +15063,7 @@ function youWeeksData(period){
     })),
   };
 }
-/* Total-volume math — computed from the user's logged history (state.sessions),
+/* Total-volume math, computed from the user's logged history (state.sessions),
    never placeholders. Each working set contributes tonnage-style work in kg:
    effectiveReps × (added weight + body weight × load factor %). Isometric holds (timed
    exercises) are not counted yet, warm-up sets are prep and never counted, and
@@ -15134,16 +15134,16 @@ function youVolumeBody(period, opts){
   const d = youVolumeData(period);
   if (d.total>0) return youLineHtml(d.bars, Object.assign({ values: true }, opts));
   return '<div class="vis-empty">'+(d.sessions===0
-    ? "No sessions in this period yet — log a workout to see your weekly volume."
-    : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load — timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
+    ? "No sessions in this period yet. Log a workout to see your weekly volume."
+    : "Nothing countable in this period. Total volume comes from logged working sets with reps and a known load. Timed holds are not counted, and a missing load factor or body weight drops a set out.")+'</div>';
 }
 /* Nudge toward Settings when bodyweight movements cannot be scaled yet. */
 function youNeedWeightHtml(){
   if (bodyWeightKg()!=null) return "";
-  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings — until then, the body-weight share of every movement stays out of Total volume.</p>';
+  return '<p class="micro" style="color:var(--amber);margin-top:.55rem">Add your current body weight in Settings. Until then, the body-weight share of every movement stays out of Total volume.</p>';
 }
 /* =========================================================================
-   STREAK — weeks with at least one logged session, month calendar + rail.
+   STREAK: weeks with at least one logged session, month calendar + rail.
    Collapsed card lives at the very bottom of the You overview; clicking it
    opens the expanded Streak screen (same you-modal-host pattern) with a
    browsable month calendar. Pure + testable, derived from state.sessions.
@@ -15360,7 +15360,7 @@ function youPeriodBtns(scope, active){
 function youOverviewHtml(){
   return '<div class="you-overview">'+
     '<div class="you-carousel-wrap">'+
-      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts — swipe for total volume">'+
+      '<div class="you-carousel" id="you-carousel" aria-label="Overview charts, swipe for total volume">'+
         '<div class="you-page" id="you-page-0"></div>'+
         '<div class="you-page" id="you-page-1"></div>'+
       '</div>'+
@@ -15384,10 +15384,10 @@ function youRecoveryHtml(nowMs){
     const pct = m[g];
     const color = pct >= 85 ? "var(--green)" : pct >= 60 ? "var(--amber)" : "var(--red)";
     let sub;
-    if (!lastHit[g]) sub = "no logged work — fresh";
+    if (!lastHit[g]) sub = "no logged work yet, fresh";
     else {
       const h = Math.max(0, Math.round((now - lastHit[g]) / 3600000));
-      sub = pct >= RECOVERY_READY_PCT ? "ready — trained " + h + "h ago" : "trained " + h + "h ago · ~" + recoveryEtaHours(g, now) + "h to ready";
+      sub = pct >= RECOVERY_READY_PCT ? "ready, trained " + h + "h ago" : "trained " + h + "h ago · ~" + recoveryEtaHours(g, now) + "h to ready";
     }
     return '<div class="rec-row" data-rec-muscle="' + g + '">'+
       '<div class="rec-top"><span class="rec-name">' + g + '</span><span class="rec-pct">' + pct + '%</span></div>'+
@@ -15418,11 +15418,11 @@ function renderYouRecoverySection(){
   sec.innerHTML =
     '<div class="you-page-head"><h3>Recovery</h3><span class="pill time">live · ' + totalRecoveryAt(Date.now()) + '% total</span></div>'+
     youRecoveryHtml(Date.now())+
-    '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially — e.g. 81% means 19% still fatigued. Scores rise automatically with time.</p>'+
+    '<p class="micro" style="margin-top:.7rem">Per-muscle recovery from logged working sets (primary 1.0 / secondary 0.4, warm-ups excluded), decaying exponentially. For example, 81% means 19% is still fatigued. Scores rise automatically with time.</p>'+
     youWeeklyMusclesHtml(youMuscleWeekRef())+
     youSplitHtml(youMuscleWeekRef());
   /* Upgrade the fallback map to the anatomical body-muscles charts when the
-     CDN module has loaded (no-op offline / in jsdom — the fallback stays). */
+     CDN module has loaded (no-op offline / in jsdom, so the fallback stays). */
   try{ if (typeof window.renderWeeklyBodyCharts === "function") window.renderWeeklyBodyCharts(); }catch(e){}
   try{
     sec.querySelectorAll("[data-you-week-nav]").forEach(btn=>{
@@ -15507,9 +15507,9 @@ function renderYouPage(i){
     page.innerHTML =
       '<div class="you-page-head"><h3>Workouts per week</h3></div>'+
       (data.total===0
-        ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
+        ? '<div class="vis-empty">No sessions in this period yet. Log a workout to see your weekly counts.</div>'
         : youLineHtml(data.bars, { values: true }))+
-      '<p class="micro" style="margin-top:.7rem">Sessions per week — did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
+      '<p class="micro" style="margin-top:.7rem">Sessions per week: did you keep up your planned weekly workouts? Click the chart to expand and choose a period.</p>';
     const chart = $(".you-chart", page);
     if (chart) chart.addEventListener("click", ()=>openYouModal("weeks"));
   } else {
@@ -15523,7 +15523,7 @@ function renderYouPage(i){
   }
 }
 /* Expanded screen: the period selector appears here, one per chart type. */
-let youModalMode = "weeks"; // "weeks" | "volume" | "streak" — which chart the expanded screen shows
+let youModalMode = "weeks"; // "weeks" | "volume" | "streak": which chart the expanded screen shows
 function openYouModal(mode){
   if ($("#you-modal-host")) return;
   youModalMode = (mode==="volume") ? "volume" : (mode==="streak" ? "streak" : "weeks");
@@ -15586,9 +15586,9 @@ function renderYouModalBody(host){
     body.innerHTML =
       youPeriodBtns("modal-period", youPeriod)+
       (data.total===0
-        ? '<div class="vis-empty">No sessions in this period yet — log a workout to see your weekly counts.</div>'
+        ? '<div class="vis-empty">No sessions in this period yet. Log a workout to see your weekly counts.</div>'
         : youLineHtml(data.bars, { values: true, tall: true }))+
-      '<p class="micro">Sessions per week — did you keep up your planned weekly workouts?</p>';
+      '<p class="micro">Sessions per week: did you keep up your planned weekly workouts?</p>';
     $$("[data-you-modal-period]", body).forEach(b=>b.addEventListener("click", ()=>{
       youPeriod = b.dataset.youModalPeriod;
       renderYouModalBody(host);
@@ -15774,7 +15774,7 @@ function wmPaint(root, ids, color){
   });
 }
 /* body-muscles paths carry NO id/data-* attributes (just a class + <title>),
-   so DOM lookups find nothing and the secondary repaint silently no-ops —
+   so DOM lookups find nothing and the secondary repaint silently no-ops,
    every trained muscle kept the library's own red intensity fill. Paint
    through the chart's internal id→path map instead. style.fill (CSS) wins
    over the library's fill attribute, so hover re-paints can't flip a

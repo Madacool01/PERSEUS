@@ -18,11 +18,11 @@ const dom = new JSDOM(html, {
     window.fetch = async (url, opts) => {
       capturedBody = JSON.parse(opts.body);
       const modelReturn = {
-        summary: "Solid session — all prescribed sets completed with reps to spare.",
+        summary: "Solid session. All prescribed sets completed with reps to spare.",
         changes: [
-          { exId:"ex-3", field:"reps", before:8, after:10, reason:"Knocked out 8 reps across three sets with clear ease — push to 10 next time." },
+          { exId:"ex-3", field:"reps", before:8, after:10, reason:"Knocked out 8 reps across three sets with clear ease, so push to 10 next time." },
           { exId:"ex-5", field:"reps", before:6, after:8, reason:"6 reps at P/R both sessions, move to 8." },
-          { exId:"ex-12", field:"time", before:20, after:25, reason:"Held the L-sit 20s for every set — add 5s." },
+          { exId:"ex-12", field:"time", before:20, after:25, reason:"Held the L-sit 20s for every set, so add 5s." },
           { exId:"ex-4", field:"sets", before:3, after:4, reason:"Attempt to violate set-count rule." }
         ]
       };

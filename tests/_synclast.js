@@ -1,6 +1,6 @@
 /* Last-modified-wins regression: when pre-sync data has divergent per-routine
    plans for the same exercise, the shared plan on load must come from the
-   copy modified last — an explicit modifiedAt stamp when present, otherwise
+   copy modified last: an explicit modifiedAt stamp when present, otherwise
    the routine trained most recently (latest logged session), NOT the first
    routine in the list. */
 const fs = require("fs");
@@ -15,7 +15,7 @@ function boot(fixture) {
   const dom = new JSDOM(html, {
     runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",
     beforeParse(w) {
-      // jsdom's real localStorage is what the page sees — seed it pre-bootstrap.
+      // jsdom's real localStorage is what the page sees, so seed it pre-bootstrap.
       w.localStorage.setItem("perseus-v1", JSON.stringify(fixture));
       w.scrollTo = () => {};
     },

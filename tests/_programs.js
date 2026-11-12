@@ -166,7 +166,7 @@ check($("#view-home").classList.contains("active"), "starting lands on Home");
 check(E("JSON.stringify(progDraft().slots.map((x,i)=>x?i:null).filter(x=>x!==null))") === "[0,2,5]", "the active week is now Monday, Wednesday and Saturday");
 check(E("progDraft().slots[0]") === "day-t-a" && E("progDraft().slots[2]") === "day-t-b" && E("progDraft().slots[5]") === "day-t-a", "each shifted session keeps its routine");
 check(E("JSON.stringify(progSavedList()[0].slots.map((x,i)=>x?i:null).filter(x=>x!==null))") === "[1,3,6]", "the saved program is untouched (shift scope: active week only)");
-check(/first session Mon/.test(W.document.querySelector("#toast").textContent), "the toast names the chosen first day: " + JSON.stringify(W.document.querySelector("#toast").textContent));
+check(/First session Mon/.test(W.document.querySelector("#toast").textContent), "the toast names the chosen first day: " + JSON.stringify(W.document.querySelector("#toast").textContent));
 
 section("The start dialog can be dismissed");
 E("switchView('programs')");
@@ -260,7 +260,7 @@ check(/Warned week/.test(prompts[0]), "the warning names the saved program that 
 check(/Reloaded/.test(prompts[0]), "and every other program that references it (" + E("progRoutineUsage('day-t-a').saved.join(', ')") + ")");
 check(/2 saved programs/.test(prompts[0]), "counting them rather than listing one");
 check(/go back to rest/.test(prompts[0]), "the warning says what happens to those days");
-check(/only the routine itself is deleted/.test(prompts[0]), "and that nothing else is removed");
+check(/Only the routine itself is deleted/.test(prompts[0]), "and that nothing else is removed");
 check(E("getDay('day-t-a')") != null, "cancelling the warning keeps the routine");
 check(E("JSON.stringify(progDraft().slots)") === "[null,\"day-t-a\",null,null,null,null,null]", "cancelling changes nothing");
 check(E("progSavedList().find(p=>p.id==='id-warn').slots[1]") === "day-t-a", "the saved program still holds it");

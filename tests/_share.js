@@ -229,7 +229,7 @@ function makeDom() {
 
   section("Import: duplicate exercises are linked, not duplicated");
   const beforeDays = B.E("state.days.length");
-  // a receiver with none of the shared movements — except one they spell their own way
+  // a receiver with none of the shared movements, except one they spell their own way
   const sharedNames = payloadB.exercises.map(e => e.name);
   B.E("var SHARED=" + JSON.stringify(sharedNames) + ";" +
       "state.exercises = state.exercises.filter(x=>SHARED.indexOf(x.name) === -1);" +
@@ -390,7 +390,7 @@ function makeDom() {
   const copied = C.E("window.__copied");
   check(typeof copied === "string" && copied.slice(0, 3) === "P0.", "Copy code copies the bare payload with no URL prefix");
   check(copied && decodeWire(copied).pid === decodeWire(codeC).pid, "the copied code is the same workout as the link");
-  check(C.E("document.querySelector('#share-host').textContent.indexOf('never your history') !== -1") === true, "sheet states that history never travels");
+  check(C.E("document.querySelector('#share-host').textContent.indexOf('Never your history') !== -1") === true, "sheet states that history never travels");
   C.click(C.$("#share-host [data-sh-close]"));
   check(C.$$("#share-host .sh-card").length === 0, "sheet closes");
 

@@ -57,7 +57,7 @@ check(Boolean($("#view-log #rd-verdict")), "readiness screen renders first");
 check($$("#view-log .rail[data-rail]").length === 4, "four readiness questions");
 check($$("#view-log [role='radiogroup']").length === 4, "each question is an accessible radiogroup");
 check($$("#view-log .rail-opt").length === 19, "sleep/energy/stress offer five steps, soreness four");
-check($("#view-log .rail-opt[aria-checked='true']") === null, "nothing is pre-answered — a default is not an answer");
+check($("#view-log .rail-opt[aria-checked='true']") === null, "nothing is pre-answered, since a default is not an answer");
 check(/Tap to answer/.test($("#view-log").textContent), "unanswered questions invite a tap");
 check(!$("#view-log .set-cell"), "no set grid until training starts");
 

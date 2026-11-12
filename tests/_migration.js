@@ -20,7 +20,7 @@ const dom = new JSDOM(html, {
   runScripts:"dangerously", pretendToBeVisual:true, url:"http://localhost/",
   beforeParse(w){
     // jsdom's real localStorage is what the page sees (window.localStorage is
-    // an accessor we can't replace) — seed it before the bootstrap script runs.
+    // an accessor we can't replace), so seed it before the bootstrap script runs.
     w.localStorage.setItem("adaptive-coach-v1", JSON.stringify(legacy));
     w.scrollTo=()=>{};
   },

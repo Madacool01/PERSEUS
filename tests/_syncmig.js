@@ -1,7 +1,7 @@
 /* Migration regression: data saved before cross-routine sync existed may hold
    different per-set plans for the same exercise in different routines (e.g.
    Lateral Raise 8/7 on Friday but 7/6 on Tuesday). On load they must converge
-   to ONE shared prescription — the first routine containing the movement wins
+   to ONE shared prescription: the first routine containing the movement wins
    and every other routine's copy mirrors it. */
 const fs = require("fs");
 const path = require("path");
@@ -22,7 +22,7 @@ const dom = new JSDOM(html, {
   runScripts:"dangerously", pretendToBeVisual:true, url:"http://localhost/",
   beforeParse(w){
     // jsdom's real localStorage is what the page sees (window.localStorage is
-    // an accessor we can't replace) — seed it before the bootstrap script runs.
+    // an accessor we can't replace), so seed it before the bootstrap script runs.
     w.localStorage.setItem("perseus-v1", JSON.stringify(fixture));
     w.scrollTo=()=>{};
   },

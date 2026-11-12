@@ -1,7 +1,7 @@
 /* Cross-routine exercise sync: an exercise's prescription (set count, per-set
    reps/time, set types, weight) is shared across every routine that includes
    it. Adding the exercise to another routine pre-fills its current plan, and
-   any change — a manual edit or an accepted coach suggestion — propagates to
+   any change, whether a manual edit or an accepted coach suggestion, propagates to
    every routine. */
 const fs = require("fs");
 const path = require("path");
@@ -76,7 +76,7 @@ const waitFor = (fn, label, ms) => new Promise(res => {
 
   section("Dips example: accepted coach change syncs to the other routine");
   E("openAddEx('day-3')");
-  // Ring Dip (ex-3) lives in Workout A (day-1) as 3 sets x 8 — pick it in the form.
+  // Ring Dip (ex-3) lives in Workout A (day-1) as 3 sets x 8, so pick it in the form.
   $("#add-ex-select").value = "ex-3";
   $("#add-ex-select").dispatchEvent(new window.Event("change", { bubbles: true }));
   check($("#add-ex-sets").value === "3", "dips add form pre-fills 3 sets from Workout A");

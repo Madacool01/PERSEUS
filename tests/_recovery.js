@@ -103,7 +103,7 @@ const eta24 = E("recoveryEtaHours('chest', Date.now() + 24*3600*1000)");
 check(eta24 < etaNow, "ETA shrinks over the next 24h (" + etaNow + " -> " + eta24 + ")");
 check(E("typeof muscleRecoveryAt(Date.now())._remaining") === "object" && E("muscleRecoveryAt(Date.now())._remaining.chest") > 0, "recovery exposes per-group remaining dose");
 // Literature calibration (Peake 2017; Sousa 2024): acute deficit <= ~30%, and
-// ready (>=95%) within 48-72h of training — not a ~50% crater that takes days.
+// ready (>=95%) within 48-72h of training, not a ~50% crater that takes days.
 E(`(function(){
   state.sessions = [{
     id:'s-acute', dayId:'day-1', dateISO: new Date(Date.now() - 1*3600*1000).toISOString(),
@@ -193,7 +193,7 @@ check(cdnIds.primary.indexOf("triceps-left") === -1, "CDN ids: primary wins over
 
 // Regression: anatomical near-names must not cross-map. Biceps femoris is a
 // hamstring, triceps surae is calf, *-lateral-* is not lats, rectus femoris
-// is quad — substring matching lit calves/hamstrings red on upper-body days.
+// is quad, since substring matching lit calves/hamstrings red on upper-body days.
 const anatMap = ["biceps-left", "biceps-femoris-left", "triceps-left", "triceps-surae-left", "chest-left", "quadriceps-left", "gastrocnemius-lateral-left", "rectus-femoris-left", "latissimus-left"];
 check(E("bodyMuscleIdsForDetail('Biceps brachii', " + JSON.stringify(anatMap) + ")").join(",") === "biceps-left", "arm biceps does not map to biceps-femoris hamstring");
 check(E("bodyMuscleIdsForDetail('Triceps brachii', " + JSON.stringify(anatMap) + ")").join(",") === "triceps-left", "arm triceps does not map to triceps-surae calf");
@@ -345,7 +345,7 @@ const splitRowNums = g => Array.from(splitRow(g).querySelectorAll(".rec-pct")).m
 check(Boolean(splitNav("prev")) && Boolean(splitNav("next")), "split card has previous/next week arrows");
 check(splitRowNums("chest")[0].indexOf("100") !== -1 && splitRowNums("chest")[1] === "1", "current week shows chest 100 volume / 1 set");
 const splitPill = () => $("#you-muscle-split .you-page-head .pill").textContent;
-check(splitPill() === E("youMuscleWeekRange(Date.now()).label"), "split pill shows the week's actual dates, not Mon–Sun");
+check(splitPill() === E("youMuscleWeekRange(Date.now()).label"), "split pill shows the week's actual dates, not Mon-Sun");
 check(splitNav("next").hasAttribute("disabled"), "next arrow disabled on the current week");
 click(splitNav("prev"));
 check(splitRowNums("back")[0].indexOf("400") !== -1 && splitRowNums("back")[1] === "2", "previous week shows back 400 volume / 2 sets");

@@ -77,7 +77,7 @@ const lastToast = () => W.__toasts[W.__toasts.length - 1];
   check(E("restTimer.kind") === "set", "a between-set rest is a 'set' rest");
   check(W.__cuePlays === 1, "cue plays once (no replay at zero)");
   check(W.__osc === 0, "no synth fallback while the MP3 plays");
-  check(lastToast() === "Rest over — next set", "between-set rest cues the next set");
+  check(lastToast() === "Rest over, next set", "between-set rest cues the next set");
 
   console.log("\n== last set of an exercise → next exercise ==\n");
   E("restClear()");

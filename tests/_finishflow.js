@@ -91,7 +91,7 @@ check($$("#view-log [data-start]").length === 2, "original log picker is shown a
 console.log("\n== Button disappears after one click (no repeat presses possible) ==");
 driveToReflection();
 $("#view-log #ref-finish").dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
-check(!$("#view-log #ref-finish"), "second press impossible — button already gone");
+check(!$("#view-log #ref-finish"), "second press impossible because the button is already gone");
 check(E("state.sessions.length") === 2 && E("state.pending.length") === 2,
   "no duplicate batches from the finishing flow (count=" + E("state.sessions.length") + "/" + E("state.pending.length") + ")");
 

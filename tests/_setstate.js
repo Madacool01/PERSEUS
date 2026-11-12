@@ -1,5 +1,5 @@
 /* Set state: a set with work but no effort (or effort but no work) is flagged
-   yellow while logging. Only work (reps/time) counts as done in History — an
+   yellow while logging. Only work (reps/time) counts as done in History. An
    effort-only set is dropped. */
 const fs = require("fs");
 const path = require("path");
