@@ -4710,9 +4710,24 @@ const PART_DETAILS = { Biceps:["Biceps brachii","Brachialis"], Triceps:["Triceps
 MUSCLES.forEach(pair=>{ if (BODY_PARTS.includes(pair[0])){ (PART_DETAILS[pair[0]] = PART_DETAILS[pair[0]] || []).push(pair[1]); } });
 function libTypeOf(e){ return EX_TYPES.hasOwnProperty(e.type) ? e.type : (e.mode==="time" ? "duration" : ((e.weightAvailable || e.mode==="weight") ? "weight" : "bodyweight")); }
 function libUsesWeight(e){ return !!(e.weightAvailable || e.mode==="weight"); }
+/* Some region tiles are named after one muscle: Lats keeps only latissimus
+   work out of the broad Back tag, Traps gathers every trapezius head. */
+const LIB_PART_FOCUS = {
+  Back: ["Latissimus dorsi"],
+  Neck: ["Upper trapezius", "Middle trapezius", "Lower trapezius"]
+};
 function libMatchParts(e, parts){
   const det = (e.primaryMuscles || []).concat(e.secondaryMuscles || []);
-  return parts.some(p=> (e.bodyParts || []).includes(p) || det.some(m=> (PART_DETAILS[p] || []).includes(m)));
+  return parts.some(p=>{
+    const focus = LIB_PART_FOCUS[p];
+    if (focus){
+      if (det.some(m=> focus.includes(m))) return true;
+      /* Built-in movements carry only region tags. Honour the tag when the
+         movement lists no exact muscles at all, never against real detail. */
+      return !det.length && (e.bodyParts || []).includes(p);
+    }
+    return (e.bodyParts || []).includes(p) || det.some(m=> (PART_DETAILS[p] || []).includes(m));
+  });
 }
 function libMatchMuscles(e, muscles, scope){
   const pool = scope === "primary" ? (e.primaryMuscles || []) : scope === "secondary" ? (e.secondaryMuscles || []) : (e.primaryMuscles || []).concat(e.secondaryMuscles || []);
@@ -4775,7 +4790,7 @@ function libSegRow(group, options, current){
 const LIB_PART_ICON = { Chest:"chest", Back:"lats", Shoulders:"shoulders", Biceps:"biceps", Triceps:"triceps", Forearms:"forearms", Core:"core", Hips:"glutes", Glutes:"glutes", Thighs:"quads", Calves:"calves", Neck:"upper-mid-back" };
 /* Tile wording only: Thighs is stored on exercises, but the quads illustration
    reads clearer under its own name. data-fv keeps the stored tag. */
-const LIB_PART_LABEL = { Thighs:"Quads" };
+const LIB_PART_LABEL = { Thighs:"Quads", Back:"Lats", Neck:"Traps" };
 const FS_CHECK = '<span class="fs-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 6.5"/></svg></span>';
 /* An <img> contributes no text, so a tile's textContent stays exactly its
    label, the filter contract the delegated click handler relies on. */
