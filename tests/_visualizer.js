@@ -114,6 +114,25 @@ check(new Set(multiThumbs).size === multiThumbs.length, "no two similar movement
 E("state.exercises.find(e=>e.id==='ex-3').primaryMuscles=[]");
 click($("#ex-vis-host [data-vis-back]"));
 
+// Built-ins carry only region tags: the fallback matches the working area,
+// never shared equipment, and never a single overlapping region.
+E("['ex-1','ex-2','ex-3'].forEach(id=>{ state.exercises.find(e=>e.id===id).primaryMuscles=[]; })");
+E("openExVisualizer('ex-1')"); // Push-Up: Chest, Shoulders, Triceps
+const builtinAlts = $$("#ex-vis-host .alt-card .alt-name").map(n=>n.textContent);
+check(builtinAlts.includes("Diamond Push-Up") && builtinAlts.includes("Ring Dip"), "region-tagged built-ins list movements sharing the working area (got: " + (builtinAlts.join(", ") || "none") + ")");
+check(!builtinAlts.includes("Plank"), "one shared region (shoulders) is not enough for a similar movement");
+check(!builtinAlts.includes("Squat (Bodyweight)"), "same-equipment dissimilar movement excluded from the region fallback");
+const subLabels = $$("#ex-vis-host .alt-card .alt-part").map(n=>n.textContent.trim());
+check(subLabels.length > 0 && subLabels.every(t=>t && t.toLowerCase() !== "n/a"), "every similar-movement card is labelled, never 'n/a' (got: " + subLabels.join(" | ") + ")");
+click($("#ex-vis-host [data-vis-back]"));
+
+// An untagged movement lists nothing rather than guessing from its gear
+E("state.exercises.push({ id:'ex-untagged', name:'Mystery Move', mode:'reps', type:'bodyweight', equipment:['bodyweight'], weightAvailable:false, defaultSets:3, defaultReps:8, defaultTime:30, defaultWeight:0, notes:'', instructions:'', bodyParts:[], primaryMuscles:[], secondaryMuscles:[] })");
+E("openExVisualizer('ex-untagged')");
+check($$("#ex-vis-host .alt-card").length === 0, "untagged movement shows no similar movements (no equipment-only guesses)");
+click($("#ex-vis-host [data-vis-back]"));
+E("state.exercises = state.exercises.filter(e=>e.id!=='ex-untagged')");
+
 // Pencil click opens the editor (not the visualizer)
 click($("#view-library .exercise-item [data-edit]"));
 const editor = $("#ex-editor-host");

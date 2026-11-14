@@ -5857,6 +5857,8 @@ function openExVisualizer(id, opts){
   }
   function visAlternativesHtml(e){
     const prim = e.primaryMuscles || [];
+    const parts = e.bodyParts || [];
+    const progIds = Array.isArray(e.progressions) ? e.progressions : [];
     let rel;
     if (prim.length){
       // Similar = movements working the same primary drivers; best matches first.
@@ -5866,24 +5868,35 @@ function openExVisualizer(id, opts){
         .filter(x=>x.score>0)
         .sort((a,b)=>b.score-a.score)
         .map(x=>x.o);
+    } else if (parts.length){
+      /* Built-in movements carry only region tags, so fall back to movements
+         that train the same working area. Equipment alone says nothing about
+         the movement, so it never qualifies a candidate; and a single shared
+         region (Planck's shoulders vs. a push-up's) is not enough either. */
+      const minShared = Math.min(parts.length, 2);
+      rel = state.exercises
+        .filter(o=>o.id!==e.id)
+        .map(o=>({ o:o, score:(o.bodyParts||[]).filter(b=>parts.includes(b)).length }))
+        .filter(x=>x.score>=minShared)
+        .sort((a,b)=>b.score-a.score)
+        .map(x=>x.o);
     } else {
-      // Nothing tagged on this movement yet, so fall back to body part / equipment / progression links.
-      rel = state.exercises.filter(o=>o.id!==e.id && (
-        (o.bodyParts||[]).some(b=>(e.bodyParts||[]).includes(b)) ||
-        (o.equipment||[]).some(k=>(e.equipment||[]).includes(k)) ||
-        (Array.isArray(e.progressions) && e.progressions.includes(o.id))
-      ));
+      // Nothing tagged on this movement yet: its movement chain is all we know.
+      rel = state.exercises.filter(o=>o.id!==e.id && progIds.includes(o.id));
     }
     rel = rel.slice(0,8);
     if (!rel.length) return "";
     const used = new Set();
     const cards = rel.map(o=>{
       const img = o.image ? o.image : natureImageFor(o.name, used);
-      const parts = (o.bodyParts||[]).slice(0,3).join(", ") || (o.primaryMuscles||[]).slice(0,2).join(", ") || "n/a";
+      const sub = (o.bodyParts||[]).slice(0,3).join(", ")
+        || (o.primaryMuscles||[]).slice(0,2).join(", ")
+        || movementTypeLabel(o)
+        || (o.equipment||[]).map(k=>EQUIP_LABELS[k]||k).slice(0,2).join(", ");
       return '<button type="button" class="alt-card" data-alt="'+o.id+'">'+
         '<span class="alt-thumb" style="background-image:url(\''+img+'\')"></span>'+
         '<span class="alt-name">'+esc(o.name)+'</span>'+
-        '<span class="alt-part">'+esc(parts)+'</span>'+
+        '<span class="alt-part">'+esc(sub)+'</span>'+
       '</button>';
     }).join("");
     return '<div class="vis-block"><div class="vis-h">Similar movements</div><div class="vis-carousel">'+cards+'</div></div>';
