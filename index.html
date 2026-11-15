@@ -3413,6 +3413,33 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
     .ticker-track { animation: none; }
   }
+  /* ---------- Coaching: a separate space ---------- */
+  /* Empty means closed: an always-present fixed layer would swallow every
+     click on the app behind it. */
+  #coaching-host { display: none; }
+  #coaching-host:not(:empty) {
+    position: fixed; inset: 0; z-index: 280;
+    display: flex; align-items: center; justify-content: center; padding: 1.1rem;
+    background: rgba(6,5,4,.62);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .ch-card { width: min(720px, 100%); }
+  .ch-ex { border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); padding: .6rem .7rem; margin-bottom: .5rem; }
+  .ch-ex-head { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin-bottom: .45rem; }
+  .ch-ex-head b { font-size: .9rem; color: var(--ink); }
+  .ch-ex-head .micro { margin-left: auto; }
+  .ch-inputs { display: flex; flex-wrap: wrap; gap: .4rem; align-items: flex-end; }
+  .ch-inputs label { display: flex; flex-direction: column; gap: .18rem; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .ch-inputs input { width: 3.4rem; text-align: center; padding: .34rem .2rem; }
+  .ch-quick { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .45rem; }
+  .ch-quick .btn { font-size: .66rem; padding: .3rem .5rem; }
+  .ch-line { display: flex; justify-content: space-between; gap: .6rem; padding: .28rem .1rem; font-size: .82rem; color: var(--ink-2); border-bottom: 1px solid var(--line-2); }
+  .ch-line:last-child { border-bottom: 0; }
+  .ch-routine { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: .55rem .7rem; margin-bottom: .5rem; background: var(--surface); }
+  .ch-routine summary { cursor: pointer; display: flex; gap: .5rem; align-items: baseline; }
+  .ch-routine summary .micro { margin-left: auto; }
+  .ch-note { margin: .8rem 0 0; color: var(--ink-3); }
+  .ch-diff { color: var(--accent); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -3485,6 +3512,7 @@
 
 <div id="toast" class="toast"></div>
 <div id="share-host"></div>
+<div id="coaching-host"></div>
 <div id="api-guide-host"></div>
 <div id="prog-start-host"></div>
 <div id="prog-save-host"></div>
@@ -9291,6 +9319,7 @@ function renderCoach(){
         '<div class="hero-cta">' +
           '<button class="btn btn-xl primary" data-goto="log">Log a session <span class="btn-arrow">→</span></button>' +
           '<button class="btn btn-xl ghost-dark" data-builder-open>Build a session <span class="btn-arrow">→</span></button>' +
+          '<button class="btn btn-xl ghost-dark" data-coach-open>Coaching a friend <span class="btn-arrow">→</span></button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -9304,6 +9333,7 @@ function renderCoach(){
     '<div class="view-hero-inner">' +
       '<h2 class="view-title">The coach <em class="serif-i">weighs in</em></h2>' +
       '<p class="view-sub fx-scrub">Review what changes for next session. Accept or reject each call. Set count is never altered.</p>' +
+      '<div class="hero-cta"><button type="button" class="btn btn-xl ghost-dark" data-coach-open>Coaching a friend <span class="btn-arrow">&#8594;</span></button></div>' +
     '</div>' +
   '</div>' +
   '<div class="wrap">';
@@ -12254,6 +12284,13 @@ function renderSettings(){
         '<button class="btn" id="set-logging-save">Save logging preference</button>'+
       '</div>'+
       '</div>'+
+      '<div class="cell s12"><div class="card"><h3>Coaching a friend</h3>'+
+        '<p class="micro">A space of its own, kept apart from your training. Open the link your friend sends, review their sessions and send back next session\u2019s reps, seconds and load. Or share your training with a coach and apply the plan they send you.</p>'+
+        '<div class="btn-row"><button class="btn primary" id="set-coach-open">Open coaching</button>'+
+          '<button class="btn" id="set-coach-share">Share my training with a coach</button>'+
+          '<button class="btn" id="set-coach-apply">Apply a plan from my coach</button></div>'+
+        '<p class="micro" style="margin:.7rem 0 0">Nothing here changes your routines, sessions, AI key or coach suggestions. Plans travel as a link or code, like workout shares.</p>'+
+      '</div></div>'+
       '<div class="cell s12"><div class="card"><h3>Your data</h3>'+
         '<p class="micro">Export everything as JSON to back it up or move it between browsers.</p>'+        '<div class="btn-row"><button class="btn" id="set-export">Export JSON</button><button class="btn" id="set-import">Import JSON</button><input id="import-file" type="file" accept=".json" style="display:none"/></div>' +
         '<div class="field" style="margin-top:1rem"><span>Auto-backup folder (Chrome/Edge)</span>'+
@@ -12336,6 +12373,12 @@ function renderSettings(){
     });
     toast("Theme: "+THEMES[prof.theme].label);
   }));
+  const chOpen = $("#set-coach-open", s);
+  if (chOpen) chOpen.addEventListener("click", ()=>coachOpenHome());
+  const chShare = $("#set-coach-share", s);
+  if (chShare) chShare.addEventListener("click", ()=>coachShareDialog());
+  const chApply = $("#set-coach-apply", s);
+  if (chApply) chApply.addEventListener("click", ()=>coachApplyDialog());
   $("#set-export", s).addEventListener("click", ()=>{
     const blob = new Blob([buildBackupJSON()],{type:"application/json"});
     const a = document.createElement("a");
@@ -13837,6 +13880,8 @@ function closeShareHost(){
   if (h) h.innerHTML = "";
 }
 function shareHostKey(ev){
+  const chH = coachHostEl();
+  if (ev && ev.key === "Escape" && chH && chH.childNodes.length && chH.firstChild){ coachClose(); return; }
   if (!ev || ev.key !== "Escape") return;
   const h = shareHostEl();
   if (h && h.childNodes.length && h.firstChild){ closeShareHost(); return; }
@@ -14144,6 +14189,812 @@ function shareHandleDeepLink(){
   }catch(e){ try{ location.hash = ""; }catch(e2){} }
   if (!code) return;
   openImportDialog(code, { auto: true });
+}
+
+/* =========================================================================
+   COACHING (a person, outside the app)
+   -------------------------------------------------------------------------
+   Coaching a friend is deliberately not part of your own training. The roster
+   lives under its own storage key, and nothing in these screens reads or
+   writes `state` except at the two moments that are the whole point:
+
+     athlete -> coach   a snapshot of routines, their targets and recent
+                        sessions, packed as a normal share code
+     coach  -> athlete  reps / seconds / load for next session, same carrier
+
+   The coach's own routines, sessions, pending suggestions and AI key are
+   never touched by browsing an athlete, and an athlete applying a plan only
+   writes the shared exercise plan: set counts are never changed, exactly as
+   the built-in coach works.
+   ========================================================================= */
+var COACH_KEY = "perseus-coaching-v1";
+var COACH_KIND_ATHLETE = "coach-athlete";
+var COACH_KIND_PLAN = "coach-plan";
+var COACH_HASH_ATHLETE = "perseus-coach=";
+var COACH_HASH_PLAN = "perseus-plan=";
+var COACH_MAX_ROUTINES = 20;
+var COACH_MAX_HISTORY = 24;
+
+/* ---------- roster storage (never `state`) ----------------------------- */
+function coachRoster(){
+  try{
+    const raw = (hasStorage() ? localStorage.getItem(COACH_KEY) : null) || memStore[COACH_KEY];
+    const obj = raw ? JSON.parse(raw) : null;
+    if (obj && Array.isArray(obj.athletes)) return obj.athletes.filter(a=>a && typeof a === "object" && a.id);
+  }catch(e){}
+  return [];
+}
+function coachSaveRoster(list){
+  try{
+    const raw = JSON.stringify({ v:1, athletes: (list || []).filter(a=>a && typeof a === "object" && a.id) });
+    if (hasStorage()){ try{ localStorage.setItem(COACH_KEY, raw); return true; }catch(e){} }
+    memStore[COACH_KEY] = raw;
+    return true;
+  }catch(e){ return false; }
+}
+function coachFindAthlete(id){
+  return coachRoster().find(a=>a.id === id) || null;
+}
+function coachUpdateAthlete(rec){
+  if (!rec || !rec.id) return;
+  const list = coachRoster();
+  const i = list.findIndex(a=>a.id === rec.id);
+  if (i < 0) list.push(rec); else list[i] = rec;
+  coachSaveRoster(list);
+}
+function coachDropAthlete(id){
+  coachSaveRoster(coachRoster().filter(a=>a.id !== id));
+}
+
+/* ---------- reading an exercise's targets ------------------------------ */
+function coachSetList(v, n){
+  const out = [];
+  for (let i=0; i<n; i++) out.push(v && v[i] != null ? v[i] : null);
+  return out;
+}
+function coachReadExercise(x){
+  if (!x || typeof x !== "object") return null;
+  const name = shareCleanText(x.n, 80);
+  if (!name) return null;
+  const mode = (x.m === "time" || x.m === "weight") ? x.m : "reps";
+  const sets = shareInt(x.s, 1, 15, 3);
+  const wa = !!x.wa || mode === "weight";
+  const out = { name: name, mode: mode, sets: sets, weightAvailable: wa, perSide: x.ps === 1 || x.ps === true };
+  if (mode === "time"){
+    out.time = shareInt(x.ti, 0, 3600, 30);
+    out.setTimes = shareNumList(x.st, sets, 0, 3600, 0.5) || Array.from({length:sets}, ()=>out.time);
+  } else {
+    out.reps = shareInt(x.rp, 0, 100, 8);
+    out.setReps = shareNumList(x.sr, sets, 0, 100, 1) || Array.from({length:sets}, ()=>out.reps);
+  }
+  if (wa){
+    out.weight = shareNum(x.w, 0, 1000, 0, 0.5);
+    out.setWeights = shareNumList(x.sw, sets, 0, 1000, 0.5) || Array.from({length:sets}, ()=>out.weight);
+  }
+  if (Array.isArray(x.ty)) out.setTypes = x.ty.slice(0, sets).map(t=>SET_TYPES[t] ? t : "regular");
+  if (x.f === "strength" || x.f === "hypertrophy") out.focus = x.f;
+  return out;
+}
+
+/* ---------- athlete snapshot ------------------------------------------- */
+function coachBuildAthletePayload(){
+  const unit = weightUnit();
+  const days = (state.days || []).filter(d=>d && (d.exercises || []).length);
+  if (!days.length) throw new Error("Add a routine with exercises first, then share it with your coach");
+  const routines = days.slice(0, COACH_MAX_ROUTINES).map(d=>{
+    const ex = (d.exercises || []).slice(0, SHARE_MAX_EXERCISES).map(de=>{
+      const x = getEx(de.exId);
+      if (!x) return null;
+      const p = (x.plan) ? x.plan : normalizePlan(x, de);
+      const n = Math.max(1, p.targetSets || de.targetSets || 1);
+      const o = { n: shareCleanText(x.name, 80), m: x.mode || "reps", wa: x.weightAvailable ? 1 : 0, ps: x.perSide ? 1 : 0, s: n };
+      if ((x.mode || "reps") === "time"){ o.ti = p.time != null ? p.time : null; o.st = coachSetList(p.setTimes, n); }
+      else { o.rp = p.reps != null ? p.reps : null; o.sr = coachSetList(p.setReps, n); }
+      if (x.weightAvailable){ o.w = p.weight != null ? p.weight : null; o.sw = coachSetList(p.setWeights, n); }
+      if (Array.isArray(p.setTypes) && p.setTypes.some(t=>t !== "regular")) o.ty = p.setTypes.slice(0, n);
+      if (de.focus) o.f = de.focus;
+      return o;
+    }).filter(Boolean);
+    return { n: shareCleanText(d.name, 80), t: SESSION_TYPES[d.type] ? d.type : "hypertrophy", ex: ex };
+  }).filter(r=>r.n && r.ex.length);
+  if (!routines.length) throw new Error("Your routines have no exercises to send yet");
+  const h = (state.sessions || []).slice(-COACH_MAX_HISTORY).reverse().map(s=>{
+    const d = s.dayId ? getDay(s.dayId) : null;
+    const sets = (s.completedSets || []).slice(0, 120).map(cs=>{
+      const x = getEx(cs.exId);
+      const o = { n: shareCleanText(x ? x.name : "Exercise", 80), i: shareInt(cs.setIndex, 0, 30, 0) };
+      if (cs.reps != null) o.rp = shareInt(cs.reps, 0, 100, 0);
+      if (cs.time != null) o.ti = shareInt(cs.time, 0, 3600, 0);
+      if (cs.weight != null) o.w = shareNum(cs.weight, 0, 1000, 0, 0.5);
+      if (cs.type && SET_TYPES[cs.type] && cs.type !== "regular") o.ty = cs.type;
+      if (cs.hit === false) o.miss = 1;
+      return o;
+    });
+    const out = { d: shareCleanText(s.dateISO, 40), r: shareCleanText(d ? d.name : "", 80), sets: sets };
+    if (s.type && SESSION_TYPES[s.type]) out.t = s.type;
+    const note = s.feedback && s.feedback.note;
+    if (note) out.note = shareCleanText(note, 240);
+    return out;
+  });
+  return { app: SHARE_APP, kind: COACH_KIND_ATHLETE, v: 1, u: unit,
+    a: shareCleanText((state.profile && state.profile.name) || "", 60),
+    ts: nowISO(), src: shareInstallId(), r: routines, h: h };
+}
+
+/* ---------- validators ------------------------------------------------ */
+function coachParseAthlete(obj){
+  if (!obj || typeof obj !== "object") throw new Error("That is not a PERSEUS coaching share");
+  if (obj.app !== SHARE_APP || obj.kind !== COACH_KIND_ATHLETE) throw new Error("That is not an athlete share. Use the link your athlete sent you.");
+  const v = shareInt(obj.v, 0, 99, 0);
+  if (!v) throw new Error("That coaching code is damaged");
+  if (v > 1) throw new Error("That share was made by a newer version of PERSEUS. Update the app to open it");
+  const unit = shareValidUnit(obj.u);
+  const routines = (Array.isArray(obj.r) ? obj.r : []).slice(0, COACH_MAX_ROUTINES).map(raw=>{
+    if (!raw || typeof raw !== "object") return null;
+    const name = shareCleanText(raw.n, 80);
+    if (!name) return null;
+    const exercises = (Array.isArray(raw.ex) ? raw.ex : []).slice(0, SHARE_MAX_EXERCISES).map(coachReadExercise).filter(Boolean);
+    if (!exercises.length) return null;
+    return { name: name, type: SESSION_TYPES[raw.t] ? raw.t : "hypertrophy", exercises: exercises };
+  }).filter(Boolean);
+  if (!routines.length) throw new Error("That share contains no routines this app can read");
+  const history = (Array.isArray(obj.h) ? obj.h : []).slice(0, COACH_MAX_HISTORY).map(raw=>{
+    if (!raw || typeof raw !== "object") return null;
+    const sets = (Array.isArray(raw.sets) ? raw.sets : []).slice(0, 200).map(cs=>{
+      if (!cs || typeof cs !== "object") return null;
+      const nm = shareCleanText(cs.n, 80);
+      if (!nm) return null;
+      const o = { name: nm, index: shareInt(cs.i, 0, 30, 0) };
+      if (cs.rp != null) o.reps = shareInt(cs.rp, 0, 100, 0);
+      if (cs.ti != null) o.time = shareInt(cs.ti, 0, 3600, 0);
+      if (cs.w != null) o.weight = shareNum(cs.w, 0, 1000, 0, 0.5);
+      if (cs.ty && SET_TYPES[cs.ty]) o.type = cs.ty;
+      if (cs.miss) o.miss = true;
+      return o;
+    }).filter(Boolean);
+    return { date: shareCleanText(raw.d, 40), routine: shareCleanText(raw.r, 80),
+      type: SESSION_TYPES[raw.t] ? raw.t : null, note: shareCleanText(raw.note, 240), sets: sets };
+  }).filter(Boolean);
+  return { athlete: shareCleanText(obj.a, 60), unit: unit, ts: shareCleanText(obj.ts, 40),
+    src: shareCleanText(obj.src, 40), routines: routines, history: history };
+}
+function coachParsePlan(obj){
+  if (!obj || typeof obj !== "object") throw new Error("That is not a PERSEUS coaching share");
+  if (obj.app !== SHARE_APP || obj.kind !== COACH_KIND_PLAN) throw new Error("That is not a coaching plan. Ask your coach for the link from Send the plan.");
+  const v = shareInt(obj.v, 0, 99, 0);
+  if (!v) throw new Error("That plan code is damaged");
+  if (v > 1) throw new Error("That plan was made by a newer version of PERSEUS. Update the app to open it");
+  const unit = shareValidUnit(obj.u);
+  const routines = (Array.isArray(obj.r) ? obj.r : []).slice(0, COACH_MAX_ROUTINES).map(raw=>{
+    if (!raw || typeof raw !== "object") return null;
+    const name = shareCleanText(raw.n, 80);
+    if (!name) return null;
+    const exercises = (Array.isArray(raw.ex) ? raw.ex : []).slice(0, SHARE_MAX_EXERCISES).map(coachReadExercise).filter(Boolean);
+    if (!exercises.length) return null;
+    return { name: name, type: SESSION_TYPES[raw.t] ? raw.t : null, exercises: exercises };
+  }).filter(Boolean);
+  if (!routines.length) throw new Error("That plan contains no exercises this app can read");
+  return { coach: shareCleanText(obj.c, 60), note: shareCleanText(obj.note, 300),
+    unit: unit, ts: shareCleanText(obj.ts, 40), routines: routines };
+}
+
+/* ---------- carrier: one more code kind on the existing pipeline -------- */
+function coachLink(code, kind){
+  let base = "";
+  try{ base = String(location.href || "").split("#")[0]; }catch(e){}
+  return (base || "index.html") + "#" + (kind === COACH_KIND_PLAN ? COACH_HASH_PLAN : COACH_HASH_ATHLETE) + code;
+}
+async function coachDecode(text){
+  const s = String(text == null ? "" : text).trim();
+  if (!s) throw new Error("Paste the link or code first");
+  if (s.length > SHARE_MAX_FILE) throw new Error("That text is far too long to be a coaching code");
+  let obj;
+  if (s.charAt(0) === "{"){
+    try{ obj = JSON.parse(s); }catch(e){ throw new Error("That is not valid JSON"); }
+  } else {
+    const code = shareFindCode(s);
+    if (!code) throw new Error("No PERSEUS coaching link or code found in that text");
+    try{ obj = await shareUnpackCode(code); }
+    catch(e){ throw new Error((e && e.message) || "That coaching code is damaged"); }
+  }
+  if (!obj || typeof obj !== "object") throw new Error("That is not a PERSEUS coaching share");
+  if (obj.kind === COACH_KIND_PLAN) return { kind: COACH_KIND_PLAN, plan: coachParsePlan(obj) };
+  if (obj.kind === COACH_KIND_ATHLETE) return { kind: COACH_KIND_ATHLETE, athlete: coachParseAthlete(obj) };
+  throw new Error("That is not a coaching code. Workout shares use the normal Share button.");
+}
+
+/* ---------- overlay plumbing ------------------------------------------ */
+function coachHostEl(){ return $("#coaching-host"); }
+function coachClose(){
+  const h = coachHostEl();
+  if (h) h.innerHTML = "";
+}
+function coachMount(htmlStr){
+  const h = coachHostEl();
+  if (!h) return null;
+  h.innerHTML = '<div class="sh-card ch-card">' + htmlStr + '</div>';
+  h.onclick = ev=>{ if (ev.target === h) coachClose(); };
+  const card = h.firstChild;
+  if (card) card.addEventListener("click", ev=>ev.stopPropagation());
+  return card;
+}
+function coachHead(title, sub){
+  return '<div class="sh-head"><div><h3 class="sh-title">' + esc(title) + '</h3>' +
+    (sub ? '<p class="micro sh-sub">' + esc(sub) + '</p>' : '') + '</div>' +
+    '<button type="button" class="btn ghost sh-x" data-ch-close aria-label="Close">✕</button></div>';
+}
+function coachWireClose(card){
+  $$("[data-ch-close]", card).forEach(b=>b.addEventListener("click", coachClose));
+}
+function coachWhen(iso){
+  try{ return iso ? fmtDate(iso) : ""; }catch(e){ return iso ? String(iso) : ""; }
+}
+
+/* ---------- dose text -------------------------------------------------- */
+function coachDoseText(ex, plan, unit){
+  const n = Math.max(1, (plan && plan.targetSets) || 1);
+  if (ex && ex.mode === "time"){
+    const a = (plan && plan.setTimes) || [];
+    const uniq = Array.from(new Set(a.map(v=>Math.round(Number(v) * 10) / 10)));
+    return (uniq.length === 1 ? uniq[0] : a.slice(0, n).join("/")) + "s × " + n;
+  }
+  const reps = (plan && plan.setReps) || [];
+  const uniq = Array.from(new Set(reps.map(v=>Math.round(Number(v)))));
+  const rt = uniq.length === 1 ? uniq[0] : reps.slice(0, n).join("/");
+  const w = (plan && plan.setWeights && plan.setWeights.length) ? plan.setWeights : null;
+  const wu = w ? Array.from(new Set(w.map(v=>Math.round(Number(v) * 2) / 2))) : [];
+  const wt = (!w || !wu.some(v=>v > 0)) ? "" : " @ " + (wu.length === 1 ? wu[0] : w.slice(0, n).join("/")) + " " + (unit || "kg");
+  return rt + " reps" + wt;
+}
+function coachLastFor(a, name){
+  const key = shareMatchKey(name);
+  for (const s of (a.history || [])){
+    const hits = (s.sets || []).filter(x=>shareMatchKey(x.name) === key);
+    if (hits.length) return { date: s.date, sets: hits };
+  }
+  return null;
+}
+function coachLastText(a, name){
+  const l = coachLastFor(a, name);
+  if (!l) return "no session yet";
+  const parts = l.sets.slice(0, 8).map(x=>{
+    if (x.time != null) return x.time + "s";
+    if (x.reps != null) return String(x.reps);
+    return "—";
+  }).join(" · ");
+  const w = l.sets.find(x=>x.weight != null && x.weight > 0);
+  return parts + (w ? " @ " + w.weight + " " + (a.unit || "kg") : "") + (l.date ? " · " + coachWhen(l.date) : "");
+}
+
+/* ---------- coach screen: roster -------------------------------------- */
+function coachOpenHome(){
+  const list = coachRoster();
+  const rows = list.map(a=>{
+    const nr = (a.routines || []).length;
+    const sets = (a.routines || []).reduce((t,r)=>t + r.exercises.reduce((s,x)=>s + x.sets, 0), 0);
+    return '<div class="sh-row"><span class="nm">' + esc(a.name || "Athlete") + '</span>' +
+      '<span class="mt">' + nr + ' routine' + (nr === 1 ? '' : 's') + ' · ' + sets + ' sets' +
+      (a.receivedAt ? ' · ' + esc(coachWhen(a.receivedAt)) : '') + '</span>' +
+      '<button type="button" class="btn small" data-ch-open="' + esc(a.id) + '">Open</button></div>';
+  }).join("");
+  const card = coachMount(
+    coachHead("Coaching", "A separate space. Nothing here touches your own routines, sessions, coach suggestions or AI key.") +
+    (list.length
+      ? '<div class="sh-list">' + rows + '</div>'
+      : '<p class="micro ch-note">No athletes yet. Your friend opens Settings → Coaching → Share my training with a coach and sends you the link or code.</p>') +
+    '<div class="btn-row" style="margin-top:1rem">' +
+      '<button type="button" class="btn primary" data-ch-add>Add an athlete from a code</button>' +
+      '<button type="button" class="btn ghost" data-ch-close>Close</button></div>' +
+    '<p class="micro ch-note">Plans travel as a link or code, exactly like workout shares. No account, no server.</p>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  $$("[data-ch-open]", card).forEach(b=>b.addEventListener("click", ()=>coachOpenAthlete(b.dataset.chOpen)));
+  const add = $("[data-ch-add]", card);
+  if (add) add.addEventListener("click", ()=>coachAddDialog());
+}
+
+function coachStoreAthlete(parsed){
+  const list = coachRoster();
+  const name = parsed.athlete || "";
+  let rec = parsed.src ? list.find(a=>a.src && a.src === parsed.src) : null;
+  if (!rec && name) rec = list.find(a=>(a.name || "").toLowerCase() === name.toLowerCase());
+  const next = {
+    id: rec ? rec.id : "ath-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: name || (rec && rec.name) || "Athlete",
+    src: parsed.src || (rec && rec.src) || "",
+    unit: parsed.unit, receivedAt: nowISO(),
+    routines: parsed.routines, history: parsed.history,
+    draft: (rec && rec.draft) || null, sentAt: (rec && rec.sentAt) || ""
+  };
+  coachUpdateAthlete(next);
+  return next;
+}
+function coachAddDialog(prefill){
+  const card = coachMount(
+    coachHead("Add an athlete", "Paste the link or code they sent. It carries their routines and recent sessions only.") +
+    '<label class="field"><span>Link or code</span><textarea data-ch-in rows="3" placeholder="https://…/#perseus-coach=P1.…"></textarea></label>' +
+    '<div class="btn-row"><button type="button" class="btn primary" data-ch-go>Read share</button>' +
+      '<button type="button" class="btn ghost" data-ch-back>Back</button></div>' +
+    '<div data-ch-msg></div>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  const ta = $("[data-ch-in]", card);
+  const msg = $("[data-ch-msg]", card);
+  const back = $("[data-ch-back]", card);
+  if (prefill && ta) ta.value = prefill;
+  if (back) back.addEventListener("click", coachOpenHome);
+  const read = async ()=>{
+    if (msg) msg.innerHTML = '<p class="micro ch-note">Reading…</p>';
+    let res;
+    try{ res = await coachDecode(ta ? ta.value : ""); }
+    catch(e){ if (msg) msg.innerHTML = '<div class="sh-err">' + esc((e && e.message) || "That did not work") + '</div>'; return; }
+    if (res.kind !== COACH_KIND_ATHLETE){
+      if (msg) msg.innerHTML = '<div class="sh-err">' + esc("That is a plan for an athlete to apply, not an athlete share.") + '</div>';
+      return;
+    }
+    const rec = coachStoreAthlete(res.athlete);
+    toast("Added " + rec.name);
+    coachOpenAthlete(rec.id);
+  };
+  const go = $("[data-ch-go]", card);
+  if (go) go.addEventListener("click", read);
+  if (ta) ta.addEventListener("paste", ()=>setTimeout(()=>{ if ((ta.value || "").trim()) read(); }, 0));
+  if (prefill) read();
+}
+
+/* ---------- coach screen: one athlete --------------------------------- */
+function coachOpenAthlete(id){
+  const a = coachFindAthlete(id);
+  if (!a){ toast("That athlete is no longer in your roster"); coachOpenHome(); return; }
+  const routines = (a.routines || []).map(r=>{
+    const rows = r.exercises.map(x=>{
+      const dose = coachDoseText({ mode: x.mode }, { targetSets: x.sets, setReps: x.setReps, setTimes: x.setTimes, setWeights: x.setWeights }, a.unit);
+      return '<div class="ch-line"><span>' + esc(x.name) + '</span><span class="micro">' + esc(dose) + '</span></div>';
+    }).join("");
+    const sets = r.exercises.reduce((t,x)=>t + x.sets, 0);
+    return '<details class="ch-routine"><summary><b>' + esc(r.name) + '</b>' +
+      '<span class="micro">' + r.exercises.length + ' exercises · ' + sets + ' sets</span></summary>' + rows + '</details>';
+  }).join("");
+  const hist = (a.history || []).slice(0, 6).map(s=>{
+    const done = (s.sets || []).filter(x=>!x.miss).length;
+    return '<div class="sh-row"><span class="nm">' + esc(s.routine || "Session") + '</span>' +
+      '<span class="mt">' + esc(s.date ? (coachWhen(s.date) || s.date) : "") + ' · ' + done + ' sets</span></div>';
+  }).join("");
+  const card = coachMount(
+    coachHead(a.name || "Athlete", "Shared " + (coachWhen(a.receivedAt) || "just now") + " · targets in " + (a.unit || "kg")) +
+    '<p class="micro" style="margin:0 0 .5rem">Routines</p>' + routines +
+    '<p class="micro" style="margin:.9rem 0 .3rem">Recent sessions</p>' +
+    (hist ? '<div class="sh-list">' + hist + '</div>' : '<p class="micro ch-note">No sessions in this share yet.</p>') +
+    '<div class="btn-row" style="margin-top:1rem">' +
+      '<button type="button" class="btn primary" data-ch-edit>Set next targets</button>' +
+      '<button type="button" class="btn ghost" data-ch-back>All athletes</button>' +
+      '<button type="button" class="btn ghost" data-ch-remove>Remove</button></div>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  const edit = $("[data-ch-edit]", card);
+  if (edit) edit.addEventListener("click", ()=>coachOpenEditor(a.id));
+  const back = $("[data-ch-back]", card);
+  if (back) back.addEventListener("click", coachOpenHome);
+  const rm = $("[data-ch-remove]", card);
+  if (rm) rm.addEventListener("click", ()=>{
+    if (!confirm("Remove " + (a.name || "this athlete") + " and their shared data from this browser?")) return;
+    coachDropAthlete(a.id);
+    toast("Athlete removed");
+    coachOpenHome();
+  });
+}
+
+/* ---------- coach screen: set next targets ---------------------------- */
+function coachCollect(card, routine){
+  const ex = {};
+  routine.exercises.forEach((x, xi)=>{
+    const o = {};
+    const times = $$('[data-ch-time="' + xi + '"]', card).map(el=>Math.max(0, Math.round((Number(el.value) || 0) * 2) / 2));
+    const reps = $$('[data-ch-rep="' + xi + '"]', card).map(el=>Math.max(0, Math.round(Number(el.value) || 0)));
+    const w = $('[data-ch-w="' + xi + '"]', card);
+    if (x.mode === "time") o.setTimes = times; else o.setReps = reps;
+    if (w) o.weight = Math.max(0, Math.round((Number(w.value) || 0) * 2) / 2);
+    ex["i" + xi] = o;
+  });
+  return ex;
+}
+function coachOpenEditor(id, routineName){
+  const a = coachFindAthlete(id);
+  if (!a || !(a.routines || []).length){ toast("Open an athlete first"); coachOpenHome(); return; }
+  const routine = (a.routines.find(r=>r.name === routineName) || a.routines[0]);
+  const draft = (a.draft && a.draft.r === routine.name && a.draft.ex) ? a.draft.ex : {};
+  const unit = a.unit || "kg";
+  const rows = routine.exercises.map((x, xi)=>{
+    const d = draft["i" + xi] || {};
+    const sets = x.sets;
+    let inputs = "";
+    if (x.mode === "time"){
+      const arr = d.setTimes || x.setTimes || [];
+      inputs = Array.from({length: sets}, (_, j)=>
+        '<label><span>' + (sets > 1 ? "Set " + (j + 1) : "Seconds") + '</span>' +
+        '<input type="number" min="0" max="3600" step="5" inputmode="numeric" data-ch-time="' + xi + '" value="' + (arr[j] != null ? arr[j] : "") + '"/></label>').join("");
+    } else {
+      const arr = d.setReps || x.setReps || [];
+      inputs = Array.from({length: sets}, (_, j)=>
+        '<label><span>' + (sets > 1 ? "Set " + (j + 1) : "Reps") + '</span>' +
+        '<input type="number" min="0" max="100" step="1" inputmode="numeric" data-ch-rep="' + xi + '" value="' + (arr[j] != null ? arr[j] : "") + '"/></label>').join("");
+    }
+    if (x.weightAvailable){
+      const w = (d.weight != null) ? d.weight : ((x.setWeights && x.setWeights[0]) || 0);
+      inputs += '<label><span>' + esc(unit) + '</span><input type="number" min="0" max="1000" step="0.5" inputmode="decimal" data-ch-w="' + xi + '" value="' + (w || "") + '"/></label>';
+    }
+    return '<div class="ch-ex" data-ch-ex="' + xi + '">' +
+      '<div class="ch-ex-head"><b>' + esc(x.name) + '</b><span class="micro">' + esc(sets + " sets · last: " + coachLastText(a, x.name)) + '</span></div>' +
+      '<div class="ch-inputs">' + inputs + '</div>' +
+      '<div class="ch-quick">' +
+        (x.mode === "time"
+          ? '<button type="button" class="btn small" data-ch-bump="time" data-ch-i="' + xi + '" data-ch-d="5">+5 s</button>'
+          : '<button type="button" class="btn small" data-ch-bump="reps" data-ch-i="' + xi + '" data-ch-d="1">+1 rep</button>') +
+        (x.weightAvailable ? '<button type="button" class="btn small" data-ch-bump="w" data-ch-i="' + xi + '" data-ch-d="2.5">+2.5 ' + esc(unit) + '</button>' : '') +
+        '<button type="button" class="btn small ghost" data-ch-match="' + xi + '">Match last</button>' +
+      '</div></div>';
+  }).join("");
+  const options = a.routines.map(r=>'<option value="' + esc(r.name) + '"' + (r.name === routine.name ? ' selected' : '') + '>' + esc(r.name) + '</option>').join("");
+  const card = coachMount(
+    coachHead("Set next targets", (a.name || "Athlete") + " · " + routine.name) +
+    (a.routines.length > 1 ? '<label class="field"><span>Routine</span><select data-ch-routine>' + options + '</select></label>' : '') +
+    '<p class="micro" style="margin:.2rem 0 .8rem">Set count stays at what they already do. Coach reps, seconds and load only.</p>' +
+    rows +
+    '<label class="field" style="margin-top:.8rem"><span>Note to athlete (optional)</span><textarea data-ch-note rows="2" maxlength="300" placeholder="e.g. keep the last set one rep shy of failure">' + esc((a.draft && a.draft.note) || "") + '</textarea></label>' +
+    '<div class="btn-row" style="margin-top:1rem">' +
+      '<button type="button" class="btn primary" data-ch-send>Send to athlete</button>' +
+      '<button type="button" class="btn" data-ch-savedraft>Save draft</button>' +
+      '<button type="button" class="btn ghost" data-ch-back>Athlete</button></div>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  const sel = $("[data-ch-routine]", card);
+  if (sel) sel.addEventListener("change", ()=>coachOpenEditor(a.id, sel.value));
+  const back = $("[data-ch-back]", card);
+  if (back) back.addEventListener("click", ()=>coachOpenAthlete(a.id));
+  $$("[data-ch-bump]", card).forEach(b=>b.addEventListener("click", ()=>{
+    const box = $('[data-ch-ex="' + b.dataset.chI + '"]', card);
+    if (!box) return;
+    const d = Number(b.dataset.chD) || 0;
+    const sel2 = b.dataset.chBump === "reps" ? "[data-ch-rep]" : b.dataset.chBump === "time" ? "[data-ch-time]" : "[data-ch-w]";
+    $$(sel2, box).forEach(el=>{
+      const v = Math.max(0, Math.min(3600, Math.round(((Number(el.value) || 0) + d) * 10) / 10));
+      el.value = v;
+    });
+  }));
+  $$("[data-ch-match]", card).forEach(b=>b.addEventListener("click", ()=>{
+    const xi = +b.dataset.chMatch;
+    const x = routine.exercises[xi];
+    const box = $('[data-ch-ex="' + xi + '"]', card);
+    const l = x ? coachLastFor(a, x.name) : null;
+    if (!l || !box){ toast("No logged session for that movement yet"); return; }
+    const last = {};
+    l.sets.forEach(s=>{ if (last[s.index] == null) last[s.index] = s; });
+    $$("[data-ch-rep]", box).forEach((el, j)=>{ const s = last[j]; if (s && s.reps != null) el.value = s.reps; });
+    $$("[data-ch-time]", box).forEach((el, j)=>{ const s = last[j]; if (s && s.time != null) el.value = s.time; });
+    const wEl = $("[data-ch-w]", box);
+    const withW = l.sets.find(s=>s.weight != null && s.weight > 0);
+    if (wEl && withW) wEl.value = withW.weight;
+    toast("Matched the last logged session");
+  }));
+  const collect = ()=>{
+    const noteEl = $("[data-ch-note]", card);
+    return { r: routine.name, note: shareCleanText(noteEl ? noteEl.value : "", 300), ex: coachCollect(card, routine) };
+  };
+  const saveDraft = (silent)=>{
+    const d = collect();
+    const rec = Object.assign({}, a, { draft: d });
+    coachUpdateAthlete(rec);
+    a.draft = d;
+    if (!silent) toast("Draft saved for " + (a.name || "athlete"));
+    return d;
+  };
+  const sd = $("[data-ch-savedraft]", card);
+  if (sd) sd.addEventListener("click", ()=>saveDraft(false));
+  const send = $("[data-ch-send]", card);
+  if (send) send.addEventListener("click", ()=>coachSendSheet(a, saveDraft(true)));
+}
+
+function coachBuildPlanPayload(a, draft){
+  const routines = a.routines || [];
+  const routine = routines.find(r=>r.name === draft.r) || routines[0];
+  if (!routine) throw new Error("That athlete share has no routines");
+  const ex = routine.exercises.map((x, xi)=>{
+    const o = (draft.ex && draft.ex["i" + xi]) || {};
+    const entry = { n: x.name, m: x.mode, s: x.sets, wa: x.weightAvailable ? 1 : 0, ps: x.perSide ? 1 : 0 };
+    if (x.mode === "time"){
+      const arr = ((o.setTimes && o.setTimes.length) ? o.setTimes : x.setTimes) || [];
+      entry.st = arr.slice(0, x.sets);
+      entry.ti = arr[0] != null ? arr[0] : x.time;
+    } else {
+      const arr = ((o.setReps && o.setReps.length) ? o.setReps : x.setReps) || [];
+      entry.sr = arr.slice(0, x.sets);
+      entry.rp = arr[0] != null ? arr[0] : x.reps;
+    }
+    if (x.weightAvailable){
+      if (o.weight != null) entry.w = o.weight;
+      else if (x.setWeights) entry.sw = x.setWeights.slice(0, x.sets);
+      else entry.w = 0;
+    }
+    if (x.setTypes) entry.ty = x.setTypes.slice(0, x.sets);
+    return entry;
+  });
+  if (!ex.length) throw new Error("That routine has no exercises to send");
+  return { app: SHARE_APP, kind: COACH_KIND_PLAN, v: 1, u: a.unit || "kg",
+    c: shareCleanText((state.profile && state.profile.name) || "", 60),
+    note: shareCleanText(draft.note || "", 300), ts: nowISO(), src: shareInstallId(),
+    r: [{ n: routine.name, t: routine.type, ex: ex }] };
+}
+async function coachSendSheet(a, draft){
+  let code;
+  try{ code = await sharePackPayload(coachBuildPlanPayload(a, draft)); }
+  catch(e){ toast((e && e.message) || "Could not build the plan"); return; }
+  const link = coachLink(code, COACH_KIND_PLAN);
+  const card = coachMount(
+    coachHead("Send the plan", (a.name || "Athlete") + " · " + draft.r) +
+    '<p class="micro" style="margin:0 0 .7rem">They open Settings → Coaching → Apply a plan from my coach. Only reps, seconds and load travel; set counts stay theirs.</p>' +
+    '<label class="field"><span>Send this link</span><textarea data-ch-out readonly rows="3">' + esc(link) + '</textarea></label>' +
+    '<div class="btn-row"><button type="button" class="btn primary" data-ch-copy="link">Copy link</button>' +
+      '<button type="button" class="btn" data-ch-copy="code">Copy code</button>' +
+      '<button type="button" class="btn ghost" data-ch-back>Back to editor</button></div>' +
+    '<p class="micro ch-note">' + link.length + ' characters' +
+      (link.length > SHARE_LINK_SOFT_LIMIT ? " · long enough that some chat apps trim it; the code is safer." : "") + '</p>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  $$("[data-ch-copy]", card).forEach(b=>b.addEventListener("click", ()=>{
+    if (b.dataset.chCopy === "link") shareCopyText(link, "Plan link");
+    else shareCopyText(code, "Plan code");
+    coachUpdateAthlete(Object.assign({}, a, { sentAt: nowISO() }));
+  }));
+  const back = $("[data-ch-back]", card);
+  if (back) back.addEventListener("click", ()=>coachOpenEditor(a.id, draft.r));
+}
+
+/* ---------- athlete screen: share my training ------------------------- */
+async function coachShareDialog(prefill){
+  let payload, code;
+  try{
+    payload = coachBuildAthletePayload();
+    code = await sharePackPayload(payload);
+  }catch(e){ toast((e && e.message) || "Could not build that share"); return; }
+  const link = coachLink(code, COACH_KIND_ATHLETE);
+  const sets = payload.r.reduce((t,r)=>t + r.ex.reduce((s,x)=>s + x.s, 0), 0);
+  const card = coachMount(
+    coachHead("Share my training with a coach", "Only your routines, their targets and your recent sessions travel. Not your profile, charts or AI key.") +
+    '<div class="sh-list">' +
+      '<div class="sh-row"><span class="nm">' + payload.r.length + ' routine' + (payload.r.length === 1 ? '' : 's') + '</span><span class="mt">' + sets + ' sets</span></div>' +
+      '<div class="sh-row"><span class="nm">' + payload.h.length + ' recent session' + (payload.h.length === 1 ? '' : 's') + '</span><span class="mt">' + esc(payload.u) + '</span></div>' +
+    '</div>' +
+    '<label class="field" style="margin-top:.9rem"><span>Send this link</span><textarea data-ch-out readonly rows="3">' + esc(prefill || link) + '</textarea></label>' +
+    '<div class="btn-row"><button type="button" class="btn primary" data-ch-copy="link">Copy link</button>' +
+      '<button type="button" class="btn" data-ch-copy="code">Copy code</button>' +
+      '<button type="button" class="btn ghost" data-ch-close>Close</button></div>' +
+    '<p class="micro ch-note">' + (prefill || link).length + ' characters. Your coach opens Settings → Coaching → Add an athlete from a code.</p>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  $$("[data-ch-copy]", card).forEach(b=>b.addEventListener("click", ()=>{
+    if (b.dataset.chCopy === "link") shareCopyText(link, "Coaching link");
+    else shareCopyText(code, "Coaching code");
+  }));
+}
+
+/* ---------- athlete screen: apply a plan ------------------------------ */
+function coachFindDay(st, name){
+  const want = shareCleanText(name, 80).toLowerCase();
+  const days = (st && st.days) || [];
+  return days.find(d=>d && shareCleanText(d.name, 80).toLowerCase() === want) || null;
+}
+function coachMergedPlan(ex, de, pe, fromUnit, unitNow){
+  const n = Math.max(1, de.targetSets || 1);
+  const cur = ex.plan ? ex.plan : normalizePlan(ex, de);
+  const conv = fromUnit !== unitNow;
+  const mk = (src, fb, isWeight, step)=>{
+    const arr = [];
+    for (let i=0; i<n; i++){
+      let v = (src && src[i] != null) ? src[i] : fb;
+      if (isWeight && conv) v = shareConvertWeight(v, fromUnit, unitNow);
+      const num = Number(v);
+      arr.push(isFinite(num) ? Math.max(0, Math.round(num / step) * step) : 0);
+    }
+    return arr;
+  };
+  const plan = { targetSets: n, reps: cur.reps, time: cur.time, weight: cur.weight,
+    setReps: null, setTimes: null, setWeights: null,
+    setTypes: (Array.isArray(cur.setTypes) && cur.setTypes.length) ? cur.setTypes.slice(0, n) : Array.from({length:n}, ()=>"regular"),
+    modifiedAt: Date.now() };
+  if (ex.mode === "time"){
+    const fb = (cur.setTimes && cur.setTimes[0]) || cur.time || ex.defaultTime || 30;
+    plan.setTimes = mk((pe.setTimes && pe.setTimes.length) ? pe.setTimes : (pe.time != null ? Array.from({length:n}, ()=>pe.time) : null), fb, false, 0.5);
+    plan.time = plan.setTimes[0];
+  } else {
+    const fb = (cur.setReps && cur.setReps[0]) || cur.reps || ex.defaultReps || 8;
+    plan.setReps = mk((pe.setReps && pe.setReps.length) ? pe.setReps : (pe.reps != null ? Array.from({length:n}, ()=>pe.reps) : null), fb, false, 1);
+    plan.reps = plan.setReps[0];
+  }
+  if (usesWeightFor(ex) && ex.weightAvailable){
+    const fb = (cur.setWeights && cur.setWeights[0]) || cur.weight || 0;
+    const fbPlan = conv ? shareConvertWeight(fb, unitNow, fromUnit) : fb;
+    const src = (pe.setWeights && pe.setWeights.length) ? pe.setWeights : (pe.weight != null ? Array.from({length:n}, ()=>pe.weight) : null);
+    plan.setWeights = mk(src, fbPlan, true, 0.5);
+    plan.weight = plan.setWeights[0];
+  }
+  if (Array.isArray(pe.setTypes) && pe.setTypes.length){
+    plan.setTypes = Array.from({length:n}, (_, i)=> SET_TYPES[pe.setTypes[i]] ? pe.setTypes[i] : (plan.setTypes[i] || "regular"));
+  }
+  return plan;
+}
+function coachPlanPreview(plan){
+  const unitNow = weightUnit();
+  const out = { routines: [], missing: [], skipped: [], converted: plan.unit !== unitNow };
+  plan.routines.forEach(pr=>{
+    const day = coachFindDay(state, pr.name);
+    if (!day){ out.missing.push(pr.name); return; }
+    const rows = [];
+    pr.exercises.forEach(pe=>{
+      const de = (day.exercises || []).find(x=>{
+        const ex = getEx(x.exId);
+        return ex && shareMatchKey(ex.name) === shareMatchKey(pe.name);
+      });
+      const ex = de ? getEx(de.exId) : null;
+      if (!de || !ex){ out.skipped.push(pe.name); return; }
+      const cur = ex.plan || normalizePlan(ex, de);
+      const merged = coachMergedPlan(ex, de, pe, plan.unit, unitNow);
+      rows.push({ name: ex.name, from: coachDoseText(ex, cur, unitNow), to: coachDoseText(ex, merged, unitNow) });
+    });
+    if (rows.length) out.routines.push({ name: day.name, rows: rows });
+  });
+  return out;
+}
+function coachSyncPlanIn(next, exId, sourceDe){
+  const ex = (next.exercises || []).find(e=>e && e.id === exId);
+  if (!ex || !sourceDe) return;
+  const plan = normalizePlan(ex, sourceDe);
+  ex.plan = plan;
+  (next.days || []).forEach(d=>(d.exercises || []).forEach(de=>{
+    if (de.exId === exId && de !== sourceDe) applyPlanToEntry(de, ex, plan);
+  }));
+}
+function coachApplyPlanToState(plan){
+  const unitNow = weightUnit();
+  const next = JSON.parse(JSON.stringify(state));
+  next.days = next.days || [];
+  next.exercises = next.exercises || [];
+  const report = { applied: 0, routines: [], missing: [], skipped: [], converted: plan.unit !== unitNow, from: plan.unit, to: unitNow };
+  plan.routines.forEach(pr=>{
+    const day = coachFindDay(next, pr.name);
+    if (!day){ report.missing.push(pr.name); return; }
+    pr.exercises.forEach(pe=>{
+      const de = (day.exercises || []).find(x=>{
+        const ex = next.exercises.find(e=>e && e.id === x.exId);
+        return ex && shareMatchKey(ex.name) === shareMatchKey(pe.name);
+      });
+      const ex = de ? next.exercises.find(e=>e && e.id === de.exId) : null;
+      if (!de || !ex){ report.skipped.push(pe.name); return; }
+      const merged = coachMergedPlan(ex, de, pe, plan.unit, unitNow);
+      applyPlanToEntry(de, ex, merged);
+      coachSyncPlanIn(next, ex.id, de);
+      report.applied += 1;
+      if (report.routines.indexOf(day.name) === -1) report.routines.push(day.name);
+    });
+  });
+  if (!report.applied) throw new Error("Nothing in that plan matched your routines. Your coach may have renamed a routine or a movement.");
+  if (!commitState(next)) throw new Error("Could not save. This browser is out of storage space. Free some space and try again.");
+  return report;
+}
+function coachApplied(report, plan){
+  const card = coachMount(
+    coachHead("Plan applied", report.routines.join(", ")) +
+    '<div class="sh-ok"><p class="micro" style="margin:0">' +
+      esc(report.applied + " movement" + (report.applied === 1 ? "" : "s") + " updated across " + report.routines.length + " routine" + (report.routines.length === 1 ? "" : "s") + ". Set counts unchanged.") +
+    '</p></div>' +
+    (report.skipped.length
+      ? '<div class="sh-list">' + report.skipped.map(n=>'<div class="sh-row"><span class="nm">' + esc(n) + '</span><span class="sh-tag gone">skipped</span></div>').join("") + '</div>'
+      : '') +
+    (plan && plan.note ? '<p class="micro ch-note">Coach note: ' + esc(plan.note) + '</p>' : '') +
+    '<div class="btn-row" style="margin-top:1rem"><button type="button" class="btn primary" data-ch-routines>Open my routines</button>' +
+    '<button type="button" class="btn" data-ch-close>Done</button></div>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  const b = $("[data-ch-routines]", card);
+  if (b) b.addEventListener("click", ()=>{ coachClose(); switchView("workouts"); });
+  toast("Coach plan applied");
+}
+async function coachApplyPreview(card, text){
+  const msg = $("[data-ch-msg]", card);
+  if (msg) msg.innerHTML = '<p class="micro ch-note">Reading…</p>';
+  let res;
+  try{ res = await coachDecode(text); }
+  catch(e){ if (msg) msg.innerHTML = '<div class="sh-err">' + esc((e && e.message) || "That did not work") + '</div>'; return; }
+  if (res.kind !== COACH_KIND_PLAN){
+    if (msg) msg.innerHTML = '<div class="sh-err">' + esc("That is an athlete share, not a plan. It is for your coach to open.") + '</div>';
+    return;
+  }
+  const plan = res.plan;
+  let diff;
+  try{ diff = coachPlanPreview(plan); }
+  catch(e){ if (msg) msg.innerHTML = '<div class="sh-err">' + esc((e && e.message) || "That plan could not be read") + '</div>'; return; }
+  if (!diff.routines.length){
+    if (msg) msg.innerHTML = '<div class="sh-err">' + esc("None of the movements in that plan match your routines." + (diff.missing.length ? " Missing routine: " + diff.missing.join(", ") + "." : "")) + '</div>';
+    return;
+  }
+  const blocks = diff.routines.map(r=>{
+    const rows = r.rows.map(x=>'<div class="ch-line"><span>' + esc(x.name) + '</span><span class="micro">' + esc(x.from) + ' → <b class="ch-diff">' + esc(x.to) + '</b></span></div>').join("");
+    return '<div class="ch-routine" style="margin-bottom:.6rem"><div class="ch-ex-head"><b>' + esc(r.name) + '</b>' +
+      '<span class="micro">' + r.rows.length + ' movement' + (r.rows.length === 1 ? '' : 's') + '</span></div>' + rows + '</div>';
+  }).join("");
+  const notes = ["Set counts stay exactly as they are."];
+  if (diff.converted) notes.push("Loads converted from " + plan.unit + " to " + weightUnit() + ".");
+  if (diff.missing.length) notes.push("Not in your routines: " + diff.missing.join(", ") + ".");
+  if (diff.skipped.length) notes.push("Skipped: " + diff.skipped.join(", ") + ".");
+  if (!msg) return;
+  msg.innerHTML =
+    '<div class="sh-ok"><h3 class="sh-title">' + esc("Plan from " + (plan.coach || "your coach")) + '</h3>' +
+    '<p class="micro sh-sub">' + esc(notes.join(" ")) + '</p>' +
+    (plan.note ? '<p class="small" style="margin:.5rem 0 0">“' + esc(plan.note) + '”</p>' : '') + '</div>' +
+    '<div class="sh-list" style="display:block">' + blocks + '</div>' +
+    '<div class="btn-row" style="margin-top:.9rem"><button type="button" class="btn primary" data-ch-apply>Apply this plan</button>' +
+    '<button type="button" class="btn ghost" data-ch-cancel>Cancel</button></div>';
+  const applyBtn = $("[data-ch-apply]", msg);
+  const cancel = $("[data-ch-cancel]", msg);
+  if (cancel) cancel.addEventListener("click", coachClose);
+  if (!applyBtn) return;
+  applyBtn.addEventListener("click", ()=>{
+    if (logCtx && !logCtx.finished){
+      if (!confirm("A session is being logged right now. Apply this plan anyway?")) return;
+    }
+    applyBtn.disabled = true;
+    let report;
+    try{ report = coachApplyPlanToState(plan); }
+    catch(e){
+      applyBtn.disabled = false;
+      msg.innerHTML = '<div class="sh-err">' + esc((e && e.message) || "That plan could not be applied") + '</div>';
+      return;
+    }
+    coachApplied(report, plan);
+  });
+}
+function coachApplyDialog(prefill){
+  const card = coachMount(
+    coachHead("Apply a plan from my coach", "Paste the link or code your coach sent. Nothing changes until you confirm the preview.") +
+    '<label class="field"><span>Link or code</span><textarea data-ch-in rows="3" placeholder="https://…/#perseus-plan=P1.…"></textarea></label>' +
+    '<div class="btn-row"><button type="button" class="btn primary" data-ch-go>Preview changes</button>' +
+    '<button type="button" class="btn ghost" data-ch-close>Close</button></div>' +
+    '<div data-ch-msg></div>'
+  );
+  if (!card) return;
+  coachWireClose(card);
+  const ta = $("[data-ch-in]", card);
+  if (prefill && ta) ta.value = prefill;
+  const go = $("[data-ch-go]", card);
+  if (go) go.addEventListener("click", ()=>coachApplyPreview(card, ta ? ta.value : ""));
+  if (ta) ta.addEventListener("paste", ()=>setTimeout(()=>{ if ((ta.value || "").trim()) coachApplyPreview(card, ta.value); }, 0));
+  if (prefill) coachApplyPreview(card, prefill);
+}
+
+/* ---------- deep links: #perseus-coach= / #perseus-plan= ---------------- */
+function coachHandleDeepLink(){
+  let hash = "";
+  try{ hash = String((typeof location !== "undefined" && location.hash) || ""); }
+  catch(e){ return; }
+  if (hash.charAt(0) === "#") hash = hash.slice(1);
+  const isPlan = hash.indexOf(COACH_HASH_PLAN) === 0;
+  const isAthlete = hash.indexOf(COACH_HASH_ATHLETE) === 0;
+  if (!isPlan && !isAthlete) return;
+  const code = hash.slice((isPlan ? COACH_HASH_PLAN : COACH_HASH_ATHLETE).length);
+  try{
+    if (window.history && window.history.replaceState){
+      window.history.replaceState(null, "", location.pathname + location.search);
+    } else location.hash = "";
+  }catch(e){ try{ location.hash = ""; }catch(e2){} }
+  if (!code) return;
+  if (isPlan) coachApplyDialog(code);
+  else coachAddDialog(code);
 }
 
 var PROG_KEY = "perseus-programs-v1";
@@ -15752,10 +16603,17 @@ function init(){
   try{ document.addEventListener("keydown", shareHostKey); }catch(e){}
   try{
     if (typeof window.addEventListener === "function"){
-      window.addEventListener("hashchange", ()=>{ try{ shareHandleDeepLink(); }catch(e){} });
+      window.addEventListener("hashchange", ()=>{ try{ shareHandleDeepLink(); }catch(e){} try{ coachHandleDeepLink(); }catch(e){} });
     }
   }catch(e){}
   try{ shareHandleDeepLink(); }catch(e){}
+  try{ coachHandleDeepLink(); }catch(e){}
+  try{
+    document.addEventListener("click", ev=>{
+      const b = ev.target && ev.target.closest ? ev.target.closest("[data-coach-open]") : null;
+      if (b){ coachOpenHome(); }
+    });
+  }catch(e){}
   try{ setTimeout(()=>queueFolderBackup(), 1500); }catch(e){}
 }
 init();

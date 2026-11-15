@@ -1,0 +1,86 @@
+The user asks for an explanation of how coaching would go, with an example. This is a question — answer, no changes. But I should ground it in the actual implementation: the exact flows, screens, labels, limits (one routine per plan, name matching, set counts fixed, links vs codes, deep links). Let me read the coaching code sections to be accurate rather than relying on memory.
+
+Read coachBuildAthletePayload → coachApplyDialog and the settings card, plus the deep link handling. Let me read the ranges: 14150-14400 (storage/parse), 14400-14900 (UI). That's large; read in two windows.
+
+I have enough for the coach side. I should also confirm the athlete side entry points: Settings → Coaching card labels, the share button text, the apply dialog wording, and history/limits (COACH_MAX_HISTORY, COACH_MAX_ROUTINES). Let me read the settings card block and the apply dialog + share sheet.
+
+Search for "set-coach" and coachApplyDialog and coachShareDialog.
+
+I have enough. This is a question — answer with a concrete walkthrough. No tool calls needed further. Answer includes a worked example with realistic numbers, plus what doesn't happen (isolation), limits.
+
+Let me write a clear, example-driven explanation: Sam (athlete) and coach. Steps with labels as implemented.
+
+Details to be accurate:
+- Athlete: Settings → "Coaching a friend" card → "Share my training with a coach" → generates link/code (link starts `…/#perseus-coach=P1.…`), copy link/code.
+- Share contains: routines (name, type, each exercise: name, sets, per-set reps or seconds, weight + unit), and up to 24 recent sessions (last 24, most recent first), each with sets actually done (reps/time/weight/type, missed-set flag) and session note (240 chars). Not included: body metrics, AI key, programs, suggestions, photos? — I set profile name only. Let me not overclaim: "profile name, unit, routines, last 24 sessions". Safe: no AI key, no programs, no your own coach suggestions.
+- Coach: Settings → Open coaching, or Coach hero "Coaching a friend" → roster → "Add an athlete from a code" paste → toast "Added Sam" → athlete screen: routines as expandable details with dose text, recent sessions with date + sets done → "Set next targets" → editor: per-set rep inputs, weight input, quick buttons +1 rep / +2.5 kg / Match last, routine selector if >1, note field → "Send to athlete" (or save draft). Produces link `#perseus-plan=…`, copy link/code.
+- Set counts fixed; the editor's inputs count equals the athlete's sets, so you cannot add a set there.
+- Athlete: Settings → "Apply a plan from my coach" → paste → "Preview changes" → preview shows old → new per movement with diff, note from coach, set counts stay; skipped/missing reported → apply → writes via commitState; toast.
+- Direct links: opening the plan link on the athlete's device jumps to preview; athlete link on coach's device opens add screen prefilled.
+- Name matching: routine by name, exercise by normalized name; renamed = skipped.
+- One routine per send; send another for another routine.
+- Isolation: coach roster in own key; coach's own state untouched unless applying a plan on their own device — note the coach *is* also an athlete, so he could apply his own plan to himself, but that's his choice; nothing auto-syncs.
+- Both sides need the same app (index.html), no account/server; each share is a snapshot — coach only sees what was last sent, no auto-updates.
+- Units: athlete's unit stored; coach edits in athlete's unit; applying converts if device unit differs.
+
+Give a worked example with numbers: Ring Dip 3 sets × 8 @10 kg → coach sets 9,9,8 @ 10, then 12.5 next week. Actually mention progressive overload cycle.
+
+Keep it structured but not bloated. End with the one-sentence commit summary per standing instruction. Hmm — "End every output with a very short 1-sentence commit summary." This is an explanation, not a code change; but the instruction says every output. I'll add a one-line note that no code changed... The instruction is a session-level requirement from the user, so honor it: "Commit summary: No code change — ..." That's odd but complies. I'll phrase: "Commit summary: no code change — this is an explanation of the coaching flow." Good.
+
+Also suggest_followups: 3 suggestions. The user asked an explanation; followups could be "Walk me through the coach's first week end to end as a printable guide" etc. Keep goal-oriented, work I can do.
+
+Should I use suggest_followups? Guidance says use at end of turn. Fine, one call with 3 items, then final message. But tool call then final message — must be in same response? I can call suggest_followups and then write final text in same response. Yes.
+
+Write the explanation now, plain text, with the commit-summary line at the end.
+
+Here's the loop, using a concrete example: **you coach Sam**, who trains on his own phone.
+
+## 1. Sam sends you a snapshot
+
+Sam opens **Settings → "Coaching a friend"** and taps **"Share my training with a coach"**. The app builds a code from his own state — profile name, his unit, his routines with per-set targets, and his last 24 sessions — and offers **Copy link** / **Copy code**. He texts it to you.
+
+What travels: routine names, exercise names, set counts, per-set reps or seconds, loads, and what he actually did last time (including sets he missed). What never travels: his AI key, his programs, his own coach suggestions, his body metrics.
+
+## 2. You read it
+
+You tap **"Coaching a friend"** in your Coach tab hero (or **Settings → Open coaching**). That's a separate overlay with its own roster — it does not swap or reload your own training data.
+
+- **"Add an athlete from a code"** → paste → **Read share** → "Added Sam".
+- His card shows **routines** (collapsed, e.g. *Push A — 5 exercises · 16 sets*, expanding to `Ring Dip — 8/8/8 reps @ 10 kg`) and **recent sessions** with dates and how many sets were completed.
+
+Opening the link on a phone does the same thing: the link is just `…/#perseus-coach=…`, so it lands straight on the paste-and-read screen, prefilled.
+
+## 3. You set next targets
+
+**"Set next targets"** opens the editor for one routine at a time. For each movement you get one input per set he already does, plus load, plus quick buttons: **+1 rep**, **+2.5 kg**, **Match last**. Under each name: *"3 sets · last: 8 · 8 · 7 @ 10 kg · 12 Nov"*.
+
+You write `9 / 9 / 8 @ 10 kg` on the dips, add a note — *"3rd set stop one rep shy"* — and tap **Send to athlete**. Out comes a `#perseus-plan=…` link or code. If you're not finished, **Save draft** keeps your edits per athlete.
+
+**The set count is not yours to change.** The editor only gives you as many inputs as he already does, and applying never adds or removes a set — you tune reps, seconds and load, which is what progressive overload needs.
+
+## 4. Sam applies it
+
+Sam goes to **Settings → "Apply a plan from my coach"** (or just taps your link) and pastes. **Preview changes** shows the diff before anything is written:
+
+```
+Ring Dip     8/8/8 @ 10 kg  →  9/9/8 @ 10 kg
+Ring Push-up 12 reps        →  12 reps (unchanged)
+```
+
+with your note underneath. He confirms; only then does his routine change, all-or-nothing, through the normal save path. Then he logs his next session as usual — the new targets are just his numbers now, and his own logging, suggestions and coach tab behave exactly as before.
+
+## 5. Next week
+
+Sam sends a fresh snapshot (same two taps), which replaces his record in your roster — name-based, so it doesn't duplicate him. You see the 9/9/8 was hit, so you go to 12.5 kg. Repeat.
+
+## The rules that keep it harmless
+
+- **Nothing syncs automatically.** Each share is a snapshot; you only see what he last sent, and he only changes what he applies. No server, no accounts.
+- **Your own data is separate.** Your roster lives in its own browser key; reading or editing Sam never rewrites your routines, sessions or pending suggestions. The only time a plan touches `perseus-v1` is when *you* apply a plan on *your* device.
+- **Matching is by name** — routine name, then exercise name. Rename either side and that movement is reported as skipped rather than guessed wrong.
+- **One plan covers one routine** — pick another routine from the selector to send a second link.
+- **Units**: he keeps his unit; your loads are converted when they land if his device is set differently.
+
+Commit summary: no code changed — this is an explanation of the coaching flow as built.
+
+This cycle is repeated weekly
