@@ -1,0 +1,3 @@
+git reset --hard pre-ai-chat     # discard chat work, return to this version
+# or, keep the attempt on a side branch:
+git switch -c ai-chat-attempt && git switch back to main later
